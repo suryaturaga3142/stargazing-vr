@@ -38,7 +38,7 @@ struct quaternion rotate_quaternion(struct quaternion q_star, struct quaternion 
     return q_star_new;
 }
 
-//Take the cross product of two quaternions
+//Take the product of two quaternions
 struct quaternion q_product(struct quaternion q1, struct quaternion q2)
 {
     struct quaternion q3;
@@ -47,4 +47,21 @@ struct quaternion q_product(struct quaternion q1, struct quaternion q2)
     q3.j = (q1.real * q2.j) - (q1.i * q2.k) + (q1.j * q2.real) + (q1.k * q2.i); //Calculate j component
     q3.k = (q1.real * q2.k) + (q1.i * q2.j) - (q1.j * q2.i) + (q1.k * q2.real); //Calculate k component
     return q3;
+}
+
+//Convert Universal Time to Greenwich Mean Sidereal Time
+//D is Julian day (days since J2000.0), H is hours since 0h UT 
+float convert_UT_to_GMST(int D, float H)
+{
+    float GMST = (6.697374558 + (0.06570982441908 * D) + (1.00273790935 * H)) % 24; //hours
+    return GMST;
+}
+
+//Convert Greenwich Mean Sidereal Time to sidereal time for the current location
+float convert_GMST_to_LST(float GMST, float longitude)
+{
+    float LST; //Local Standard Time
+    float longitude_hours = longitude / 15; //Convert longitude to hours, 15 degrees per hour
+    LST = (GMST + longitude_hours) % 24; 
+    return LST;
 }
