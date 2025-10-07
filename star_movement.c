@@ -22,6 +22,17 @@ struct quaternion star_coords_to_quaternion(float angle_ra_rad, float angle_dec_
     return q;
 }
 
+//Create unit quaternion to represent rotation given a rotation axis and the amount to rotate by
+//TODO: Is an array the best way to pass in the axis? Also should it be checked to verify it's a unit vector
+struct quaternion rotation_to_quaternion(float angle, float[] axis)
+{
+    struct quaternion q_rotation;
+    q_rotation.real = math.cos(angle / 2);
+    q_rotation.i = math.sin(angle / 2) * axis[0];
+    q_rotation.j = math.sin(angle / 2) * axis[1];
+    q_rotation.k = math.sin(angle / 2) * axis[2];
+}
+
 //Take the conjugate of a quaternion
 struct quaternion q_conjugate(struct quaternion q)
 {
@@ -34,11 +45,12 @@ struct quaternion rotate_quaternion(struct quaternion q_star, struct quaternion 
 {
     struct quaternion q_star_new; //New position of star
     struct quaternion q_rot_inverse = q_conjugate(q_rotation); //Get inverse of quaternion (conjugate for unit quaternion)
-    q_star_new = q_product(q_product(q_rotation, q_star), q_rot_inverse); //Calculate (Qr x Qs) x Qr-1
+    //TODO: Verify this doesn't need to be (Qr^-1 * Qs) * Qr because Earth is rotating instead of stars
+    q_star_new = q_product(q_product(q_rotation, q_star), q_rot_inverse); //Calculate (Qr * Qs) * Qr^-1
     return q_star_new;
 }
 
-//Take the product of two quaternions
+//Take the product of two quaternions q1 * q2
 struct quaternion q_product(struct quaternion q1, struct quaternion q2)
 {
     struct quaternion q3;
@@ -61,6 +73,7 @@ float convert_UT_to_GMST(int D, float H)
 float convert_GMST_to_LST(float GMST, float longitude)
 {
     float LST; //Local Standard Time
+    //TODO: Check this conversion, not sure if the 15 degrees per hour still applies in sidereal time
     float longitude_hours = longitude / 15; //Convert longitude to hours, 15 degrees per hour
     LST = (GMST + longitude_hours) % 24; 
     return LST;
