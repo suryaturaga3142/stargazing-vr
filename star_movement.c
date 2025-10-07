@@ -22,3 +22,10 @@ struct quaternion star_coords_to_quaternion(float angle_ra_rad, float angle_dec_
     return q;
 }
 
+//Take the conjugate of a quaternion
+struct quaternion quaternion_conjugate(struct quaternion q)
+{
+    struct quaternion q_c = {q.real, -1 * q.i, -1 * q.j, -1 * q.k};
+    return q_c;
+}
+
