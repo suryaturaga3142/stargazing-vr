@@ -3,10 +3,9 @@
 */
 
 #include "star_movement.h"
-#include "quaternions.h"
 
 float earth_angular_velocity = (7.292115e-5 * 180 / 3.14159265358979323846); //degrees per second
-float earth_axis[]; //TODO: Make quaternion instead so it's easier to update based on position relative to GPS location?
+float earth_axis[3]; //TODO: Make quaternion instead so it's easier to update based on position relative to GPS location?
 
 //Get the quaternion for the rotation of the earth based on the amount of time passed
 //TODO: Is there a way to have a function as the quaternion angle? Or is this good?

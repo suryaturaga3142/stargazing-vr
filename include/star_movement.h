@@ -2,6 +2,7 @@
 #define STARMOVEMENT_H
 
 #include <math.h>
+#include <quaternions.h>
 
 /* Function definitions are in star_movements.c */
 

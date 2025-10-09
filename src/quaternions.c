@@ -34,6 +34,32 @@ quaternion q_conjugate(quaternion q)
     return q_c;
 }
 
+//Find the magnitude of a quaternion
+float q_magnitude(quaternion q)
+{
+    float q_m = pow((q.real * q.real) + (q.i * q.i) + (q.j * q.j) + (q.k * q.k), (1/2));
+    return q_m;
+}
+
+//Scale a quaternion by a scalar value
+quaternion q_scaled(quaternion q, float scalar)
+{
+    quaternion q_s;
+    q_s.real = scalar * q.real;
+    q_s.i = scalar * q.i;
+    q_s.j = scalar * q.j;
+    q_s.k = scalar * q.k;
+}
+
+//Take the inverse of a quaternion
+quaternion q_inverse(quaternion q)
+{
+    quaternion q_c = q_conjugate(q); //Conjugate of quaternion
+    float q_m = q_magnitude(q); //Magnitude of quaternion
+    quaternion q_i = q_scaled(q, (1 / pow(q_m, 2))); //Inverse quaternion
+    return q_i;
+}
+
 //Take the product of two quaternions q1 * q2
 quaternion q_product(quaternion q1, quaternion q2)
 {
@@ -49,7 +75,7 @@ quaternion q_product(quaternion q1, quaternion q2)
 quaternion rotate_quaternion(quaternion q_star, quaternion q_rotation)
 {
     quaternion q_star_new; //New position of star
-    quaternion q_rot_inverse = q_conjugate(q_rotation); //Get inverse of quaternion (conjugate for unit quaternion)
+    quaternion q_rot_inverse = q_inverse(q_rotation); //Get inverse of quaternion (conjugate for unit quaternion)
     //TODO: Verify this doesn't need to be (Qr^-1 * Qs) * Qr because Earth is rotating instead of stars
     q_star_new = q_product(q_product(q_rotation, q_star), q_rot_inverse); //Calculate (Qr * Qs) * Qr^-1
     return q_star_new;

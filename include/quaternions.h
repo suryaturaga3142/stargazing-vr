@@ -17,10 +17,19 @@ typedef struct {
 quaternion star_coords_to_quaternion(float angle_ra_deg, float angle_dec_deg);
 
 //Create unit quaternion to represent rotation given a rotation axis and the amount to rotate by
-quaternion rotation_to_quaternion(float angle, float[] axis);
+quaternion rotation_to_quaternion(float angle, float axis[]);
 
 //Take the conjugate of a quaternion
 quaternion q_conjugate(quaternion q);
+
+//Find the magnitude of a quaternion
+float q_magnitude(quaternion q);
+
+//Scale a quaternion by a scalar value
+quaternion q_scaled(quaternion q, float scalar);
+
+//Take the inverse of a quaternion
+quaternion q_inverse(quaternion q);
 
 //Take the product of two quaternions q1 * q2
 quaternion q_product(quaternion q1, quaternion q2);
