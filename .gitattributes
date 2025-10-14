@@ -1,7 +1,14 @@
-# Gitattributes file to maintain LF
+# Gitattributes file to maintain consistent line endings across different OSes
+# and to specify binary files.
 
+# Set default behavior to LF
 text=auto eol=lf
 
+# Specific files and their attributes
+headers.code-snippets text
+settings.json         text
+
+# Setting the defaults
 *.c         text
 *.cpp       text
 *.h         text
@@ -13,6 +20,7 @@ text=auto eol=lf
 *.txt       text
 .gitignore  text
 
+# Making no change to binary and img files.
 *.bin       binary
 *.uf2       binary
 *.elf       binary
@@ -23,5 +31,6 @@ text=auto eol=lf
 *.jpeg      binary
 *.gif       binary
 
+# For Windows specific files, set to CRLF
 *.bat       text eol=crlf
 *.cmd       text eol=crlf
