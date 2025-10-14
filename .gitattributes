@@ -6,7 +6,7 @@ text=auto eol=lf
 
 # Specific files and their attributes
 headers.code-snippets text
-settings.json         text
+*.json         text
 
 # Setting the defaults
 *.c         text
