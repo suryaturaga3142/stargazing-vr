@@ -1,0 +1,27 @@
+# Gitattributes file to maintain LF
+
+text=auto eol=lf
+
+*.c         text
+*.cpp       text
+*.h         text
+*.s         text
+*.pio       text
+*.py        text
+*.ini       text
+*.md        text
+*.txt       text
+.gitignore  text
+
+*.bin       binary
+*.uf2       binary
+*.elf       binary
+*.a         binary
+*.o         binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
