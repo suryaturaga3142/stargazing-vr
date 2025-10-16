@@ -1,7 +1,8 @@
 /*******************************************************************************
  * @file        gps.c
  * @brief       Implements the functionality for the GPS module.
- * @details     Coding the driver for the NEO M10 GPS.
+ * @details     Coding the driver for the NEO M10 GPS. Uses UART for sending
+ *              UBX commands and receiving NMEA sentences.
  * 
  * @author      LED Chasers
  * @date        2025-10-14
