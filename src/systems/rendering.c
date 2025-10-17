@@ -1,17 +1,19 @@
 /*******************************************************************************
- * @file        main.c
- * @brief       Implements the functionality for the main module.
- * @details     This is the main file for the project.
+ * @file        rendering.c
+ * @brief       Implements the functionality for the rendering module.
+ * @details     Complete set of functions for working with mechanics to render
+ *              pixels onto a 2D screen using methods such as spatial culling.
  * 
  * @author      LED Chasers
  * @date        2025-10-14
  * 
- * @note        This module is designed to be the main module to drive everything.
+ * @note        This module is designed to give help with pixel mapping.
  * 
  * @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
  ******************************************************************************/
 
 /* ----------------------------- Private Includes --------------------------- */
+#include "rendering.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -25,10 +27,3 @@
 
 /* ----------------------------- Public Functions --------------------------- */
 
-
-
-
-int main() 
-{
-    return 0;
-}

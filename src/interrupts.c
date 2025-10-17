@@ -1,12 +1,12 @@
 /*******************************************************************************
- * @file        main.c
- * @brief       Implements the functionality for the main module.
- * @details     This is the main file for the project.
+ * @file        interrupts.c
+ * @brief       Implements the functionality for interrupt handlers.
+ * @details     Has callback functions for TIM, DMA, GPIO, watchdog.
  * 
  * @author      LED Chasers
  * @date        2025-10-14
  * 
- * @note        This module is designed to be the main module to drive everything.
+ * @note        This module is designed to define all the interrupt handlers.
  * 
  * @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
  ******************************************************************************/
@@ -25,10 +25,3 @@
 
 /* ----------------------------- Public Functions --------------------------- */
 
-
-
-
-int main() 
-{
-    return 0;
-}
