@@ -14,6 +14,8 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
+#include "globals.h"
+
 // sandy move gps struct here pls
 
 typedef struct {
