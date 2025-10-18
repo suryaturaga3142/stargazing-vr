@@ -14,6 +14,19 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
+// sandy move gps struct here pls
+
+typedef struct {
+    //
+} StarPackedBin_t;
+
+typedef struct {
+    //
+} Star_t;
+
+typedef struct {
+    //
+} SphereSector_t;
 
 
 #endif /* STRUCTS_H */
