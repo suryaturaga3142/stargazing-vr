@@ -13,15 +13,9 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stdint.h>
-#include <math.h>
-#include <limits.h>
-#include <time.h>
-#include "hardware/pio.h"
+#include "config.h"
+#include "structs.h"
+
 
 
 #endif /* GLOBALS_H */
