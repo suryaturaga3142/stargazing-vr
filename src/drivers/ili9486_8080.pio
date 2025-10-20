@@ -1,6 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; @file       ili9486_pio.s
-; @brief      PIO assembly program to drive an ILI9486 display via a 16-bit 8080 parallel interface.
+; @brief      PIO assembly program to drive an ILI9486 display via a 16-bit 
+;             8080 parallel interface. Manages all the wrapper C as well.
 ; @author     LED Chasers
 ; @date       2025-10-14
 ; @version    1.0
@@ -12,6 +13,8 @@
 ; specifically timed to meet the requirements of the ILI9486 display controller.
 ; The program is designed to be fed a continuous stream of 32-bit words from
 ; the DMA controller, offloading all data transfer from the CPU.
+; The program also uses the c-sdk to place all the draw command to PIO interfacing
+; within this file.
 ;
 ;
 ; HEADSET INTERACTION:
@@ -25,8 +28,6 @@
 ; =============
 ;   - DEPENDS ON:
 ;     - The DMA controller to continuously feed its TX FIFO.
-;     - The C code in `display.c` to correctly initialize the PIO state machine,
-;       configure the pin mappings, and set the clock speed.
 ;
 ;   - REQUIRED BY:
 ;     - The `pioasm` build tool, which compiles this file into `ili9486_pio.pio.h`.
@@ -50,3 +51,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 .program ili9486_pio
+; Program here.
+
+% c-sdk {
+// Place the c initialization and management code here.
+%}

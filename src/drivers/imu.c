@@ -7,7 +7,8 @@
  * @date        2025-10-14
  * 
  * @note        This module is designed to be driven by interrupts and is not
- *              intended to be called from a blocking main loop.
+ *              intended to be called from a blocking main loop. Functions here
+ *              need to be of highest priority to minimize latency.
  * 
  * @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
  ******************************************************************************/

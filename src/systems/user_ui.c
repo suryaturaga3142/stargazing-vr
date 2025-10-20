@@ -6,8 +6,9 @@
  * @author      LED Chasers
  * @date        2025-10-14
  * 
- * @note        This module is designed to be driven by interrupts and is not
- *              intended to be called from a blocking main loop.
+ * @note        This module is designed to be highly low priority. Execute most
+ *              UI related stuff in main since it can potentially and 
+ *              unneccessarily block stuff.
  * 
  * @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
  ******************************************************************************/
