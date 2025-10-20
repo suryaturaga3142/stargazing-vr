@@ -1,7 +1,8 @@
 /*******************************************************************************
  * @file        display.h
  * @brief       Driver for LCD Displays
- * @details     Library for use of ILI9486 LCD displays. Uses PIO as well.
+ * @details     A very high level C file for managing only the LCD and PIO
+ *              initialization.
  * 
  * @see         display.c for implementation details.
  * 

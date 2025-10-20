@@ -4,7 +4,7 @@
  * @details     Defines all structs meant for tasks such as stars, raw stars, 
  *              sphere sectors, etc.
  * 
- * @see         structs.c for implementation details.
+ # @see         globals.c for use details.
  * 
  * @author      LED Chasers
  * @date        2025-10-14
