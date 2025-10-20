@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 // SYSTEM TIMING CONSTANTS
 //------------------------------------------------------------------------------
+
 #define TARGET_REFRESH_RATE_HZ          150
 #define IMU_SAMPLE_RATE_HZ              100
 #define GPS_CORRECTION_INTERVAL_MIN     10
@@ -26,6 +27,7 @@
 //------------------------------------------------------------------------------
 // STAR CATALOG & CULLING CONSTANTS
 //------------------------------------------------------------------------------
+
 #define STAR_CATALOG_SIZE_MAX           15000
 #define SKY_PATCH_RA_DIVISIONS          24
 #define SKY_PATCH_DEC_DIVISIONS         12
