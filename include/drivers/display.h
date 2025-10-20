@@ -15,5 +15,4 @@
 #define DISPLAY_H
 
 
-
 #endif /* DISPLAY_H */
