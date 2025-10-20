@@ -14,6 +14,63 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+//------------------------------------------------------------------------------
+// SYSTEM TIMING CONSTANTS
+//------------------------------------------------------------------------------
+#define TARGET_REFRESH_RATE_HZ          150
+#define IMU_SAMPLE_RATE_HZ              100
+#define GPS_CORRECTION_INTERVAL_MIN     10
+#define WATCHDOG_SUPERVISOR_INTERVAL_MS 100
+#define WATCHDOG_TIMEOUT_MS             200
 
+//------------------------------------------------------------------------------
+// STAR CATALOG & CULLING CONSTANTS
+//------------------------------------------------------------------------------
+#define STAR_CATALOG_SIZE_MAX           15000
+#define SKY_PATCH_RA_DIVISIONS          24
+#define SKY_PATCH_DEC_DIVISIONS         12
+
+//------------------------------------------------------------------------------
+// PERIPHERAL CONFIGURATION
+//------------------------------------------------------------------------------
+
+// -- ILI9486 Displays (GPIO Bank 0-20) --
+// The 16-bit data bus uses a large, contiguous block of GPIOs.
+#define PIN_LCD_D0                      0   // D0-D15 MUST be consecutive. Uses GPIO 0-15.
+#define PIN_LCD_RESET                   16
+#define PIN_LCD_CS                      17
+#define PIN_LCD_DC                      18  // Data/Command
+#define PIN_LCD_WR                      19  // Write Strobe
+#define PIN_LCD_RD                      20  // Read Strobe is tied to 3.3V, but we reserve the pin.
+
+// -- BNO085 IMU (GPIO Bank 24-27) --
+// Grouped together for clean I2C routing.
+#define I2C_PORT                        i2c0
+#define IMU_I2C_ADDR                    0x4A
+#define PIN_IMU_SDA                     24
+#define PIN_IMU_SCL                     25
+#define PIN_IMU_INT                     26  // Interrupt pin
+#define PIN_IMU_RST                     27  // Reset pin
+
+// -- NEO-M10 GPS (GPIO Bank 28-29) --
+#define UART_PORT                       uart0
+#define GPS_UART_BAUD                   9600
+#define PIN_GPS_TX                      28 // RP2350 TX -> GPS RX (For UBX commands)
+#define PIN_GPS_RX                      29 // RP2350 RX <- GPS TX (For NMEA data)
+
+// -- SD Card (via SDIO on a high bank) --
+// Uses a dedicated high-speed peripheral block.
+// Note: These pins MUST be a valid, consecutive SDIO block for your specific RP2350 variant.
+#define PIN_SDIO_CLK                    34
+#define PIN_SDIO_CMD                    35
+#define PIN_SDIO_D0                     36  // D0-D3 MUST be consecutive.
+
+// -- User Interface (GPIO Bank 40-44) --
+// Grouped together for clean User UI routing.
+#define PIN_LED_R                       40
+#define PIN_LED_G                       41
+#define PIN_LED_B                       42
+#define PIN_BTN_DRIFT_CORRECT           43
+#define PIN_BTN_LOCATION_TOGGLE         44
 
 #endif /* CONFIG_H */
