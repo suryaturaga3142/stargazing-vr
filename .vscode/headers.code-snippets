@@ -40,6 +40,7 @@
     ],
     "description": "Creates a standard header file (.h) with a comment block and header guard."
   },
+
   "C Source File Template (.c)": {
     "prefix": "csrc",
     "body": [
@@ -70,12 +71,16 @@
       "/* ----------------------------- Private Functions -------------------------- */",
       "// ...",
       "",
+      "/* ----------------------------- Public Variables -------------------------- */",
+      "// ...",
+      "",
       "/* ----------------------------- Public Functions --------------------------- */",
       "$0",
       ""
     ],
     "description": "Creates a standard source file (.c) with a comment block and file structure."
   },
+
   "Doxygen Function Comment": {
     "prefix": "cfunc",
     "body": [
@@ -87,5 +92,16 @@
       " */"
     ],
     "description": "Creates a Doxygen-style function comment block."
+  },
+
+  "Doxygen Struct Header": {
+    "prefix": "cstruct",
+    "body": [
+      "/**",
+      " * @brief ${1:A brief, one-sentence description of this struct.}",
+      " * @details ${2:A more detailed description of the struct's purpose and members.}",
+      " */"
+    ],
+    "description": "Inserts a Doxygen-style comment block for a struct."
   }
 }

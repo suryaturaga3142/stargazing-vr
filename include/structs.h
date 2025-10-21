@@ -4,7 +4,7 @@
  * @details     Defines all structs meant for tasks such as stars, raw stars, 
  *              sphere sectors, etc.
  * 
- * @see         structs.c for implementation details.
+ # @see         globals.c for use details.
  * 
  * @author      LED Chasers
  * @date        2025-10-14
@@ -14,6 +14,159 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
+#include <stdint.h>
+#include "globals.h"
+
+// sandy move gps struct here pls
+
+/* -------------------------- Core Math Data Types -------------------------- */
+
+/**
+ * @brief A standard 4-element single-precision floating-point quaternion.
+ * @details Represents a rotation in 3D space, typically in (w, x, y, z) order.
+ */
+typedef struct {
+    float w, x, y, z;
+} Quaternion_t;
+
+/**
+ * @brief A standard 3-element single-precision floating-point vector.
+ * @details Used for positions, directions, and velocities in 3D space.
+ */
+typedef struct {
+    float x, y, z;
+} Vector3f_t;
+
+/* -------------------------- Timekeeping Data Types ------------------------ */
+
+/**
+ * @brief A "human-readable" calendar time structure (UTC).
+ * @details This format is used for interfacing with peripherals like the GPS
+ * (parsing NMEA) and the hardware RTC (setting registers). It is not
+ * used for high-performance mathematical calculations.
+ */
+typedef struct {
+    uint16_t year;
+    uint8_t  month;
+    uint8_t  day;
+    uint8_t  hour;
+    uint8_t  minute;
+    uint8_t  second;
+} UTCTime_t;
+
+/**
+ * @brief A high-precision Julian Date for all astronomical calculations.
+ * @details A Julian Date is a continuous count of days since a standard epoch.
+ * This linear format is ideal for all standard celestial mechanics
+ * algorithms (e.g., for sidereal time). Struct makes this safer.
+ */
+typedef struct {
+    double jd; // Use a 'double' for maximum precision in calculations.
+} JulianDate_t;
+
+
+/* --------------------------- Star Catalog Data Types ---------------------- */
+
+/**
+ * @brief Header for the stars.bin file on the SD card.
+ * @details Provides metadata to validate the file and understand its contents.
+ */
+typedef struct {
+    uint32_t magic_number;    // Should be "STAR" (0x53544152) to make sure bin is right
+    uint16_t version;         // File format version
+    uint16_t header_size;     // Size of this header in bytes
+    uint32_t star_count;      // Total number of stars in the file
+} StarFileHeader_t;
+
+/**
+ * @brief Memory-efficient structure for a single star as stored on the SD card.
+ * @details Uses scaled integers to minimize storage footprint. This is the
+ * "on-disk" format that is unpacked at startup.
+ */
+typedef struct {
+    int32_t  ra_scaled;
+    int32_t  dec_scaled;
+    int16_t  pmra_scaled;
+    int16_t  pmdec_scaled;
+    int16_t  mag_scaled;
+} PackedStar_t;
+
+/**
+ * @brief Render-ready structure for a single star in RAM.
+ * @details Stores the pre-calculated Cartesian coordinates on a unit sphere,
+ * optimized for the real-time rendering loop. Single element in processed buffer.
+ */
+typedef struct {
+    float x, y, z;
+    float mag;
+} Star_t;
+
+/**
+ * @brief Defines a single sector of the sky for spatial culling.
+ * @details Acts as an index into the global `all_stars` array, describing a
+ * contiguous "slice" of stars belonging to this patch. The use of a 2D array
+ * makes this work by design with O(1) lookup time for a patch.
+ */
+typedef struct {
+    uint32_t start_index;
+    uint16_t star_count;
+} SkyPatch_t;
+
+/* -------------------------- Peripheral Data Types ------------------------- */
+
+/**
+ * @brief A complete, timestamped measurement snapshot from the IMU.
+ * @details Bundles the orientation and velocity from a single 100Hz IMU update
+ * to ensure they are always synchronized.
+ */
+typedef struct {
+    Quaternion_t orientation; // The fused rotation vector (q)
+    Vector3f_t   velocity;    // The calibrated angular velocity (ω)
+    uint64_t     timestamp_us;// High-resolution timestamp of the measurement
+} IMUData_t;
+
+/**
+ * @brief A complete snapshot of parsed data from a GPS fix.
+ * @details Encapsulates all useful information from a set of NMEA sentences.
+ */
+typedef struct {
+    UTCTime_t time;
+    float     latitude;
+    float     longitude;
+    bool      is_valid;
+} GPSData_t;
+
+/* ---------------------------- System State Types -------------------------- */
+
+/**
+ * @brief Represents the current state of the RGB LED indicator.
+ * @details Used by the UI manager to control the color and pattern of the
+ * user-facing status LED.
+ */
+typedef struct {
+    enum {
+        LED_COLOR_OFF,
+        LED_COLOR_WHITE,
+        LED_COLOR_BLUE,
+        LED_COLOR_YELLOW,
+        LED_COLOR_GREEN,
+        LED_COLOR_CYAN,
+        LED_COLOR_RED,
+        LED_COLOR_ORANGE,
+        LED_COLOR_MAGENTA,
+        LED_COLOR_PURPLE
+    } LED_Color_t;
+    enum {
+        LED_SOLID,
+        LED_BLINK,
+        LED_PULSE
+    } pattern;
+    enum {
+        LED_SPEED_SLOW,
+        LED_SPEED_MEDIUM,
+        LED_SPEED_FAST
+    } speed;
+} LEDState_t;
 
 
 #endif /* STRUCTS_H */

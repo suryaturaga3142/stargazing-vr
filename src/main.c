@@ -7,6 +7,9 @@
  * @date        2025-10-14
  * 
  * @note        This module is designed to be the main module to drive everything.
+ *              Don't put interrupts here. Initialize everything, go through the
+ *              startup process, and execute the lowest level non critical blocking
+ *              tasks that potentially cause priority blocking when in handlers.
  * 
  * @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
  ******************************************************************************/

@@ -1,13 +1,14 @@
 /*******************************************************************************
  * @file        gps.c
- * @brief       Implements the functionality for the GPS module.
- * @details     Coding the driver for the NEO M10 GPS.
+ * @brief       Implements the complete functionality for the GPS module.
+ * @details     Coding the driver for the NEO M10 GPS. Uses UART blocking for 
+ *              sending UBX commands and receiving NMEA sentences. 
  * 
  * @author      LED Chasers
  * @date        2025-10-14
  * 
- * @note        This module is designed to be driven by interrupts and is not
- *              intended to be called from a blocking main loop.
+ * @note        This module is designed to be taken care of by interrupts or
+ *              main. Use main for long blocking functions.
  * 
  * @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
  ******************************************************************************/

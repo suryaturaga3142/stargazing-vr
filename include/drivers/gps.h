@@ -1,7 +1,7 @@
 /*******************************************************************************
  * @file        gps.h
  * @brief       Header file for GPS driver library
- * @details     Function and locals decleration for GPS module.
+ * @details     Function and locals declaration for GPS module.
  * 
  * @see         gps.c for implementation details.
  * 
