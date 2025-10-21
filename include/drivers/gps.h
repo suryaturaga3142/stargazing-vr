@@ -25,9 +25,13 @@ typedef struct {
 } gps_data_t; 
 
 void init_uart(uint baud_rate);
+int uart_read_line(char *buffer, size_t max_len);
 
 void gps_init(void);
 int gps_read_data(gps_data_t *data);
+int parse_gnrmc(const char *sentence, gps_data_t *data);
+void process_gnrmc_from_uart(void);
+
 
 
 #endif /* GPS_H */
