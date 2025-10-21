@@ -25,8 +25,6 @@ typedef struct {
 } gps_data_t; 
 
 void init_uart(uint baud_rate);
-void uart_send(const uint8_t *data, size_t length);
-int uart_read(char *buffer, size_t max_len);
 
 void gps_init(void);
 int gps_read_data(gps_data_t *data);
