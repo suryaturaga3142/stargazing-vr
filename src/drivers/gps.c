@@ -116,6 +116,9 @@ void process_gnrmc_from_uart()
                 printf("Lat: %.6f, Lon: %.6f, Valid: %d\n",
                     gps.latitude, gps.longitude, gps.is_valid);
             }
+            else {
+                printf("parse failed\n");
+            }
         }
     }
 }
