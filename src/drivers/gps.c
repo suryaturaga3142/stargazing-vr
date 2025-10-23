@@ -36,6 +36,7 @@
 static char line_buffer[LINE_BUFFER_LENGTH];
 static volatile uint16_t line_buffer_index = 0;
 static volatile bool line_ready = false;
+static volatile bool buffering_active = false;
 
 // Internal struct to hold the latest data.
 // Initialized to zero/invalid.
@@ -52,27 +53,47 @@ static void on_uart_rx() {
     while (uart_is_readable(UART_PORT)) {
         char ch = uart_getc(UART_PORT);
 
-        if (line_ready) {
-            // Main loop hasn't processed last line yet.
-            // Drop this character to prevent buffer overwrite.
-            continue; 
-        }
-
-        if (ch == '\n' || ch == '\r') {
-            if (line_buffer_index > 0) {
-                // End of line, mark for processing
-                line_buffer[line_buffer_index] = '\0';
-                line_ready = true;
-                line_buffer_index = 0; // Reset for next line
-            }
-            // else: ignore empty lines
-        } else if (line_buffer_index < (LINE_BUFFER_LENGTH - 1)) {
-            // Add character to buffer
+        if (ch == '$') {
+            // Start of a new NMEA sentence
+            line_buffer_index = 0;
             line_buffer[line_buffer_index++] = ch;
+            buffering_active = true;
+            line_ready = false; // Discard any previous partial line
+        } 
+        else if (buffering_active) 
+        {
+            // We are inside a sentence, keep buffering
+            if (line_ready) {
+                // Main loop hasn't processed last line yet.
+                // A new '$' will reset this, but until then, drop chars.
+                continue;
+            }
+            
+            if (ch == '\n' || ch == '\r') {
+                // End of line, mark for processing
+                if (line_buffer_index > 0) { // Should always be > 0 since we started with '$'
+                    line_buffer[line_buffer_index] = '\0';
+                    line_ready = true;
+                    buffering_active = false;
+                }
+                // else: buffer was reset by '$' (e.g., "$...$"), ignore this newline
+            } 
+            else if (line_buffer_index < (LINE_BUFFER_LENGTH - 1)) {
+                // Add character to buffer
+                line_buffer[line_buffer_index++] = ch;
+            } 
+            else {
+                // Buffer overflow, sentence is too long.
+                // Discard this line and wait for a new '$'.
+                buffering_active = false;
+                line_buffer_index = 0;
+            }
         }
-        // else: buffer overflow, character is dropped
+        // else: (buffering_active is false and ch != '$')
+        //       We are waiting for a '$', so ignore this character.
     }
 }
+
 
 /**
  * @brief Parses a complete NMEA sentence and updates the internal data struct.
@@ -80,6 +101,7 @@ static void on_uart_rx() {
  * @return true if a useful (RMC or GGA) frame was parsed, false otherwise.
  */
 static bool parse_line(const char *line) {
+    // This function was correct and is unchanged.
     bool new_data_parsed = false;
     switch (minmea_sentence_id(line, false)) {
         case MINMEA_SENTENCE_RMC: {
@@ -151,6 +173,8 @@ bool gps_update(void) {
     strcpy(line_to_process, line_buffer);
     line_ready = false;
     restore_interrupts(irq_status);
+
+    printf("RAW: %s\n", line_to_process);
 
     // Process the line outside the critical section
     if (minmea_check(line_to_process, false)) {
