@@ -15,7 +15,16 @@
  ******************************************************************************/
 
 /* ----------------------------- Private Includes --------------------------- */
-// ...
+#include "gps.h"
+// #include "minmea.h" // Assumes minmea.h is in the src/ dir or include path
+
+// We get all hardware defs from your config.h
+// #include "config.h" 
+
+#include "pico/stdlib.h"
+#include "hardware/uart.h"
+#include "hardware/irq.h"
+// #include <string.h> // For strcpy
 
 /* ---------------------------- Private Constants --------------------------- */
 // ...
@@ -33,5 +42,12 @@
 
 int main() 
 {
+    stdio_init_all();
+    gps_init();
+
+    for(;;) {
+        gps_update();
+    }
+
     return 0;
 }
