@@ -21,6 +21,7 @@
 #include "config.h" 
 
 #include "pico/stdlib.h"
+#include "pico/critical_section.h"
 #include "hardware/uart.h"
 #include "hardware/irq.h"
 #include <string.h> // For strcpy
