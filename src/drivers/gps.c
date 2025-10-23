@@ -19,10 +19,6 @@
 #include <stdio.h>
 
 /* ---------------------------- Private Constants --------------------------- */
-#define UART_ID uart0
-#define TX_PIN 0
-#define RX_PIN 1
-
 /* ----------------------------- Private Variables -------------------------- */
 // config message 
 static uint8_t ubx_cfg_msgout_gnrmc_uart0[] = {
@@ -67,17 +63,17 @@ double nmea_to_decimal(const char *coord, char dir) {
 /* ----------------------------- Public Functions --------------------------- */
 void init_uart(uint baud_rate)
 { 
-    gpio_set_function(TX_PIN, GPIO_FUNC_UART);
-    gpio_set_function(RX_PIN, GPIO_FUNC_UART);
-    uart_init(UART_ID, baud_rate);
-    uart_set_format(UART_ID, 8, 1, UART_PARITY_NONE);
+    gpio_set_function(PIN_GPS_TX, GPIO_FUNC_UART);
+    gpio_set_function(PIN_GPS_RX, GPIO_FUNC_UART);
+    uart_init(UART_PORT, baud_rate);
+    uart_set_format(UART_PORT, 8, 1, UART_PARITY_NONE);
 }
 
 int uart_read_line(char *buffer, size_t max_len) 
 {
     size_t i = 0;
     while (i < max_len - 1) {
-        uart_read_blocking(UART_ID, &buffer[i], 1); // Read one byte at a time
+        uart_read_blocking(UART_PORT, &buffer[i], 1); // Read one byte at a time
         if (buffer[i] == '\n') {
             i++;
             break;
@@ -97,7 +93,7 @@ void gps_init()
     calc_ubx_checksum(ubx_cfg_msgout_gnrmc_uart0, sizeof(ubx_cfg_msgout_gnrmc_uart0));
 
     //Send configuration message over UART
-    uart_write_blocking(UART_ID, ubx_cfg_msgout_gnrmc_uart0, sizeof(ubx_cfg_msgout_gnrmc_uart0));
+    uart_write_blocking(UART_PORT, ubx_cfg_msgout_gnrmc_uart0, sizeof(ubx_cfg_msgout_gnrmc_uart0));
 
     //Small delay for GPS to apply settings
     sleep_ms(100);
@@ -107,23 +103,24 @@ void gps_init()
 void process_gnrmc_from_uart() 
 {
     char nmea_buf[128];
-    gps_data_t gps;
+    GPSData_t gps;
 
     while (1) {
         int len = uart_read_line(nmea_buf, 128);
         if (len > 0 && strncmp(nmea_buf, "$GNRMC", 6) == 0) {
-            if (parse_gnrmc(nmea_buf, &gps)) {
-                printf("Time: %s\n", gps.time);
-                printf("Status: %c\n", gps.status);
-                printf("Latitude: %.6f\n", gps.latitude);
-                printf("Longitude: %.6f\n", gps.longitude);
-                printf("Date: %s\n", gps.date);
+            if (parse_gnrmc(nmea_buf, &gps)) 
+            {
+                printf("UTC: %02d-%02d-%02d %02d:%02d:%02d\n",
+                    gps.time.year, gps.time.month, gps.time.day,
+                    gps.time.hour, gps.time.minute, gps.time.second);
+                printf("Lat: %.6f, Lon: %.6f, Valid: %d\n",
+                    gps.latitude, gps.longitude, gps.is_valid);
             }
         }
     }
 }
 
-int parse_gnrmc(const char *sentence, gps_data_t *data) {
+int parse_gnrmc(const char *sentence, GPSData_t *data) {
     if (!sentence || !data) return 0;
     if (strncmp(sentence, "$GNRMC", 6) != 0) return 0;
 
@@ -136,29 +133,52 @@ int parse_gnrmc(const char *sentence, gps_data_t *data) {
     int field = 0;
 
     token = strtok(buf, ",");
-    while (token) {
-        switch (field) {
-            case 1: strncpy(data->time, token, 10); data->time[10] = '\0'; break;
-            case 2: data->status = token[0]; break;
+    while (token) 
+    {
+        switch (field) 
+        {
+            case 1: // UTC Time
+                if (strlen(token) >= 6) 
+                {
+                    data->time.hour   = (uint8_t)((token[0]-'0')*10 + (token[1]-'0'));
+                    data->time.minute = (uint8_t)((token[2]-'0')*10 + (token[3]-'0'));
+                    data->time.second = (uint8_t)((token[4]-'0')*10 + (token[5]-'0'));
+                }
+                break;
+
+            case 2: // Status (A = valid, V = invalid)
+                data->is_valid = (token[0] == 'A');
+                break;
+
             case 3: { // Latitude
-                char lat[16] = {0};
-                strncpy(lat, token, 15);
+                char lat_str[16] = {0};
+                strncpy(lat_str, token, 15);
                 token = strtok(NULL, ","); field++;
-                data->latitude = nmea_to_decimal(lat, token ? token[0] : 'N');
+                char ns = token ? token[0] : 'N';
+                data->latitude = nmea_to_decimal(lat_str, ns);
                 break;
             }
+
             case 5: { // Longitude
-                char lon[16] = {0};
-                strncpy(lon, token, 15);
+                char lon_str[16] = {0};
+                strncpy(lon_str, token, 15);
                 token = strtok(NULL, ","); field++;
-                data->longitude = nmea_to_decimal(lon, token ? token[0] : 'E');
+                char ew = token ? token[0] : 'E';
+                data->longitude = nmea_to_decimal(lon_str, ew);
                 break;
             }
-            case 9: strncpy(data->date, token, 6); data->date[6] = '\0'; break;
+
+            case 9: // Date (ddmmyy)
+                if (strlen(token) >= 6) {
+                    data->time.day   = (uint8_t)((token[0]-'0')*10 + (token[1]-'0'));
+                    data->time.month = (uint8_t)((token[2]-'0')*10 + (token[3]-'0'));
+                    data->time.year  = (uint16_t)(2000 + (token[4]-'0')*10 + (token[5]-'0'));
+                }
+                break;
         }
         token = strtok(NULL, ",");
         field++;
     }
-    return 1;
+    return data->is_valid ? 1 : 0;
 }
 
