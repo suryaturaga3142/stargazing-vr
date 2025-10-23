@@ -94,7 +94,6 @@ static void on_uart_rx() {
     }
 }
 
-
 /**
  * @brief Parses a complete NMEA sentence and updates the internal data struct.
  * @param line The NMEA sentence string.
@@ -152,6 +151,28 @@ void gps_init(void) {
     gpio_set_function(PIN_GPS_TX, GPIO_FUNC_UART);
     gpio_set_function(PIN_GPS_RX, GPIO_FUNC_UART);
 
+    // --- NEW ---
+    // Send a UBX-CFG-PRT command to configure the module to
+    // *only* output NMEA messages on this UART.
+    // This prevents the module from sending binary UBX data.
+    // Payload: 01 00 00 00 D0 08 00 00 (UART1, 8N1, 9600 baud)
+    //          00 C2 01 00 (inProtoMask: UBX+NMEA)
+    //          01 00       (outProtoMask: NMEA ONLY)
+    //          00 00 00 00 (flags, reserved)
+    // Full command with header, class, len, and checksum:
+    uint8_t set_nmea_only[] = {
+        0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00,
+        0xD0, 0x08, 0x00, 0x00, 0x00, 0xC2, 0x01, 0x00, 0x01, 0x00,
+        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB8, 0x4A
+    };
+    
+    // Wait for UART to be writable and send command
+    uart_write_blocking(UART_PORT, set_nmea_only, sizeof(set_nmea_only));
+    
+    // Give module time to process command
+    sleep_ms(100); 
+    // --- END NEW ---
+
     // Set up and enable the UART RX interrupt.
     int UART_IRQ = (UART_PORT == uart0) ? UART0_IRQ : UART1_IRQ;
     irq_set_exclusive_handler(UART_IRQ, on_uart_rx);
@@ -174,7 +195,9 @@ bool gps_update(void) {
     line_ready = false;
     restore_interrupts(irq_status);
 
+    // --- ADD THIS LINE TO VIEW RAW DATA ---
     printf("RAW: %s\n", line_to_process);
+    // ----------------------------------------
 
     // Process the line outside the critical section
     if (minmea_check(line_to_process, false)) {
