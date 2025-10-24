@@ -37,7 +37,7 @@
 //------------------------------------------------------------------------------
 
 // -- ILI9486 Displays (GPIO Bank 0-20) --
-// The 16-bit data bus uses a large, contiguous block of GPIOs.
+// The 16-bit data bus is implemented with PIO.
 #define PIN_LCD_D0                      0   // D0-D15 MUST be consecutive. Uses GPIO 0-15.
 #define PIN_LCD_RESET                   16
 #define PIN_LCD_CS                      17
@@ -45,27 +45,29 @@
 #define PIN_LCD_WR                      19  // Write Strobe
 #define PIN_LCD_RD                      20  // Read Strobe is tied to 3.3V, but we reserve the pin.
 
-// -- BNO085 IMU (GPIO Bank 24-27) --
+// -- FORBIDDEN ZONE (GPIO 21-26) --
+// Connected to Proton board PBs and LEDs.
+
+// -- BNO085 IMU (GPIO Bank 27-30) --
 // Grouped together for clean I2C routing.
 #define I2C_PORT                        i2c0
 #define IMU_I2C_ADDR                    0x4A
-#define PIN_IMU_SDA                     24
-#define PIN_IMU_SCL                     25
-#define PIN_IMU_INT                     26  // Interrupt pin
 #define PIN_IMU_RST                     27  // Reset pin
+#define PIN_IMU_SDA                     28
+#define PIN_IMU_SCL                     29
+#define PIN_IMU_INT                     30  // Interrupt pin
 
-// -- NEO-M10 GPS (GPIO Bank 28-29) --
-#define UART_PORT                       uart0
+// -- NEO-M10 GPS (GPIO Bank 31-32) --
+#define UART_PORT                       uart1
 #define GPS_UART_BAUD                   9600
-#define PIN_GPS_TX                      28 // RP2350 TX -> GPS RX (For UBX commands)
-#define PIN_GPS_RX                      29 // RP2350 RX <- GPS TX (For NMEA data)
+#define PIN_GPS_TX                      31 // RP2350 TX -> GPS RX (For UBX commands)
+#define PIN_GPS_RX                      32 // RP2350 RX <- GPS TX (For NMEA data)
 
 // -- SD Card (via SDIO on a high bank) --
-// Uses a dedicated high-speed peripheral block.
-// Note: These pins MUST be a valid, consecutive SDIO block for your specific RP2350 variant.
+// Uses a second PIO for implementing SDIO.
 #define PIN_SDIO_CLK                    34
 #define PIN_SDIO_CMD                    35
-#define PIN_SDIO_D0                     36  // D0-D3 MUST be consecutive.
+#define PIN_SDIO_D0                     36  // D0-D3 MUST be consecutive. Uses GPIO 36-39
 
 // -- User Interface (GPIO Bank 40-44) --
 // Grouped together for clean User UI routing.
