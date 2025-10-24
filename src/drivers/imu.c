@@ -1,20 +1,20 @@
 /*******************************************************************************
- * @file        main.c
- * @brief       Implements the functionality for the main module.
- * @details     This is the main file for the project.
+ * @file        imu.c
+ * @brief       Implements the functionality for the IMU module.
+ * @details     Complete set of functions needed to interact with the BNO080.
  * 
  * @author      LED Chasers
  * @date        2025-10-14
  * 
- * @note        This module is designed to be the main module to drive everything.
- *              Don't put interrupts here. Initialize everything, go through the
- *              startup process, and execute the lowest level non critical blocking
- *              tasks that potentially cause priority blocking when in handlers.
+ * @note        This module is designed to be driven by interrupts and is not
+ *              intended to be called from a blocking main loop. Functions here
+ *              need to be of highest priority to minimize latency.
  * 
  * @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
  ******************************************************************************/
 
 /* ----------------------------- Private Includes --------------------------- */
+#include "imu.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -28,10 +28,3 @@
 
 /* ----------------------------- Public Functions --------------------------- */
 
-
-
-
-int main() 
-{
-    return 0;
-}

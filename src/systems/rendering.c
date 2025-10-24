@@ -1,20 +1,23 @@
 /*******************************************************************************
- * @file        main.c
- * @brief       Implements the functionality for the main module.
- * @details     This is the main file for the project.
+ * @file        rendering.c
+ * @brief       Implements the functionality for the rendering module.
+ * @details     Works in tandem with results of mechanics.h functions. The 
+ *              rotations in mechanics allows for a single quaternion 
+ *              calculation. This will be used here to remap the relevant
+ *              stars through spatial culling, map them onto the screen,
+ *              and formulating the command buffer for display.c to access.
  * 
  * @author      LED Chasers
  * @date        2025-10-14
  * 
- * @note        This module is designed to be the main module to drive everything.
- *              Don't put interrupts here. Initialize everything, go through the
- *              startup process, and execute the lowest level non critical blocking
- *              tasks that potentially cause priority blocking when in handlers.
+ * @note        This module is designed to give help with pixel mapping. Call
+ *              only during pixel projection in interrupts.
  * 
  * @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
  ******************************************************************************/
 
 /* ----------------------------- Private Includes --------------------------- */
+#include "rendering.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -28,10 +31,3 @@
 
 /* ----------------------------- Public Functions --------------------------- */
 
-
-
-
-int main() 
-{
-    return 0;
-}

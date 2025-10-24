@@ -1,20 +1,20 @@
 /*******************************************************************************
- * @file        main.c
- * @brief       Implements the functionality for the main module.
- * @details     This is the main file for the project.
+ * @file        user_ui.c
+ * @brief       Implements the functionality for the User UI.
+ * @details     Functions to handle PBs and RGB LEDs.
  * 
  * @author      LED Chasers
  * @date        2025-10-14
  * 
- * @note        This module is designed to be the main module to drive everything.
- *              Don't put interrupts here. Initialize everything, go through the
- *              startup process, and execute the lowest level non critical blocking
- *              tasks that potentially cause priority blocking when in handlers.
+ * @note        This module is designed to be highly low priority. Execute most
+ *              UI related stuff in main since it can potentially and 
+ *              unneccessarily block stuff.
  * 
  * @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
  ******************************************************************************/
 
 /* ----------------------------- Private Includes --------------------------- */
+#include "user_ui.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -28,10 +28,3 @@
 
 /* ----------------------------- Public Functions --------------------------- */
 
-
-
-
-int main() 
-{
-    return 0;
-}

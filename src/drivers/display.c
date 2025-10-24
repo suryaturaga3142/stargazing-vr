@@ -1,20 +1,21 @@
 /*******************************************************************************
- * @file        main.c
- * @brief       Implements the functionality for the main module.
- * @details     This is the main file for the project.
+ * @file        display.c
+ * @brief       Implements the initialization for the LCD Display module.
+ * @details     Very high level for initializing and passing draw commands. 
+ *              All low level complexity handled by PIO.
  * 
  * @author      LED Chasers
  * @date        2025-10-14
  * 
- * @note        This module is designed to be the main module to drive everything.
- *              Don't put interrupts here. Initialize everything, go through the
- *              startup process, and execute the lowest level non critical blocking
- *              tasks that potentially cause priority blocking when in handlers.
+ * @note        This module is designed to be driven by interrupts and is not
+ *              intended to be called from a blocking main loop. Only the 
+ *              initialization is.
  * 
  * @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
  ******************************************************************************/
 
 /* ----------------------------- Private Includes --------------------------- */
+#include "display.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -28,10 +29,3 @@
 
 /* ----------------------------- Public Functions --------------------------- */
 
-
-
-
-int main() 
-{
-    return 0;
-}
