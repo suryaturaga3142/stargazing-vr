@@ -5,7 +5,7 @@
  *              Basically more extensive wrapper functions for CMSIS-DSP.
  * 
  * @author      LED Chasers
- * @date        2025-10-14
+ * @date        2025-10-24
  * 
  * @note        This module is designed to be driven by interrupts and is not
  *              intended to be called from a blocking main loop. Use as needed.
