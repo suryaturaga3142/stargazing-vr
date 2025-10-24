@@ -17,11 +17,14 @@
 /* ----------------------------- Private Includes --------------------------- */
 #include <stdio.h>
 #include "gps.h"
+#include "imu.h"
 
 #include "pico/stdlib.h"
 
 /* ---------------------------- Private Constants --------------------------- */
 #define GPS_TEST
+// #define IMU_TEST
+// #define LCD_SPI_TEST
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
@@ -77,5 +80,18 @@ int main() {
     return 0;
 }
 
+#endif
+
+#ifdef IMU_H
+
+int main() {
+
+    return 0;
+}
+
+#endif
+
+
+#ifdef LCD_SPI_TEST
 
 #endif
