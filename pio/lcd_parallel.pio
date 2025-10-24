@@ -2,13 +2,14 @@
 .side_set 1 opt
 
 ; Purpose:
-; Output 18 bits of pixel data to the LCD on each write strobe (WR).
+; Output 16 bits of pixel data to the LCD on each write strobe (WR).
 ; Uses autopull so the SM continuously requests 18-bit words from TX FIFO.
 ; Side-set controls WR (active low pulse).
+; For RGB 565 LCD
 
 .wrap_target
     pull block
-    out pins, 18     ; Output 18 bits to DB0..DB17
+    out pins, 16     ; Output 18 bits to DB0..DB15
     nop side 0 [1]   ; Drive WR low, hold for 2 cycles
     nop side 1 [1]   ; Drive WR high, hold for 2 cycles
 .wrap
@@ -29,26 +30,26 @@ static inline void lcd_parallel_program_init(
     pio_sm_config c = lcd_parallel_program_get_default_config(offset);
 
     // Configure which pins are used for output
-    sm_config_set_out_pins(&c, pin_data_base, 18); // DB0..DB17
+    sm_config_set_out_pins(&c, pin_data_base, 16); // DB0..DB15
     sm_config_set_sideset_pins(&c, pin_wr);        // WR pin for side-set
 
     // Configure FIFO shift behavior
-    // Autopull ensures each 'out pins, 18' automatically gets new 18 bits.
+    // Autopull ensures each 'out pins, 16' automatically gets new 18 bits.
     sm_config_set_out_shift(&c,
         /* shift_right = */ true,    // Shift right so MSB goes out first
         /* autopull = */ true,
-        /* pull_threshold = */ 18);
+        /* pull_threshold = */ 16);
 
     // Configure clock speed
     sm_config_set_clkdiv(&c, clkdiv);
 
     // Initialize GPIOs for PIO control
     pio_gpio_init(pio, pin_wr);
-    for (uint i = 0; i < 18; i++)
+    for (uint i = 0; i < 16; i++)
         pio_gpio_init(pio, pin_data_base + i);
 
     // Set pin directions (PIO takes ownership)
-    pio_sm_set_consecutive_pindirs(pio, sm, pin_data_base, 18, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin_data_base, 16, true);
     pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_wr), (1u << pin_wr));
 
     // Load configuration and enable SM
