@@ -5,7 +5,7 @@
  *              Basically more extensive wrapper functions for CMSIS-DSP.
  * 
  * @author      LED Chasers
- * @date        2025-10-24
+ * @date        2025-10-25
  * 
  * @note        This module is designed to be driven by interrupts and is not
  *              intended to be called from a blocking main loop. Use as needed.
@@ -17,10 +17,13 @@
 #include "mechanics.h"
 
 #include "dsp/quaternion_math_functions.h"
+#include <math.h>
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
 // ...
+const float earth_angular_velocity = (7.292115e-5 * 180 / 3.14159265358979323846); //degrees per second
+const Vector3f_t earth_axis = {0.0f, 0.0f, 1.0f}; //Assuming Z axis is Earth's rotation axis
 
 /* ----------------------------- Private Variables -------------------------- */
 // ...
@@ -29,6 +32,125 @@
 // ...
 
 /* ----------------------------- Public Functions --------------------------- */
+
+/**************************************************************************** */
+/*                       Earth Rotation Functions                             */
+/**************************************************************************** */
+/**
+  @brief         Perform initial time and location rotations on star catalog
+  @param[in]     current_date       current date in Julian Date format
+  @param[in]     longitude          longitude of user in degrees
+  @param[in]     latitude           latitude of user in degrees
+*/
+void rotate_stars_to_init_locations(JulianDate_t current_date, float longitude, float latitude)
+{
+    // Implement the algorithm to convert a UTC timestamp and longitude into Local Sidereal Time. 
+    float LST = calculate_LST(current_date, longitude); //hours
+    float rotation_seconds = 3600 * LST; //Get time difference from LST in seconds
+    
+    // Implement the logic to create the q_time and q_location quaternions. 
+    Quaternion_t q_time = get_time_rotation_quaternion(rotation_seconds); //Quaternion representing rotation based on current day and time
+    Quaternion_t q_location = get_location_rotation_quaternion(latitude); //Quaternion representing rotation based on current GPS location
+
+    // Create a simple rendering loop that applies the combined q_location * q_time rotation to all 9,000 stars and draws them to the screen. 
+    for (int i = 0; i < STAR_CATALOG_SIZE_MAX; i++)
+    {
+        Star_t star = all_stars[i];
+        Quaternion_t q_star = {0.0f, star.x, star.y, star.z}; //Convert star to quaternion
+        Quaternion_t q_rotated_star = apply_active_rotation(q_star, q_time); //Apply time rotation
+        q_rotated_star = apply_active_rotation(q_rotated_star, q_location); //Apply latitude rotation
+        Star_t rotated_star = {q_rotated_star.x, q_rotated_star.y, q_rotated_star.z, star.mag}; //Convert back to star
+        all_stars[i] = rotated_star; //Updated star catalog with rotated star
+    }
+
+    //TODO: Add rendering to screen using SDL library for testing purposes
+
+    return;
+}
+
+/**
+  @brief         Perform initial time and location rotations on star catalog
+  @param[in]     current_date       current date in Julian Date format
+  @param[in]     longitude          longitude of user in degrees
+  @param[in]     latitude           latitude of user in degrees
+  @returns       LST (Local Sidereal Time) in hours
+*/
+float calculate_LST(JulianDate_t current_date, float longitude)
+{
+    // Convert Julian Date to D (days since J2000.0) and H (hours since 0h UT)
+    int D = trunc(current_date.jd);
+    float H = (current_date.jd - D) * 24.0;
+
+    // Calculate GMST
+    float GMST = (6.697374558 + (0.06570982441908 * D) + (1.00273790935 * H)); //hours;
+
+    // Calculate LST
+    float LST = GMST + longitude / 15.041; //Convert longitude to hours, 15.041 degrees per hour
+
+    return LST;
+}
+
+/**
+  @brief         Get quaternion to model the rotation of the Earth for a given amount of time
+  @param[in]     rotation_seconds       The amount of time to rotate in seconds
+  @returns       A quaternion representing the rotation
+*/
+Quaternion_t get_time_rotation_quaternion(float rotation_seconds)
+{
+    float angle = -1 * (rotation_seconds * earth_angular_velocity); //degrees
+    Quaternion_t q_time = rotation_to_quaternion(angle, earth_axis);
+    return q_time;
+}
+
+/**
+  @brief         Get quaternion to model the rotation from global to horizon frame based on latitude
+  @param[in]     latitude      The latitude to rotate to in degrees
+  @returns       A quaternion representing the rotation
+*/
+Quaternion_t get_location_rotation_quaternion(latitude)
+{
+    float angle = 90 - latitude; //degrees
+    Vector3f_t rotation_axis = {1.0f, 0.0f, 0.0f}; //Rotate around x axis
+    Quaternion_t q_location = rotation_to_quaternion(angle, rotation_axis);
+    return q_location;
+}
+
+/**
+  @brief         Model a rotation by applying a rotation quaternion to a point quaternion
+  @param[in]     q_point        A quaternion representing the point to rotate
+  @param[in]     q_rotation     A quaternion representing the rotation to apply
+  @returns       A quaternion representing the point after the rotation
+*/
+Quaternion_t apply_active_rotation(const Quaternion_t q_point, const Quaternion_t q_rotation)
+{
+    Quaternion_t q_rotation_inverse;
+    quaternion_inverse(&q_rotation, &q_rotation_inverse, 1); //Get inverse of rotation quaternion
+    Quaternion_t q_temp, q_point_rotated;
+    quaternion_product_single(q_rotation_inverse, q_point, &q_temp); //q_temp = q_rotation_inverse * q_point
+    quaternion_product_single(q_temp, q_rotation_inverse, &q_point_rotated); //q_point_rotated = q_temp * q_rotation_inverse
+    return q_point_rotated;
+}
+
+/**
+  @brief         Create a quaternion that represents a rotation
+  @param[in]     angle          The number of degrees to rotate about the axis
+  @param[in]     q_rotation     The axis to rotate about (must be a unit vector)
+  @returns       A quaternion representing the rotation
+*/
+Quaternion_t rotation_to_quaternion(float angle, Vector3f_t axis)
+{
+    //TODO: Error check for unit vector axis?
+    Quaternion_t q_rotation;
+    q_rotation.w = cos(angle / 2);
+    q_rotation.x = sin(angle / 2) * axis.x;
+    q_rotation.y = sin(angle / 2) * axis.y;
+    q_rotation.z = sin(angle / 2) * axis.z;
+    return q_rotation;
+}
+
+/**************************************************************************** */
+/*                             Quaternion Functions                           */
+/**************************************************************************** */
 /**
   @brief         Floating-point quaternion Norm.
   @param[in]     pInputQuaternions       points to the input vector of quaternions
