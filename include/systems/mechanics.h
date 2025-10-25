@@ -20,36 +20,44 @@
   @brief         Floating-point quaternion Norm.
   @param[in]     pInputQuaternions       points to the input vector of quaternions
   @param[out]    pNorms                  points to the output vector of norms
+  @param[in]     nbQuaternions           number of quaternions in each vector
  */
 void quaternion_norm(const Quaternion_t *pInputQuaternions, 
-    float32_t *pNorms);
+    float32_t *pNorms,
+    uint32_t nbQuaternions);
 
 
 /**
   @brief         Floating-point quaternion inverse.
   @param[in]     pInputQuaternions            points to the input vector of quaternions
   @param[out]    pInverseQuaternions          points to the output vector of inverse quaternions
- */
+  @param[in]     nbQuaternions                number of quaternions in each vector  
+  */
 void quaternion_inverse(const Quaternion_t *pInputQuaternions, 
-    Quaternion_t *pInverseQuaternions);
+    Quaternion_t *pInverseQuaternions,
+    uint32_t nbQuaternions);
 
 
 /**
   @brief         Floating-point quaternion conjugates.
   @param[in]     pInputQuaternions            points to the input vector of quaternions
   @param[out]    pConjugateQuaternions        points to the output vector of conjugate quaternions
- */
+  @param[in]     nbQuaternions                number of quaternions in each vector
+  */
 void quaternion_conjugate(const Quaternion_t *inputQuaternions, 
-    Quaternion_t *pConjugateQuaternions);
+    Quaternion_t *pConjugateQuaternions,
+    uint32_t nbQuaternions);
 
 
 /**
   @brief         Floating-point normalization of quaternions.
   @param[in]     pInputQuaternions            points to the input vector of quaternions
   @param[out]    pNormalizedQuaternions       points to the output vector of normalized quaternions
- */
+  @param[in]     nbQuaternions                number of quaternions in each vector
+  */
 void quaternion_normalize(const Quaternion_t *inputQuaternions, 
-    Quaternion_t *pNormalizedQuaternions);
+    Quaternion_t *pNormalizedQuaternions,
+    uint32_t nbQuaternions);
 
 
 /**
@@ -68,10 +76,12 @@ void quaternion_product_single(const Quaternion_t qa,
   @param[in]     qa                  First array of quaternions
   @param[in]     qb                  Second array of quaternions
   @param[out]    r                   Elementwise product of quaternions
- */
+  @param[in]     nbQuaternions       Number of quaternions in each vector
+  */
 void quaternion_product(const Quaternion_t *qa, 
     const Quaternion_t *qb, 
-    Quaternion_t *r);
+    Quaternion_t *r,
+    uint32_t nbQuaternions);
 
 
 // I don't think we need these
