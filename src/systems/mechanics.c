@@ -89,7 +89,26 @@ void quaternion_inverse(const Quaternion_t *pInputQuaternions,
   */
 void quaternion_conjugate(const Quaternion_t *inputQuaternions, 
     Quaternion_t *pConjugateQuaternions,
-    uint32_t nbQuaternions);
+    uint32_t nbQuaternions)
+{
+    float32_t inputQuaternionArray[4 * nbQuaternions], outputQuaternionArray[4 * nbQuaternions];
+    for (int i = 0; i < nbQuaternions; i++)
+    {
+        inputQuaternionArray[4 * i + 0] = inputQuaternions[i].w;
+        inputQuaternionArray[4 * i + 1] = inputQuaternions[i].x;
+        inputQuaternionArray[4 * i + 2] = inputQuaternions[i].y;
+        inputQuaternionArray[4 * i + 3] = inputQuaternions[i].z;
+    }
+    arm_quaternion_conjugate_f32(inputQuaternionArray, outputQuaternionArray, nbQuaternions);
+    for (int i = 0; i < nbQuaternions; i++)
+    {
+        pConjugateQuaternions[i].w = outputQuaternionArray[4 * i + 0];
+        pConjugateQuaternions[i].x = outputQuaternionArray[4 * i + 1];
+        pConjugateQuaternions[i].y = outputQuaternionArray[4 * i + 2];
+        pConjugateQuaternions[i].z = outputQuaternionArray[4 * i + 3];
+    }
+    return;
+}
 
 
 /**
@@ -100,7 +119,26 @@ void quaternion_conjugate(const Quaternion_t *inputQuaternions,
   */
 void quaternion_normalize(const Quaternion_t *inputQuaternions, 
     Quaternion_t *pNormalizedQuaternions,
-    uint32_t nbQuaternions);
+    uint32_t nbQuaternions)
+{
+    float32_t inputQuaternionArray[4 * nbQuaternions], outputQuaternionArray[4 * nbQuaternions];
+    for (int i = 0; i < nbQuaternions; i++)
+    {
+        inputQuaternionArray[4 * i + 0] = inputQuaternions[i].w;
+        inputQuaternionArray[4 * i + 1] = inputQuaternions[i].x;
+        inputQuaternionArray[4 * i + 2] = inputQuaternions[i].y;
+        inputQuaternionArray[4 * i + 3] = inputQuaternions[i].z;
+    }
+    arm_quaternion_normalize_f32(inputQuaternionArray, outputQuaternionArray, nbQuaternions);
+    for (int i = 0; i < nbQuaternions; i++)
+    {
+        pNormalizedQuaternions[i].w = outputQuaternionArray[4 * i + 0];
+        pNormalizedQuaternions[i].x = outputQuaternionArray[4 * i + 1];
+        pNormalizedQuaternions[i].y = outputQuaternionArray[4 * i + 2];
+        pNormalizedQuaternions[i].z = outputQuaternionArray[4 * i + 3];
+    }
+    return;
+}
 
 
 /**
@@ -111,7 +149,19 @@ void quaternion_normalize(const Quaternion_t *inputQuaternions,
  */
 void quaternion_product_single(const Quaternion_t qa, 
     const Quaternion_t qb, 
-    Quaternion_t r);
+    Quaternion_t *r)
+{
+    float32_t inputQaArray[4] = {qa.w, qa.x, qa.y, qa.z},
+            inputQbArray[4] = {qb.w, qb.x, qb.y, qb.z}, 
+            outputQuaternionArray[4];
+    
+    arm_quaternion_product_single_f32(inputQaArray, inputQbArray, outputQuaternionArray);
+    (*r).w = outputQuaternionArray[0];
+    (*r).x = outputQuaternionArray[1];
+    (*r).y = outputQuaternionArray[2];
+    (*r).z = outputQuaternionArray[3];
+    return;
+}
 
 
 /**
@@ -124,5 +174,28 @@ void quaternion_product_single(const Quaternion_t qa,
 void quaternion_product(const Quaternion_t *qa, 
     const Quaternion_t *qb, 
     Quaternion_t *r,
-    uint32_t nbQuaternions);
+    uint32_t nbQuaternions)
+{
+    float32_t inputQaArray[4 * nbQuaternions], inputQbArray[4 * nbQuaternions], outputQuaternionArray[4 * nbQuaternions];
+    for (int i = 0; i < nbQuaternions; i++)
+    {
+        inputQaArray[4 * i + 0] = qa[i].w;
+        inputQaArray[4 * i + 1] = qa[i].x;
+        inputQaArray[4 * i + 2] = qa[i].y;
+        inputQaArray[4 * i + 3] = qa[i].z;
+        inputQbArray[4 * i + 0] = qb[i].w;
+        inputQbArray[4 * i + 1] = qb[i].x;
+        inputQbArray[4 * i + 2] = qb[i].y;
+        inputQbArray[4 * i + 3] = qb[i].z;
+    }
+    arm_quaternion_product_f32(inputQaArray, inputQbArray, outputQuaternionArray, nbQuaternions);
+    for (int i = 0; i < nbQuaternions; i++)
+    {
+        r[i].w = outputQuaternionArray[4 * i + 0];
+        r[i].x = outputQuaternionArray[4 * i + 1];
+        r[i].y = outputQuaternionArray[4 * i + 2];
+        r[i].z = outputQuaternionArray[4 * i + 3];
+    }
+    return;
+}
 

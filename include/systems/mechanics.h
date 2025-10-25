@@ -68,7 +68,7 @@ void quaternion_normalize(const Quaternion_t *inputQuaternions,
  */
 void quaternion_product_single(const Quaternion_t qa, 
     const Quaternion_t qb, 
-    Quaternion_t r);
+    Quaternion_t *r);
 
 
 /**
