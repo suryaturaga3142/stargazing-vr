@@ -59,7 +59,26 @@ void quaternion_norm(const Quaternion_t *pInputQuaternions,
   */
 void quaternion_inverse(const Quaternion_t *pInputQuaternions, 
     Quaternion_t *pInverseQuaternions,
-    uint32_t nbQuaternions);
+    uint32_t nbQuaternions)
+{
+    float32_t inputQuaternionArray[4 * nbQuaternions], outputQuaternionArray[4 * nbQuaternions];
+    for (int i = 0; i < nbQuaternions; i++)
+    {
+        inputQuaternionArray[4 * i + 0] = pInputQuaternions[i].w;
+        inputQuaternionArray[4 * i + 1] = pInputQuaternions[i].x;
+        inputQuaternionArray[4 * i + 2] = pInputQuaternions[i].y;
+        inputQuaternionArray[4 * i + 3] = pInputQuaternions[i].z;
+    }
+    arm_quaternion_inverse_f32(inputQuaternionArray, outputQuaternionArray, nbQuaternions);
+    for (int i = 0; i < nbQuaternions; i++)
+    {
+        pInverseQuaternions[i].w = outputQuaternionArray[4 * i + 0];
+        pInverseQuaternions[i].x = outputQuaternionArray[4 * i + 1];
+        pInverseQuaternions[i].y = outputQuaternionArray[4 * i + 2];
+        pInverseQuaternions[i].z = outputQuaternionArray[4 * i + 3];
+    }
+    return;
+}
 
 
 /**
