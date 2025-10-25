@@ -15,6 +15,8 @@
 
 /* ----------------------------- Private Includes --------------------------- */
 #include "mechanics.h"
+
+#include "dsp/quaternion_math_functions.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
