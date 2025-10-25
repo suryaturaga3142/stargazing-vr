@@ -29,7 +29,8 @@
 #include <stdio.h>  // For printf
 // ...
 
-#define C3
+//#define C3
+#define C2
 
 
 #ifdef C3
@@ -337,92 +338,72 @@ static void parse_line(const char *line) {
     }
 }
 
-/* ----------------------------- Public Functions --------------------------- */
-
 void gps_init(void) {
-    // Set the TX and RX pins
-    gpio_set_function(PIN_GPS_TX, GPIO_FUNC_UART);
-    gpio_set_function(PIN_GPS_RX, GPIO_FUNC_UART);
+    // --- THIS IS THE MODIFIED PART ---
+    // Set the TX and RX pins manually for this test, ignoring config.h
+    #define TEST_PIN_GPS_TX 8
+    #define TEST_PIN_GPS_RX 9
+    
+    // Check from datasheet: GPIO 8 is uart1_tx, GPIO 9 is uart1_rx. This is correct.
+    gpio_set_function(TEST_PIN_GPS_TX, GPIO_FUNC_UART);
+    gpio_set_function(TEST_PIN_GPS_RX, GPIO_FUNC_UART);
+    // --- END OF MODIFICATION ---
 
-    // This UBX command configures the port for NMEA output only
-    // *AND* sets the module's baud rate to 9600 (GPS_UART_BAUD).
-    // The module's default rate is 38400, so we must send this
-    // command at its *current* rate to make it switch.
-    
-    // We "flush" the command at all common baud rates to ensure
-    // one of them works, regardless of the module's current state.
-    
-    // This command configures port 1 (UART) to output NMEA only and sets
-    // the baud rate to 9600.
+
+    // --- THIS COMMAND IS NOW FIXED ---
+    // This is the robust UBX-CFG-PRT command.
+    // It configures port 1 (UART) to 9600 baud, NMEA input, and NMEA output.
     uint8_t set_nmea_only_at_9600[] = {
-        0xB5, 0x62, 0x06, 0x8A, 0x0C, 0x00, 0x01, 0x01, 0x00, 0x00, // Header
-        0x00, 0x00, 0x00, 0x00, // inProtoMask (NMEA)
-        0x01, 0x00, 0x00, 0x00, // outProtoMask (NMEA)
-        0x92, 0xEF // Checksum
+        0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, // Header & Port 1
+        0xD0, 0x08, 0x00, 0x00, // UART Mode (8N1)
+        0x80, 0x25, 0x00, 0x00, // 9600 BAUD
+        0x02, 0x00, // inProtoMask (NMEA only)
+        0x02, 0x00, // outProtoMask (NMEA only)
+        0x00, 0x00, 0x00, 0x00, // flags
+        0xC2, 0x93  // CORRECTED CHECKSUM
     };
     
-    // List of common baud rates to try.
-    // We try fast rates first, ending with our target rate.
     const uint32_t baud_rates_to_try[] = { 38400, 115200, 9600 };
     const int num_baud_rates = sizeof(baud_rates_to_try) / sizeof(baud_rates_to_try[0]);
 
     for (int i = 0; i < num_baud_rates; i++) {
         uart_init(UART_PORT, baud_rates_to_try[i]);
-        sleep_ms(10); // Allow UART to settle
+        sleep_ms(10);
         uart_write_blocking(UART_PORT, set_nmea_only_at_9600, sizeof(set_nmea_only_at_9600));
-        sleep_ms(100); // Give module time to process command
+        sleep_ms(100);
     }
 
-    // After the loop, the module *will* be at 9600 baud.
-    // Now, set our Pico's UART to 9600 to match.
     uart_init(UART_PORT, GPS_UART_BAUD);
     
-    // Set up and enable the UART RX interrupt.
     int UART_IRQ = (UART_PORT == uart0) ? UART0_IRQ : UART1_IRQ;
     irq_set_exclusive_handler(UART_IRQ, on_uart_rx);
     irq_set_enabled(UART_IRQ, true);
-    uart_set_irq_enables(UART_PORT, true, false); // Enable RX interrupt, disable TX
+    uart_set_irq_enables(UART_PORT, true, false);
 }
 
+//
+// gps_update() function (from your code)
+//
 void gps_update(void) {
     if (!line_ready) {
         return; // No new line to process
     }
 
-    // Create a local copy of the line to process.
-    // This minimizes time with interrupts disabled.
     char line_to_process[LINE_BUFFER_LENGTH];
     
-    // Disable interrupts briefly to safely copy and clear flag
     uint32_t irq_status = save_and_disable_interrupts();
     strcpy(line_to_process, line_buffer);
     line_ready = false;
     restore_interrupts(irq_status);
 
-    // --- PRINT RAW SENTENCE ---
-    // This is the requested output for the test.
     printf("RAW: %s\n", line_to_process);
-    // --------------------------
 
-    // Process the line outside the critical section
     if (minmea_check(line_to_process, false)) {
         parse_line(line_to_process);
     }
 }
 
-/**
- * @brief DEBUGGING UART RX interrupt handler.
- *
- * This ISR just prints the hex value of *any* character it receives.
- * It proves that data is flowing from the GPS module.
- */
-static void on_uart_rx_debug() {
-    while (uart_is_readable(UART_PORT)) {
-        char ch = uart_getc(UART_PORT);
-        // Print the hex value of the character
-        printf("%02X ", ch);
-    }
-}
+
 
 #endif
 

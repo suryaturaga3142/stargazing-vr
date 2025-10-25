@@ -27,12 +27,13 @@
 #include "pico/stdlib.h"
 
 /* ---------------------------- Private Constants --------------------------- */
+// #define LCD_SPI_TEST2
+// #define LCD_SPI_TEST
 // #define GPS_I2C_SCAN
 // #define GPS_I2C_TEST
 // #define GPS_DUMB_TEST
-// #define GPS_RAW_TEST
+#define GPS_RAW_TEST
 // #define IMU_TEST
-// #define LCD_SPI_TEST
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
@@ -43,7 +44,105 @@
 
 /* ----------------------------- Public Functions --------------------------- */
 
+#ifdef LCD_SPI_TEST2
 
+// Define 24-bit (RGB888) colors
+#define COLOR_RED     0x00FF0000
+#define COLOR_GREEN   0x0000FF00
+#define COLOR_BLUE    0x000000FF
+#define COLOR_WHITE   0x00FFFFFF
+#define COLOR_BLACK   0x00000000
+
+int main() {
+    // Initialize standard I/O (for printf over USB)
+    stdio_init_all();
+    sleep_ms(4000); // Wait for terminal to connect
+
+    printf("=====================================\n");
+    printf("     ILI9486 SPI Test (24-bit)\n");
+    printf("=====================================\n");
+
+    // Initialize the LCD
+    lcd_init();
+    printf("LCD Init complete. Should be on.\n");
+
+    // Run a color cycle test
+    while (true) {
+        printf("Filling screen RED\n");
+        lcd_fill_screen(COLOR_RED);
+        sleep_ms(1000);
+
+        printf("Filling screen GREEN\n");
+        lcd_fill_screen(COLOR_GREEN);
+        sleep_ms(1000);
+
+        printf("Filling screen BLUE\n");
+        lcd_fill_screen(COLOR_BLUE);
+        sleep_ms(1000);
+        
+        printf("Filling screen BLACK\n");
+        lcd_fill_screen(COLOR_BLACK);
+        sleep_ms(1000);
+    }
+
+    return 0;
+}
+
+
+
+#endif
+
+
+#ifdef LCD_SPI_TEST
+
+#include "pico/stdlib.h"
+#include <stdio.h>
+#include "display.h"
+
+// Define 16-bit (RGB565) colors
+#define COLOR_RED     0xF800
+#define COLOR_GREEN   0x07E0
+#define COLOR_BLUE    0x001F
+#define COLOR_WHITE   0xFFFF
+#define COLOR_BLACK   0x0000
+
+int main() {
+    // Initialize standard I/O (for printf over USB)
+    stdio_init_all();
+    sleep_ms(4000); // Wait for terminal to connect
+
+    printf("=====================================\n");
+    printf("     ILI9486 SPI Test\n");
+    printf("=====================================\n");
+
+    // Initialize the LCD
+    lcd_init();
+    printf("LCD Init complete.\n");
+
+    // Run a color cycle test
+    while (true) {
+        printf("Filling screen RED\n");
+        lcd_fill_screen(COLOR_RED);
+        sleep_ms(1000);
+
+        printf("Filling screen GREEN\n");
+        lcd_fill_screen(COLOR_GREEN);
+        sleep_ms(1000);
+
+        printf("Filling screen BLUE\n");
+        lcd_fill_screen(COLOR_BLUE);
+        sleep_ms(1000);
+        
+        printf("Filling screen BLACK\n");
+        lcd_fill_screen(COLOR_BLACK);
+        sleep_ms(1000);
+    }
+
+    return 0;
+}
+
+
+#endif
 
 #ifdef GPS_I2C_SCAN
 
@@ -198,16 +297,6 @@ int main() {
 
 
 #ifdef IMU_TEST
-
-int main() {
-
-    return 0;
-}
-
-#endif
-
-
-#ifdef LCD_SPI_TEST
 
 int main() {
 
