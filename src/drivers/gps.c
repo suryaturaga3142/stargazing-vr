@@ -253,7 +253,7 @@ static volatile bool buffering_active = false; // For robust ISR
 static void on_uart_rx() {
     while (uart_is_readable(UART_PORT)) {
         char ch = uart_getc(UART_PORT);
-
+        
         if (ch == '$') {
             // Start of a new NMEA sentence
             line_buffer_index = 0;
@@ -362,20 +362,57 @@ void gps_init(void) {
         0x00, 0x00, 0x00, 0x00, // flags
         0xC2, 0x93  // CORRECTED CHECKSUM
     };
-    
-    const uint32_t baud_rates_to_try[] = { 38400, 115200, 9600 };
-    const int num_baud_rates = sizeof(baud_rates_to_try) / sizeof(baud_rates_to_try[0]);
 
-    for (int i = 0; i < num_baud_rates; i++) {
-        uart_init(UART_PORT, baud_rates_to_try[i]);
-        sleep_ms(10);
-        uart_write_blocking(UART_PORT, set_nmea_only_at_9600, sizeof(set_nmea_only_at_9600));
-        sleep_ms(100);
-    }
+    uint8_t set_nmea_only_at_19200[] = {
+        0xB5, 0x62,             // UBX header
+        0x06, 0x00,             // Class, ID (CFG-PRT)
+        0x14, 0x00,             // Length (20 bytes)
+        0x01, 0x00, 0x00, 0x00, // Port ID, reserved
+        0xD0, 0x08, 0x00, 0x00, // UART mode (8N1)
+        0x00, 0x4B, 0x00, 0x00, // Baudrate 19200 (little endian)
+        0x02, 0x00,             // inProtMask = NMEA only
+        0x02, 0x00,             // outProtMask = NMEA only
+        0x00, 0x00, 0x00, 0x00, // flags
+        0x95, 0xCB              // CHECKSUM (CK_A, CK_B)
+    };
 
-    uart_init(UART_PORT, GPS_UART_BAUD);
+    uint8_t set_nmea_only_at_38400[] = {
+    0xB5, 0x62,             // UBX header
+    0x06, 0x00,             // Class/ID (CFG-PRT)
+    0x14, 0x00,             // Payload length (20 bytes)
+    0x01, 0x00, 0x00, 0x00, // Port ID, reserved
+    0xD0, 0x08, 0x00, 0x00, // UART mode (8N1)
+    0x00, 0x96, 0x00, 0x00, // Baud rate 38400 (little-endian)
+    0x02, 0x00,             // Input protocols bitmask (NMEA only)
+    0x02, 0x00,             // Output protocols bitmask (NMEA only)
+    0x00, 0x00, 0x00, 0x00, // Flags
+    0xBE, 0x88              // Checksum (CK_A, CK_B)
+    };
+
+    uint8_t enable_rmc_msg[] = {
+    0xB5, 0x62,         // UBX header
+    0x06, 0x01,         // CFG-MSG (Class, ID)
+    0x03, 0x00,         // Payload length
+    0xF0,               // NMEA class
+    0x04,               // RMC message ID
+    0x01,               // Enable on UART1
+    0x54, 0x65          // Checksum (CK_A, CK_B)
+};
+
+
+
     
-    int UART_IRQ = (UART_PORT == uart0) ? UART0_IRQ : UART1_IRQ;
+    uart_init(UART_PORT, 38400);
+    sleep_ms(10);
+
+    
+    uart_write_blocking(UART_PORT, set_nmea_only_at_38400, sizeof(set_nmea_only_at_38400));
+    sleep_ms(200);
+
+    uart_write_blocking(UART_PORT, enable_rmc_msg, sizeof(enable_rmc_msg));
+    sleep_ms(200);
+    
+    int UART_IRQ = UART1_IRQ;
     irq_set_exclusive_handler(UART_IRQ, on_uart_rx);
     irq_set_enabled(UART_IRQ, true);
     uart_set_irq_enables(UART_PORT, true, false);
