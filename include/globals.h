@@ -14,6 +14,7 @@
 #define GLOBALS_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "config.h"
 #include "structs.h"
 
@@ -31,7 +32,14 @@ extern volatile JulianDate_t g_current_time_jd;   // The high-precision master s
 
 // --- Low-Priority Shared Data ---
 // Volatile variables for background tasks.
-extern volatile GPSData_t g_latest_gps_data;      // Updated by the main loop from GPS data.
+extern volatile GPSData_t g_latest_gps_data;            // Updated by the main loop from GPS data.
+
+// --- Global Star Database ---
+extern uint8_t g_file_buffer[TEMP_STAR_BUFFER_SIZE];    // This buffer holds the raw .bin file read from the SD card
+
+// --- Startup Set Values ---
+extern PackedStar_t* g_star_array;                      // Pointes to the first star in the g_file_buffer
+extern uint32_t g_star_count;                           // Total number of stars in the array
 
 
 // --- System State Flags ---

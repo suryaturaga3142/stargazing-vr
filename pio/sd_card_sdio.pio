@@ -1,0 +1,44 @@
+; PIO program for SD card SDIO mode (READ-ONLY)
+; NOTE: This file is hard-coded for specific RP2350 high-bank pins:
+; - D0 = GPIO 33
+; - CLK = GPIO 31
+.define D0 1
+.define D1 1
+.define PUBLIC CLKDIV D0 + 1 + D1 + 1
+
+.program sdio_cmd_clk
+    .side_set 1
+    mov OSR, NULL       side 1 [D1] 
+wait_cmd:
+    mov Y, !STATUS      side 0 [D0] 
+    jmp !Y wait_cmd     side 1 [D1]
+load_cmd:
+    out NULL, 32        side 0 [D0] 
+    out X, 8            side 1 [D1] 
+    set pins, 1         side 0 [D0] 
+    set pindirs, 1      side 1 [D1] 
+send_cmd:
+    out pins, 1         side 0 [D0] 
+    jmp X-- send_cmd    side 1 [D1]
+prep_resp:
+    set pindirs, 0      side 0 [D0] 
+    out X, 8            side 1 [D1] 
+    nop                 side 0 [D0] 
+    jmp !X resp_done    side 1 [D1] 
+wait_resp:
+    nop                 side 0 [D0]
+    jmp PIN wait_resp   side 1 [D1] 
+read_resp:
+    in PINS, 1          side 0 [D0] 
+    jmp X-- read_resp   side 1 [D1] 
+resp_done:
+    push                side 0 [D0] 
+
+.program sdio_data_rx
+wait_start:
+    mov X, Y                            
+    wait 0 gpio 33                      ; Wait for zero state on D0 (absolute GPIO 33)
+    wait 1 gpio 31      [CLKDIV-1]      ; Wait for rising edge on CLK (absolute GPIO 31)
+rx_data:
+    in PINS, 4          [CLKDIV-2] 
+    jmp X--, rx_data

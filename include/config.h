@@ -58,7 +58,9 @@
 #define PIN_IMU_INT                     30  // Interrupt pin
 
 // -- SD Card (via SDIO on a high bank) --
-// Uses a second PIO for implementing SDIO.
+// Uses a second PIO for implementing SDIO. PIO2 or PIO3 for GPIOs >= 30
+#define SDIO_PIO pio2
+#define SDIO_GPIO_FUNC GPIO_FUNC_PIO2 // Matches SDIO_PIO
 #define PIN_SDIO_CLK                    31
 #define PIN_SDIO_CMD                    32
 #define PIN_SDIO_D0                     33  // D0-D3 MUST be consecutive. Uses GPIO 33-36
@@ -76,6 +78,46 @@
 #define PIN_LED_B                       42
 #define PIN_BTN_DRIFT_CORRECT           43
 #define PIN_BTN_LOCATION_TOGGLE         44
+
+//------------------------------------------------------------------------------
+// SDIO CONFIGURATION
+//------------------------------------------------------------------------------
+
+// --- Project-Wide Magic Numbers ---
+#define STAR_FILE_MAGIC                 0x53544152 // "STAR"
+
+// --- Buffer Configuration ---
+// Buffer size for PackedStar_t structs + header + some safety margin
+#define TEMP_STAR_BUFFER_SIZE           ( (STAR_CATALOG_SIZE_MAX * 14) + 12 + 256 ) // ~210 KB if MAX is 15000
+
+// --- SD Card Driver Settings ---
+#define SD_BAUD_RATE                    (10 * 1000 * 1000) // Start with 10MHz, can go up to 25MHz
+#define SD_INIT_BAUD_RATE               (400 * 1000) // 400 KHz
+#define SD_CMD_TIMEOUT_MS               100
+#define SD_READ_TIMEOUT_MS              500
+#define SD_BLOCK_SIZE                   512
+#define SDIO_MAX_BLOCKS                 128 // Max blocks to read in a single CMD18
+
+// --- SD Card Command Opcodes ---
+#define CMD0_GO_IDLE_STATE              0
+#define CMD2_ALL_SEND_CID               2
+#define CMD3_SEND_RELATIVE_ADDR         3
+#define CMD7_SELECT_CARD                7
+#define CMD8_SEND_IF_COND               8
+#define CMD9_SEND_CSD                   9
+#define CMD12_STOP_TRANSMISSION         12
+#define CMD13_SEND_STATUS               13
+#define CMD17_READ_SINGLE_BLOCK         17
+#define CMD18_READ_MULTIPLE_BLOCK       18
+#define CMD55_APP_CMD                   55
+#define ACMD6_SET_BUS_WIDTH             6
+#define ACMD13_SD_STATUS                13
+#define ACMD41_SD_SEND_OP_COND          41
+#define ACMD42_SET_CLR_CARD_DETECT      42
+
+//------------------------------------------------------------------------------
+// SYSTEM STATE CONFIGURATION
+//------------------------------------------------------------------------------
 
 // -- LED Related Definitions --
 // These define the actual periods in milliseconds for the LED patterns.
