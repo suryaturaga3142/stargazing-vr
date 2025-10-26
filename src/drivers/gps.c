@@ -337,86 +337,53 @@ static void parse_line(const char *line) {
             break; // Ignore other sentences
     }
 }
+void disable_unwanted_nmea_msgs(void) {
+    // List of PUBX disable commands for unwanted NMEA messages (as ASCII strings)
+    const char *disable_cmds[] = {
+        "$PUBX,40,GGA,0,0,0,0*5A\r\n",
+        "$PUBX,40,GLL,0,0,0,0*5C\r\n",
+        "$PUBX,40,GSA,0,0,0,0*4E\r\n",
+        "$PUBX,40,GSV,0,0,0,0*59\r\n",
+        "$PUBX,40,VTG,0,0,0,0*48\r\n"
+    };
+    int num_cmds = sizeof(disable_cmds) / sizeof(disable_cmds[0]);
+
+    for (int i = 0; i < num_cmds; i++) {
+        uart_write_blocking(UART_PORT, (const uint8_t *)disable_cmds[i], strlen(disable_cmds[i]));
+        sleep_ms(150);  // small delay to allow GPS to process
+    }
+}
+
 
 void gps_init(void) {
-    // --- THIS IS THE MODIFIED PART ---
-    // Set the TX and RX pins manually for this test, ignoring config.h
+    // --- Pin setup ---
     #define TEST_PIN_GPS_TX 8
     #define TEST_PIN_GPS_RX 9
-    
-    // Check from datasheet: GPIO 8 is uart1_tx, GPIO 9 is uart1_rx. This is correct.
+
     gpio_set_function(TEST_PIN_GPS_TX, GPIO_FUNC_UART);
     gpio_set_function(TEST_PIN_GPS_RX, GPIO_FUNC_UART);
-    // --- END OF MODIFICATION ---
 
-
-    // --- THIS COMMAND IS NOW FIXED ---
-    // This is the robust UBX-CFG-PRT command.
-    // It configures port 1 (UART) to 9600 baud, NMEA input, and NMEA output.
-    uint8_t set_nmea_only_at_9600[] = {
-        0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, // Header & Port 1
-        0xD0, 0x08, 0x00, 0x00, // UART Mode (8N1)
-        0x80, 0x25, 0x00, 0x00, // 9600 BAUD
-        0x02, 0x00, // inProtoMask (NMEA only)
-        0x02, 0x00, // outProtoMask (NMEA only)
-        0x00, 0x00, 0x00, 0x00, // flags
-        0xC2, 0x93  // CORRECTED CHECKSUM
-    };
-
-    uint8_t set_nmea_only_at_19200[] = {
-        0xB5, 0x62,             // UBX header
-        0x06, 0x00,             // Class, ID (CFG-PRT)
-        0x14, 0x00,             // Length (20 bytes)
-        0x01, 0x00, 0x00, 0x00, // Port ID, reserved
-        0xD0, 0x08, 0x00, 0x00, // UART mode (8N1)
-        0x00, 0x4B, 0x00, 0x00, // Baudrate 19200 (little endian)
-        0x02, 0x00,             // inProtMask = NMEA only
-        0x02, 0x00,             // outProtMask = NMEA only
-        0x00, 0x00, 0x00, 0x00, // flags
-        0x95, 0xCB              // CHECKSUM (CK_A, CK_B)
-    };
-
-    uint8_t set_nmea_only_at_38400[] = {
-    0xB5, 0x62,             // UBX header
-    0x06, 0x00,             // Class/ID (CFG-PRT)
-    0x14, 0x00,             // Payload length (20 bytes)
-    0x01, 0x00, 0x00, 0x00, // Port ID, reserved
-    0xD0, 0x08, 0x00, 0x00, // UART mode (8N1)
-    0x00, 0x96, 0x00, 0x00, // Baud rate 38400 (little-endian)
-    0x02, 0x00,             // Input protocols bitmask (NMEA only)
-    0x02, 0x00,             // Output protocols bitmask (NMEA only)
-    0x00, 0x00, 0x00, 0x00, // Flags
-    0xBE, 0x88              // Checksum (CK_A, CK_B)
-    };
-
-    uint8_t enable_rmc_msg[] = {
-    0xB5, 0x62,         // UBX header
-    0x06, 0x01,         // CFG-MSG (Class, ID)
-    0x03, 0x00,         // Payload length
-    0xF0,               // NMEA class
-    0x04,               // RMC message ID
-    0x01,               // Enable on UART1
-    0x54, 0x65          // Checksum (CK_A, CK_B)
-};
-
-
-
-    
+    // --- Initialize UART at GPS current baud rate ---
     uart_init(UART_PORT, 38400);
     sleep_ms(10);
+    // --- Disable other common NMEA messages on UART1 ---
 
-    
-    uart_write_blocking(UART_PORT, set_nmea_only_at_38400, sizeof(set_nmea_only_at_38400));
-    sleep_ms(200);
+    uart_write_blocking(UART_PORT, (const uint8_t *)"$PUBX,40,RMC,0,1,0,0*46\r\n", 19);
+    sleep_ms(150);
 
-    uart_write_blocking(UART_PORT, enable_rmc_msg, sizeof(enable_rmc_msg));
-    sleep_ms(200);
-    
-    int UART_IRQ = UART1_IRQ;
+     uart_write_blocking(UART_PORT, (const uint8_t *)"$PUBX,40,VTG,0,0,0,0*48\r\n", 19);
+    sleep_ms(150);
+
+    disable_unwanted_nmea_msgs();
+
+    // --- Enable UART interrupts and ISR ---
+    int UART_IRQ = (UART_PORT == uart0) ? UART0_IRQ : UART1_IRQ;
     irq_set_exclusive_handler(UART_IRQ, on_uart_rx);
     irq_set_enabled(UART_IRQ, true);
     uart_set_irq_enables(UART_PORT, true, false);
 }
+
+
 
 //
 // gps_update() function (from your code)
