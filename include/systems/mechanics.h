@@ -15,6 +15,65 @@
 #define MECHANICS_H
 
 #include "structs.h"
+#include "dsp/quaternion_math_functions.h"
+
+/**
+  @brief         Perform initial time and location rotations on star catalog
+  @param[in]     current_date       current date in Julian Date format
+  @param[in]     longitude          longitude of user in degrees
+  @param[in]     latitude           latitude of user in degrees
+*/
+void rotate_stars_to_init_locations(JulianDate_t current_date, 
+    float longitude, 
+    float latitude);
+
+
+/**
+  @brief         Perform initial time and location rotations on star catalog
+  @param[in]     current_date       current date in Julian Date format
+  @param[in]     longitude          longitude of user in degrees
+  @param[in]     latitude           latitude of user in degrees
+  @returns       LST (Local Sidereal Time) in hours
+*/
+float calculate_LST(JulianDate_t current_date, 
+    float longitude);
+
+
+/**
+  @brief         Get quaternion to model the rotation of the Earth for a given amount of time
+  @param[in]     rotation_seconds       The amount of time to rotate in seconds
+  @returns       A quaternion representing the rotation
+*/
+Quaternion_t get_time_rotation_quaternion(float rotation_seconds);
+
+
+/**
+  @brief         Get quaternion to model the rotation from global to horizon frame based on latitude
+  @param[in]     latitude      The latitude to rotate to in degrees
+  @returns       A quaternion representing the rotation
+*/
+Quaternion_t get_location_rotation_quaternion(float latitude);
+
+
+/**
+  @brief         Model a rotation by applying a rotation quaternion to a point quaternion
+  @param[in]     q_point        A quaternion representing the point to rotate
+  @param[in]     q_rotation     A quaternion representing the rotation to apply
+  @returns       A quaternion representing the point after the rotation
+*/
+Quaternion_t apply_active_rotation(const Quaternion_t q_point, 
+    const Quaternion_t q_rotation);
+
+
+/**
+  @brief         Create a quaternion that represents a rotation
+  @param[in]     angle          The number of degrees to rotate about the axis
+  @param[in]     q_rotation     The axis to rotate about (must be a unit vector)
+  @returns       A quaternion representing the rotation
+*/
+Quaternion_t rotation_to_quaternion(float angle, 
+    Vector3f_t axis);
+
 
 /**
   @brief         Floating-point quaternion Norm.

@@ -4,7 +4,10 @@
         "star_movement.h": "c",
         "math.h": "c",
         "quaternion_math_functions.h": "c",
-        "arm_compiler_specific.h": "c"
+        "arm_compiler_specific.h": "c",
+        "structs.h": "c",
+        "globals.h": "c",
+        "stdint.h": "c"
     },
     "cortex-debug.variableUseNaturalFormat": false
 }

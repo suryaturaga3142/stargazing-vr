@@ -15,7 +15,8 @@
 #define STRUCTS_H
 
 #include <stdint.h>
-#include "globals.h"
+#include "hardware/pio.h"
+#include "config.h"
 
 // sandy move gps struct here pls
 

@@ -16,8 +16,8 @@
 /* ----------------------------- Private Includes --------------------------- */
 #include "mechanics.h"
 
-#include "dsp/quaternion_math_functions.h"
 #include <math.h>
+#include "globals.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -107,7 +107,7 @@ Quaternion_t get_time_rotation_quaternion(float rotation_seconds)
   @param[in]     latitude      The latitude to rotate to in degrees
   @returns       A quaternion representing the rotation
 */
-Quaternion_t get_location_rotation_quaternion(latitude)
+Quaternion_t get_location_rotation_quaternion(float latitude)
 {
     float angle = 90 - latitude; //degrees
     Vector3f_t rotation_axis = {1.0f, 0.0f, 0.0f}; //Rotate around x axis
