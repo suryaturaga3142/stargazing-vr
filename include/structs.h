@@ -83,7 +83,7 @@ typedef struct {
  * @details Uses scaled integers to minimize storage footprint. This is the
  * "on-disk" format that is unpacked at startup.
  */
-typedef struct {
+typedef struct __attribute__((packed)) {
     int32_t  ra_scaled;
     int32_t  dec_scaled;
     int16_t  pmra_scaled;
