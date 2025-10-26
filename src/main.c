@@ -27,10 +27,7 @@
 #include "pico/stdlib.h"
 
 /* ---------------------------- Private Constants --------------------------- */
-// #define LCD_SPI_TEST2
 // #define LCD_SPI_TEST
-// #define GPS_I2C_SCAN
-// #define GPS_I2C_TEST
 // #define GPS_DUMB_TEST
 #define GPS_RAW_TEST
 // #define IMU_TEST
@@ -43,54 +40,6 @@
 // ...
 
 /* ----------------------------- Public Functions --------------------------- */
-
-#ifdef LCD_SPI_TEST2
-
-// Define 24-bit (RGB888) colors
-#define COLOR_RED     0x00FF0000
-#define COLOR_GREEN   0x0000FF00
-#define COLOR_BLUE    0x000000FF
-#define COLOR_WHITE   0x00FFFFFF
-#define COLOR_BLACK   0x00000000
-
-int main() {
-    // Initialize standard I/O (for printf over USB)
-    stdio_init_all();
-    sleep_ms(4000); // Wait for terminal to connect
-
-    printf("=====================================\n");
-    printf("     ILI9486 SPI Test (24-bit)\n");
-    printf("=====================================\n");
-
-    // Initialize the LCD
-    lcd_init();
-    printf("LCD Init complete. Should be on.\n");
-
-    // Run a color cycle test
-    while (true) {
-        printf("Filling screen RED\n");
-        lcd_fill_screen(COLOR_RED);
-        sleep_ms(1000);
-
-        printf("Filling screen GREEN\n");
-        lcd_fill_screen(COLOR_GREEN);
-        sleep_ms(1000);
-
-        printf("Filling screen BLUE\n");
-        lcd_fill_screen(COLOR_BLUE);
-        sleep_ms(1000);
-        
-        printf("Filling screen BLACK\n");
-        lcd_fill_screen(COLOR_BLACK);
-        sleep_ms(1000);
-    }
-
-    return 0;
-}
-
-
-
-#endif
 
 
 #ifdef LCD_SPI_TEST
@@ -144,102 +93,6 @@ int main() {
 
 #endif
 
-#ifdef GPS_I2C_SCAN
-
-int main() {
-    // Initialize standard I/O (for printf over USB)
-    stdio_init_all();
-    sleep_ms(4000); // Wait for terminal to connect
-
-    printf("=====================================\n");
-    printf("     I2C Scanner on i2c1\n");
-    printf("=====================================\n");
-    printf("Initializing i2c1...\n");
-    printf("SDA PIN: %d (GPIO %d)\n", PIN_GPS_TX, PIN_GPS_TX);
-    printf("SCL PIN: %d (GPIO %d)\n", PIN_GPS_RX, PIN_GPS_RX);
-
-    // Initialize i2c1
-    i2c_init(i2c1, 100 * 1000); // 100 kHz
-    
-    // Set pins to I2C function
-    gpio_set_function(PIN_GPS_TX, GPIO_FUNC_I2C); // GPIO 38
-    gpio_set_function(PIN_GPS_RX, GPIO_FUNC_I2C); // GPIO 39
-    
-    // The SDK's i2c_init enables internal pull-ups.
-    // We can explicitly enable them to be safe.
-    gpio_pull_up(PIN_GPS_TX);
-    gpio_pull_up(PIN_GPS_RX);
-
-    printf("Scanning addresses 0x00 to 0x7F...\n\n");
-
-    for (int addr = 0; addr < (1 << 7); ++addr) {
-        
-        // Skip invalid 7-bit addresses
-        if (addr < 0x08 || addr > 0x77) {
-            continue;
-        }
-
-        uint8_t rxdata;
-        int ret = i2c_read_blocking(i2c1, addr, &rxdata, 1, false);
-
-        if (ret >= 0) {
-            // Found a device!
-            printf("Device found at I2C address: 0x%02X\n", addr);
-        } else {
-            // No device at this address
-            // Optional: print a dot for every failed attempt
-            // printf(".");
-        }
-        sleep_ms(10); // Short delay between probes
-    }
-
-    printf("\nScan complete.\n");
-
-    // Loop forever
-    while (true) {
-        sleep_ms(1000);
-    }
-
-    return 0;
-}
-#endif
-
-
-#ifdef GPS_I2C_TEST
-
-int main() {
-    // Initialize standard I/O (for printf over USB)
-    stdio_init_all();
-    
-    // This delay is CRITICAL. It gives your computer time
-    // to connect to the new USB serial port.
-    sleep_ms(4000); // 4-second delay
-
-    printf("=====================================\n");
-    printf("Starting GPS I2C NMEA Test...\n");
-    printf("=====================================\n");
-
-    // Initialize the GPS driver (which also inits i2c1)
-    gps_init();
-    printf("GPS driver initialized for I2C on i2c1 (GPIO 38/39).\n");
-    printf("Polling for NMEA sentences from NEO-M10 at 0x%02X:\n\n", 0x42);
-
-    // Main application loop
-    while (true) {
-        // This function polls for data, prints it, and parses it.
-        gps_update();
-
-        // We need a small delay so we don't spam the I2C bus
-        // and flood the terminal.
-        sleep_ms(10); 
-    }
-
-    return 0;
-}
-
-
-
-#endif
 
 #ifdef GPS_DUMB_TEST
 
