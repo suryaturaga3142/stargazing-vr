@@ -26,7 +26,7 @@
 /* ----------------------------- Public Functions --------------------------- */
 
 
-
+//#include "lcd_parallel.pio.h"
 
 int main() 
 {
