@@ -101,10 +101,10 @@ static void sdio_send_command(uint8_t command, uint32_t arg, uint8_t response_bi
 
 static sdio_status_t rp2040_sdio_command_R1(uint8_t command, uint32_t arg, uint32_t *response) {
     sdio_send_command(command, arg, response ? 48 : 0);
-    uint32_t start = millis();
+    uint32_t start = to_ms_since_boot(get_absolute_time());
     uint32_t wait_words = response ? 2 : 1;
     while (pio_sm_get_rx_fifo_level(SDIO_PIO, g_sd_state.cmd_sm) < wait_words) {
-        if ((uint32_t)(millis() - start) > SD_CMD_TIMEOUT_MS) {
+        if ((uint32_t)(to_ms_since_boot(get_absolute_time()) - start) > SD_CMD_TIMEOUT_MS) {
             pio_sm_clear_fifos(SDIO_PIO, g_sd_state.cmd_sm);
             pio_sm_exec(SDIO_PIO, g_sd_state.cmd_sm, pio_encode_jmp(g_sd_state.pio_cmd_clk_offset));
             return g_sd_state.last_error = SDIO_ERR_RESPONSE_TIMEOUT;
@@ -140,9 +140,9 @@ static sdio_status_t rp2040_sdio_command_R2(uint8_t command, uint32_t arg, uint8
     channel_config_set_dreq(&dmacfg, pio_get_dreq(SDIO_PIO, g_sd_state.cmd_sm, false));
     dma_channel_configure(g_sd_state.dma_ch_a, &dmacfg, &response_buf, &SDIO_PIO->rxf[g_sd_state.cmd_sm], 5, true);
     sdio_send_command(command, arg, 136);
-    uint32_t start = millis();
+    uint32_t start = to_ms_since_boot(get_absolute_time());
     while (dma_channel_is_busy(g_sd_state.dma_ch_a)) {
-        if ((uint32_t)(millis() - start) > SD_CMD_TIMEOUT_MS) {
+        if ((uint32_t)(to_ms_since_boot(get_absolute_time()) - start) > SD_CMD_TIMEOUT_MS) {
             dma_channel_abort(g_sd_state.dma_ch_a);
             pio_sm_clear_fifos(SDIO_PIO, g_sd_state.cmd_sm);
             pio_sm_exec(SDIO_PIO, g_sd_state.cmd_sm, pio_encode_jmp(g_sd_state.pio_cmd_clk_offset));
@@ -170,9 +170,9 @@ static sdio_status_t rp2040_sdio_command_R2(uint8_t command, uint32_t arg, uint8
 
 static sdio_status_t rp2040_sdio_command_R3(uint8_t command, uint32_t arg, uint32_t *response) {
     sdio_send_command(command, arg, 48);
-    uint32_t start = millis();
+    uint32_t start = to_ms_since_boot(get_absolute_time());
     while (pio_sm_get_rx_fifo_level(SDIO_PIO, g_sd_state.cmd_sm) < 2) {
-        if ((uint32_t)(millis() - start) > SD_CMD_TIMEOUT_MS) {
+        if ((uint32_t)(to_ms_since_boot(get_absolute_time()) - start) > SD_CMD_TIMEOUT_MS) {
             pio_sm_clear_fifos(SDIO_PIO, g_sd_state.cmd_sm);
             pio_sm_exec(SDIO_PIO, g_sd_state.cmd_sm, pio_encode_jmp(g_sd_state.pio_cmd_clk_offset));
             return g_sd_state.last_error = SDIO_ERR_RESPONSE_TIMEOUT;
@@ -194,7 +194,7 @@ static sdio_status_t rp2040_sdio_stop() {
 
 static sdio_status_t rp2040_sdio_rx_start(uint8_t *buffer, uint32_t num_blocks) {
     assert(((uint32_t)buffer & 3) == 0 && num_blocks <= SDIO_MAX_BLOCKS);
-    g_sd_state.transfer_start_time = millis();
+    g_sd_state.transfer_start_time = to_ms_since_boot(get_absolute_time());
     g_sd_state.data_buf = (uint32_t*)buffer;
     g_sd_state.blocks_done = 0;
     g_sd_state.total_blocks = num_blocks;
@@ -267,7 +267,7 @@ static sdio_status_t rp2040_sdio_rx_poll() {
         }
         return g_sd_state.last_error = SDIO_OK;
     }
-    if (millis() - g_sd_state.transfer_start_time >= SD_READ_TIMEOUT_MS) {
+    if (to_ms_since_boot(get_absolute_time()) - g_sd_state.transfer_start_time >= SD_READ_TIMEOUT_MS) {
         printf("SDIO: Read poll timeout\n");
         rp2040_sdio_stop();
         return g_sd_state.last_error = SDIO_ERR_DATA_TIMEOUT;
@@ -280,9 +280,9 @@ static bool sd_sdio_stop_transmission() {
     if (rp2040_sdio_command_R1(CMD12_STOP_TRANSMISSION, 0, &reply) != SDIO_OK) {
         return false;
     }
-    uint32_t start = millis();
+    uint32_t start = to_ms_since_boot(get_absolute_time());
     while ((sio_hw->gpio_in & (1 << g_sd_state.d0_gpio)) == 0) {
-        if (millis() - start > SD_CMD_TIMEOUT_MS) {
+        if (to_ms_since_boot(get_absolute_time()) - start > SD_CMD_TIMEOUT_MS) {
             printf("SDIO: Stop transmission timeout\n");
             return false;
         }
@@ -389,14 +389,14 @@ int sd_init(void) {
         printf("SDIO: Card failed CMD8. Not an SDHC card?\n");
         return -3;
     }
-    uint32_t start = millis();
+    uint32_t start = to_ms_since_boot(get_absolute_time());
     do {
         if (rp2040_sdio_command_R1(CMD55_APP_CMD, 0, &reply) != SDIO_OK ||
             rp2040_sdio_command_R3(ACMD41_SD_SEND_OP_COND, 0xC0100000, &g_sd_state.ocr) != SDIO_OK) {
             printf("SDIO: Failed ACMD41 sequence.\n");
             return -4;
         }
-        if ((uint32_t)(millis() - start) > 1000) {
+        if ((uint32_t)(to_ms_since_boot(get_absolute_time()) - start) > 1000) {
             printf("SDIO: Init timeout (ACMD41)\n");
             return -5;
         }
