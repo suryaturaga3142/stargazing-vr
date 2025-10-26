@@ -57,8 +57,8 @@
 // -- NEO-M10 GPS (GPIO Bank 28-29) --
 #define UART_PORT                       uart0
 #define GPS_UART_BAUD                   9600
-#define PIN_GPS_TX                      28 // RP2350 TX -> GPS RX (For UBX commands)
-#define PIN_GPS_RX                      29 // RP2350 RX <- GPS TX (For NMEA data)
+#define PIN_GPS_TX                      8 // RP2350 TX -> GPS RX (For UBX commands)
+#define PIN_GPS_RX                      9 // RP2350 RX <- GPS TX (For NMEA data)
 
 // -- SD Card (via SDIO on a high bank) --
 // Uses a dedicated high-speed peripheral block.
