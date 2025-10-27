@@ -16,17 +16,11 @@
 #include <stdbool.h>
 
 /**
- * @brief Initializes the SD card and loads the star database into RAM.
- * @details This function:
- * 1. Calls sd_init().
- * 2. Reads the star file header from block 0.
- * 3. Validates the magic number.
- * 4. Calculates the total file size and required blocks.
- * 5. Reads the entire file into the global g_file_buffer.
- * 6. Sets the global g_star_array pointer and g_star_count.
- *
- * @return true if the database was loaded successfully, false otherwise.
+ * @brief Executes the complete device startup sequence.
+ * @details Initializes peripherals, loads data from SD card, processes star data,
+ * acquires initial GPS fix, and prepares the system for the main loop.
+ * @return true if startup was successful, false otherwise (enters error state).
  */
-bool load_star_data(void);
+bool run_startup_sequence(void);
 
 #endif /* STARTUP_H */
