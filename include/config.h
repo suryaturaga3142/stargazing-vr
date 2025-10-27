@@ -31,6 +31,8 @@
 #define STAR_CATALOG_SIZE_MAX           15000
 #define SKY_PATCH_RA_DIVISIONS          24
 #define SKY_PATCH_DEC_DIVISIONS         12
+#define MAX_OPERATIONS_PER_FRAME        3000 // Safety margin below ~3200
+#define MAX_STARS_RENDER_PER_FRAME      1500 // Half of operations
 
 //------------------------------------------------------------------------------
 // PERIPHERAL CONFIGURATION
@@ -98,25 +100,24 @@
 #define SD_BLOCK_SIZE                   512
 #define SDIO_MAX_BLOCKS                 128 // Max blocks to read in a single CMD18
 
-// --- SD Card Command Opcodes ---
-#define CMD0_GO_IDLE_STATE              0
-#define CMD2_ALL_SEND_CID               2
-#define CMD3_SEND_RELATIVE_ADDR         3
-#define CMD7_SELECT_CARD                7
-#define CMD8_SEND_IF_COND               8
-#define CMD9_SEND_CSD                   9
-#define CMD12_STOP_TRANSMISSION         12
-#define CMD13_SEND_STATUS               13
-#define CMD17_READ_SINGLE_BLOCK         17
-#define CMD18_READ_MULTIPLE_BLOCK       18
-#define CMD55_APP_CMD                   55
-#define ACMD6_SET_BUS_WIDTH             6
-#define ACMD13_SD_STATUS                13
-#define ACMD41_SD_SEND_OP_COND          41
-#define ACMD42_SET_CLR_CARD_DETECT      42
+//------------------------------------------------------------------------------
+// DISPLAY & DRAWING CONFIGURATION
+//------------------------------------------------------------------------------
+
+// -- Display Driver Settings --
+// From 125MHz sys_clk, 4 PIO cycles/pixel: (125 / 3) / 4 = 10.4 MHz pixel clock.
+// This is safely below the 15.15 MHz (66ns) ILI9486 spec.
+#define LCD_PIO_CLKDIV     3.0f
+
+// -- Drawing Colors (RGB565 Format: 0bRRRRRGGGGGGBBBBB) --
+// Colors to show on the LCD Display.
+#define COLOR_BG_NIGHT_SKY 0x00A3 // Very dark night sky blue
+#define COLOR_BLACK        0x0000 // Absolute black
+#define COLOR_STAR_CENTER  0xFFFF // Bright white
+#define COLOR_STAR_EDGE    0xAD55 // Dim white/grey
 
 //------------------------------------------------------------------------------
-// SYSTEM STATE CONFIGURATION
+// RGB LED STATE CONFIGURATION
 //------------------------------------------------------------------------------
 
 // -- LED Related Definitions --
@@ -135,9 +136,5 @@
 #define LED_HEX_ORANGE          0x00FFA500
 #define LED_HEX_MAGENTA         0x00FF00FF
 #define LED_HEX_PURPLE          0x00800080
-// -- LED RGB Isolation Macros --
-#define LED_VAL_R(hex)          (hex >> 16) & 0xFF
-#define LED_VAL_G(hex)          (hex >>  8) & 0xFF
-#define LED_VAL_B(hex)          (hex >>  0) & 0xFF
 
 #endif /* CONFIG_H */

@@ -31,6 +31,23 @@
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
+
+// --- SD Card Command Opcodes ---
+#define CMD0_GO_IDLE_STATE              0
+#define CMD2_ALL_SEND_CID               2
+#define CMD3_SEND_RELATIVE_ADDR         3
+#define CMD7_SELECT_CARD                7
+#define CMD8_SEND_IF_COND               8
+#define CMD9_SEND_CSD                   9
+#define CMD12_STOP_TRANSMISSION         12
+#define CMD13_SEND_STATUS               13
+#define CMD17_READ_SINGLE_BLOCK         17
+#define CMD18_READ_MULTIPLE_BLOCK       18
+#define CMD55_APP_CMD                   55
+#define ACMD6_SET_BUS_WIDTH             6
+#define ACMD13_SD_STATUS                13
+#define ACMD41_SD_SEND_OP_COND          41
+#define ACMD42_SET_CLR_CARD_DETECT      42
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
