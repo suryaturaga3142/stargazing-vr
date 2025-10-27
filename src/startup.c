@@ -1,7 +1,8 @@
 /*******************************************************************************
  * @file        startup.c
  * @brief       Implements the functionality for startup.
- * @details     All the actual functions for initialization.
+ * @details     All the actual functions for initialization. the entire file
+ *              buffer resides as a static here. Implement sorting here.
  * 
  * @author      LED Chasers
  * @date        2025-10-26
@@ -19,12 +20,18 @@
 #include "globals.h"
 
 #include <stdio.h>
+#include <string.h>
+#include <math.h>
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
+
+// --- Global Star Database ---
+// Define the large buffer. It MUST be 32-bit aligned for the DMA.
+static uint8_t g_file_buffer[TEMP_STAR_BUFFER_SIZE] __attribute__((aligned(4)));
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */
@@ -40,6 +47,11 @@ static uint32_t div_round_up(uint32_t n, uint32_t d) {
 
 /* ----------------------------- Public Functions --------------------------- */
 
+/**
+ * @brief Loads star data from the bin file.
+ * 
+ * @return boolean of successful loading or not.
+ */
 bool load_star_data(void) {
     printf("Initializing SD card...\n");
     int init_status = sd_init();
@@ -109,9 +121,6 @@ bool load_star_data(void) {
 
     printf("File loaded successfully.\n");
 
-    // 5. Set the global pointers and counts
-    uint8_t *star_data_ptr = g_file_buffer + header->header_size;
-    g_star_array = (PackedStar_t *)star_data_ptr;
     g_star_count = header->star_count;
 
     return true;

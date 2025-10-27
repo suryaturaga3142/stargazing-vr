@@ -22,6 +22,7 @@
 // These large arrays are defined in globals.c and hold the pre-processed star data.
 extern Star_t all_stars[STAR_CATALOG_SIZE_MAX];
 extern SkyPatch_t sky_database[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
+extern uint32_t g_star_count;                           // Total number of stars in the array
 
 // --- Real-Time Shared Data ---
 // Volatile variables to safely share data between high-frequency ISRs and the main application.
@@ -31,10 +32,6 @@ extern volatile JulianDate_t g_current_time_jd;   // The high-precision master s
 // --- Low-Priority Shared Data ---
 // Volatile variables for background tasks.
 extern volatile GPSData_t g_latest_gps_data;            // Updated by the main loop from GPS data.
-
-// --- Global Star Database ---
-extern uint8_t g_file_buffer[TEMP_STAR_BUFFER_SIZE];    // This buffer holds the raw .bin file read from the SD card
-extern uint32_t g_star_count;                           // Total number of stars in the array
 
 // --- System State Flags ---
 // Volatile flags used by ISRs to communicate events to the main loop or other ISRs.

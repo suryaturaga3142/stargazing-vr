@@ -33,6 +33,7 @@
 #define SKY_PATCH_DEC_DIVISIONS         12
 #define MAX_OPERATIONS_PER_FRAME        2000 // Safety margin
 #define MAX_STARS_RENDER_PER_FRAME      1000 // Half of operations
+#define DRAW_LIST_BUFFER_MAX_WORDS      60000
 
 //------------------------------------------------------------------------------
 // PERIPHERAL CONFIGURATION
@@ -73,13 +74,12 @@
 #define PIN_GPS_TX                      38 // RP2350 TX -> GPS RX (For UBX commands)
 #define PIN_GPS_RX                      39 // RP2350 RX <- GPS TX (For NMEA data)
 
-// -- User Interface (GPIO Bank 40-44) --
+// -- User Interface (GPIO Bank 40-43) --
 // Grouped together for clean User UI routing.
 #define PIN_LED_R                       40
 #define PIN_LED_G                       41
 #define PIN_LED_B                       42
-#define PIN_BTN_DRIFT_CORRECT           43
-#define PIN_BTN_LOCATION_TOGGLE         44
+#define PIN_BTN_LOCATION_TOGGLE         43
 
 //------------------------------------------------------------------------------
 // SDIO CONFIGURATION

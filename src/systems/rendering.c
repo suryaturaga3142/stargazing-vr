@@ -31,6 +31,8 @@
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
+
+static uint32_t draw_list_buffer[DRAW_LIST_BUFFER_MAX_WORDS];
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */

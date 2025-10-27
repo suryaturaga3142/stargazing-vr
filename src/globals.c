@@ -18,7 +18,7 @@
 // The actual memory for our star catalog and spatial culling grid is allocated here.
 Star_t all_stars[STAR_CATALOG_SIZE_MAX];
 SkyPatch_t sky_database[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
-
+uint32_t g_star_count = 0;
 
 // --- Real-Time Shared Data Definitions ---
 volatile IMUData_t g_latest_imu_data = {0};
@@ -26,11 +26,6 @@ volatile JulianDate_t g_current_time_jd = {0.0};
 
 // --- Low-Priority Shared Data Definitions ---
 volatile GPSData_t g_latest_gps_data = {0};
-
-// --- Global Star Database ---
-// Define the large buffer. It MUST be 32-bit aligned for the DMA.
-uint8_t g_file_buffer[TEMP_STAR_BUFFER_SIZE] __attribute__((aligned(4)));
-uint32_t g_star_count = 0;
 
 // --- System State Flag Definitions ---
 volatile bool g_is_rendering = false;
