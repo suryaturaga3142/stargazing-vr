@@ -31,8 +31,8 @@
 #define STAR_CATALOG_SIZE_MAX           15000
 #define SKY_PATCH_RA_DIVISIONS          24
 #define SKY_PATCH_DEC_DIVISIONS         12
-#define MAX_OPERATIONS_PER_FRAME        3000 // Safety margin below ~3200
-#define MAX_STARS_RENDER_PER_FRAME      1500 // Half of operations
+#define MAX_OPERATIONS_PER_FRAME        2000 // Safety margin
+#define MAX_STARS_RENDER_PER_FRAME      1000 // Half of operations
 
 //------------------------------------------------------------------------------
 // PERIPHERAL CONFIGURATION

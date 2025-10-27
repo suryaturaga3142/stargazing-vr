@@ -30,14 +30,10 @@ volatile GPSData_t g_latest_gps_data = {0};
 // --- Global Star Database ---
 // Define the large buffer. It MUST be 32-bit aligned for the DMA.
 uint8_t g_file_buffer[TEMP_STAR_BUFFER_SIZE] __attribute__((aligned(4)));
-
-// Initialize the pointer and count
-PackedStar_t* g_star_array = NULL;
 uint32_t g_star_count = 0;
 
 // --- System State Flag Definitions ---
 volatile bool g_is_rendering = false;
-volatile bool g_drift_correct_request = false;
 volatile bool g_toggle_mode_request = false;
 volatile bool g_gps_correction_needed = false;
 volatile bool g_use_gps_location = true; // Default to using GPS location on startup
