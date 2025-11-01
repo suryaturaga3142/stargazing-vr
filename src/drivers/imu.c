@@ -16,16 +16,18 @@
 /* ----------------------------- Private Includes --------------------------- */
 #include "imu.h"
 #include "stdint.h"
-#include "hardware/i2c.h"
+#include "hardware/spi.h"
+#include "hardware/gpio.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
 // ...
-const i2c_inst_t* I2C_BUS = i2c0;
-const int I2C_SDA_PIN;
-const int I2C_SCL_PIN;
-const int I2C_BAUDRATE;
-const uint8_t IMU_I2C_ADDRESS;
+const spi_inst_t* SPI_BUS = spi1;
+const int SPI_IMU_SCK = 26; // SCK pin number for the IMU
+const int SPI_IMU_CSn = 25; // CSn pin number for the IMU
+const int SPI_IMU_RX = 24; // TX pin number for the IMU
+const int IMU_INTR = 22; // GPIO pin to receive the interrupts from the IMU
+const int SPI_BAUDRATE = 100000; //bytes/second //Fast mode
 
 /* ----------------------------- Private Variables -------------------------- */
 // ...
@@ -36,11 +38,27 @@ const uint8_t IMU_I2C_ADDRESS;
 /* ----------------------------- Public Functions --------------------------- */
 
 /**
-  @brief         Initialize pins of RP3250 for I2C communication
+  @brief         Initialize pins of RP3250 for SPI communication
 */
-void init_i2c()
+void init_spi_for_imu()
 {
-    //i2c_init(I2C_BUS, I2C_BAUDRATE);
+    //Initialize GPIO pins for SPI
+    gpio_init_mask((1 << SPI_IMU_SCK) | (1 << SPI_IMU_CSn) | (1 << SPI_IMU_RX));
+    gpio_set_function_masked((1 << SPI_IMU_SCK) | (1 << SPI_IMU_CSn) | (1 << SPI_IMU_RX), GPIO_FUNC_SPI);
+
+    //Enable interrupt when IMU_INTR pin is pulled low
+    gpio_init(IMU_INTR);
+    gpio_set_dir(IMU_INTR, false);
+    gpio_add_raw_irq_handler(IMU_INTR, read_imu_data);
+    irq_set_enabled(GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_irq_enabled(IMU_INTR, GPIO_IRQ_EDGE_FALL, true);
+
+    //Initialize SPI
+    spi_init(SPI_BUS, SPI_BAUDRATE);
+    spi_set_format(SPI_BUS, 16, 0, 0, SPI_MSB_FIRST); //Figure out number of bits per data transfer
+
+    //Configure IMU to Generate interrupts at 100kHz
+    
 
     return;
 }

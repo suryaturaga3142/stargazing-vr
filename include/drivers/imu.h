@@ -14,9 +14,9 @@
 #define IMU_H
 
 /**
-  @brief         Initialize pins of RP3250 for I2C communication
+  @brief         Initialize pins of RP3250 for SPI communication
 */
-void init_i2c();
+void init_spi_for_imu();
 
 /**
   @brief        Read data from the IMU
