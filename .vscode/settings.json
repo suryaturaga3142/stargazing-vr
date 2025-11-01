@@ -2,7 +2,9 @@
     "files.associations": {
         "quaternions.h": "c",
         "star_movement.h": "c",
-        "math.h": "c"
+        "math.h": "c",
+        "spi.h": "c",
+        "i2c.h": "c"
     },
     "cortex-debug.variableUseNaturalFormat": false
 }

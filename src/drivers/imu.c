@@ -15,10 +15,17 @@
 
 /* ----------------------------- Private Includes --------------------------- */
 #include "imu.h"
+#include "stdint.h"
+#include "hardware/i2c.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
 // ...
+const i2c_inst_t* I2C_BUS = i2c0;
+const int I2C_SDA_PIN;
+const int I2C_SCL_PIN;
+const int I2C_BAUDRATE;
+const uint8_t IMU_I2C_ADDRESS;
 
 /* ----------------------------- Private Variables -------------------------- */
 // ...
@@ -28,3 +35,22 @@
 
 /* ----------------------------- Public Functions --------------------------- */
 
+/**
+  @brief         Initialize pins of RP3250 for I2C communication
+*/
+void init_i2c()
+{
+    //i2c_init(I2C_BUS, I2C_BAUDRATE);
+
+    return;
+}
+
+/**
+  @brief        Read data from the IMU
+  @note         Should be triggered with interrupt
+*/
+void read_imu_data()
+{
+
+    return;
+}

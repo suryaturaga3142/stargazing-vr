@@ -13,6 +13,15 @@
 #ifndef IMU_H
 #define IMU_H
 
+/**
+  @brief         Initialize pins of RP3250 for I2C communication
+*/
+void init_i2c();
 
+/**
+  @brief        Read data from the IMU
+  @note         Should be triggered with interrupt
+*/
+void read_imu_data();
 
 #endif /* IMU_H */
