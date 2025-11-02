@@ -7,7 +7,7 @@
  # @see         globals.c for use details.
  * 
  * @author      LED Chasers
- * @date        2025-10-14
+ * @date        2025-11-02
  * @version     1.0
  ******************************************************************************/
 
@@ -15,7 +15,8 @@
 #define STRUCTS_H
 
 #include <stdint.h>
-#include "globals.h"
+#include "hardware/pio.h"
+#include "config.h"
 
 // sandy move gps struct here pls
 
