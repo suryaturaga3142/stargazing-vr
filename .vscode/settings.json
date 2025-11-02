@@ -6,7 +6,9 @@
         "spi.h": "c",
         "i2c.h": "c",
         "structs.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "imu.h": "c",
+        "stdio.h": "c"
     },
     "cortex-debug.variableUseNaturalFormat": false
 }

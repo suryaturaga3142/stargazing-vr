@@ -16,6 +16,20 @@
 #include "structs.h"
 #include <stdint.h>
 
+//TODO: Probably need to add a flag that indicates whether this rotation has been appleid yet
+Quaternion_t current_rotation_vector;  // The most recently returned quaternion from the IMU
+volatile int imu_data_ready_flag;
+
+//Struct to hold BNO085 packet data
+typedef struct {
+    uint8_t  channel;
+    uint8_t  sequence;
+    uint16_t payload_len;
+    uint8_t  payload[255];
+    bool     valid;
+} bno085_packet_t;
+
+//SHTP Channels
 typedef enum {
   CHANNEL_COMMAND       = 0, //Bootloader
   CHANNEL_EXECUTABLE    = 1, //Main control channel during initialization
@@ -25,6 +39,7 @@ typedef enum {
   CHANNEL_GYRO_VECTOR   = 5  //Specialized channel for high-frequency gyro/rotation data
 } shtp_channel_t;
 
+//SHTP Commands
 typedef enum {
   CMD_GET_FEATURE_RESPONSE  = 0xF1, //Response to a set feature cmd
   CMD_GET_FEATURE           = 0xF2, //Request current feature config
@@ -44,9 +59,9 @@ typedef enum {
   REPORT_MAGNETOMETER                   = 0x03, //Magnetic field (uT)
   REPORT_LINEAR_ACCELERATION            = 0x04, //Acceleration w/ gravity removed
   REPORT_ROTATION_VECTOR                = 0x05, //Quaternion orientation (fusion of accel + gyro + mag)
-  REPORT_GRAVITY_VECTOR                 = 0x06, //Gravity direction & magnitude
-  REPORT_GAME_ROTATION_VECTOR           = 0x07, //Quaternion without magnetometer correction
-  REPORT_GEOMAG_ROTATION_VECTOR         = 0x08, //Quaternion using accel + mag (no gyro)
+  REPORT_GRAVITY_VECTOR                 = 0x07, //Gravity direction & magnitude
+  REPORT_GAME_ROTATION_VECTOR           = 0x08, //Quaternion without magnetometer correction
+  REPORT_GEOMAG_ROTATION_VECTOR         = 0x06, //Quaternion using accel + mag (no gyro)
   REPORT_ACCELEROMETER_UNCALIBRATED     = 0x09, //Raw accel data before offset calibration
   REPORT_GYROSCOPE_UNCALIBRATED         = 0x0A, //Raw gyro data before offset calibration
   REPORT_MAGNETOMETER_UNCALIBRATED      = 0x0B, //Raw mag data before offset calibration
@@ -69,37 +84,18 @@ typedef enum {
 void init_spi_for_imu(void);
 
 /**
-  @brief        Read data from the IMU
+  @brief        Handle interrupt and raise flag that there is data ready to be read
   @note         Should be triggered with interrupt
+*/
+void imu_isr(void);
+
+/**
+  @brief        Read data from the IMU
 */
 void read_imu_data(void);
 
 
-/**
-  @brief        Update the current orientation quaternion
-  @param[in]    quat      Pointer to new orientation quaternion
-*/
-void update_orientation(const Quaternion_t* quat);
+void parse_imu_rotation_data(void);
 
-
-/**
-  @brief        Update the current acceleration vector
-  @param[in]    accel     Pointer to new acceleration vector
-*/
-void update_acceleration(const Vector3f_t* accel);
-
-
-/**
-  @brief        Update the current angular velocity vector
-  @param[in]    gyro      Pointer to new angular velocity vector
-*/
-void update_angular_velocity(const Vector3f_t* gyro);
-
-
-/**
-  @brief        Handle calibration response from IMU
-  @param[in]    status     Calibration status byte
-*/
-void handle_calibration_response(uint8_t status);
 
 #endif /* IMU_H */
