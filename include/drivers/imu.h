@@ -90,12 +90,32 @@ void init_spi_for_imu(void);
 void imu_isr(void);
 
 /**
+  @brief         Read one full packet of data from BNO085 with SPI
+  @param
+*/
+int bno085_read_packet(bno085_packet_t *pkt);
+
+/**
+    @brief          Clears every pending SHTP packet in FIFO and looks for packet on channel 3.
+    @return         Returns true only when a channel-3 packet was found and stored in out_pkt.
+ */
+bool bno085_service_fifo(bno085_packet_t *out_pkt);
+
+/**
+    @brief          Clears every pending SHTP packet in FIFO and looks for packet on channel 2.
+    @return         Returns true only when a channel-2 packet was found and stored in out_pkt.
+ */
+bool bno085_service_fifo_ch2(bno085_packet_t *out_pkt);
+
+/**
+  @brief        Parse IMU rotation vector data into quaternion
+*/
+void parse_imu_rotation_data();
+
+/**
   @brief        Read data from the IMU
 */
 void read_imu_data(void);
-
-
-void parse_imu_rotation_data(void);
 
 
 #endif /* IMU_H */
