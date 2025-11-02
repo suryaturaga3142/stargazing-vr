@@ -18,6 +18,11 @@
 #include "stdint.h"
 #include "hardware/dma.h"
 #include "hardware/irq.h" 
+
+// ...
+
+/* ---------------------------- Private Constants --------------------------- */
+// ...
 #define PIXEL_AMOUNT 1000
 #define AMOUNT_OF_STARS 1000
 #define PACKET_PER_STAR 20
@@ -32,11 +37,6 @@
 #define CMD_CASET 0x2A
 #define CMD_PASET 0x2B
 #define CMD_RAMWR 0x2C
-
-// ...
-
-/* ---------------------------- Private Constants --------------------------- */
-// ...
 
 /* ----------------------------- Private Variables -------------------------- */
 // ...
@@ -269,8 +269,14 @@ void place_new_stars(int matrix[AMOUNT_OF_STARS][2])
     int d = draw_index;
     if ((e + d) > FINAL_DMA_CAP) {
         // clamp (shouldn't happen if capacities sized correctly)
-        if (e > FINAL_DMA_CAP) e = FINAL_DMA_CAP;
-        if (d > (FINAL_DMA_CAP - e)) d = FINAL_DMA_CAP - e;
+        if (e > FINAL_DMA_CAP)
+        {
+            e = FINAL_DMA_CAP;
+        }
+        if (d > (FINAL_DMA_CAP - e))
+        {
+            d = FINAL_DMA_CAP - e;
+        }
     }
 
     // copy
