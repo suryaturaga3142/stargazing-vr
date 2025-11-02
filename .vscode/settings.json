@@ -4,7 +4,9 @@
         "star_movement.h": "c",
         "math.h": "c",
         "spi.h": "c",
-        "i2c.h": "c"
+        "i2c.h": "c",
+        "structs.h": "c",
+        "stdint.h": "c"
     },
     "cortex-debug.variableUseNaturalFormat": false
 }
