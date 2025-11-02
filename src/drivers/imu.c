@@ -27,9 +27,12 @@ const int SPI_IMU_CSn = 25; // CSn pin number for the IMU
 const int SPI_IMU_RX = 24; // RX pin number for the IMU
 const int SPI_IMU_TX = 27; // TX pin number for the IMU
 const int IMU_INTR = 22; // GPIO pin to receive the interrupts from the IMU
-const int SPI_BAUDRATE = 100000; //bytes/second //Fast mode
+const int SPI_BAUDRATE = 100000; //bytes/second
 
 /* ----------------------------- Private Variables -------------------------- */
+uint8_t sequence_num = 1;
+
+//Possibly delete these
 static Quaternion_t current_orientation = {1.0f, 0.0f, 0.0f, 0.0f};  // Identity quaternion
 static Vector3f_t current_acceleration = {0.0f, 0.0f, 0.0f};
 static Vector3f_t current_angular_velocity = {0.0f, 0.0f, 0.0f};
@@ -160,10 +163,28 @@ void init_spi_for_imu()
 
     //Initialize SPI
     spi_init(SPI_BUS, SPI_BAUDRATE);
-    spi_set_format(SPI_BUS, 16, 0, 0, SPI_MSB_FIRST); //Figure out number of bits per data transfer
+    spi_set_format(SPI_BUS, 8, 0, 0, SPI_MSB_FIRST); //Figure out number of bits per data transfer
 
-    //Configure IMU to Generate interrupts at 100Hz
-    
+    //Configure IMU to generate interrupts at 100Hz
+    //TODO: Turn packet into a struct?
+    uint8_t packet[] = {
+        // SHTP header (4 bytes)
+        0x0F, 0x00,      //Length = 15 bytes (LSB first)
+        CHANNEL_CONTROL, //Channel 2
+        sequence_num++, 
+
+        // Payload (Set Feature Command)
+        CMD_SET_FEATURE,        //Command ID
+        REPORT_ROTATION_VECTOR, //Report ID
+        0x00,                   //Feature flags
+        0xA0, 0x86, 0x01, 0x00, //Report interval = 10000 us (100 Hz)
+        0x00, 0x00,             //Change sensitivty
+        0x00, 0x00,             //Batch interval
+    };
+    gpio_put(SPI_IMU_CSn, 0); //Pull chip select low
+    spi_write_blocking(SPI_BUS, packet, sizeof(packet));
+
+    //TODO: Check packet is received by checking for a feature response (0xF1) on channel 2
 
     return;
 }
@@ -172,6 +193,7 @@ void init_spi_for_imu()
   @brief        Read data from the IMU
   @note         Should be triggered with interrupt
 */
+//TODO: Change so SPI reads are done outside of ISR function and ISR only sets flag that data is ready (to prevent missing data packets)
 void read_imu_data()
 {
     gpio_acknowledge_irq(IMU_INTR, GPIO_IRQ_EDGE_FALL);
@@ -184,16 +206,18 @@ void read_imu_data()
     spi_read_blocking(SPI_BUS, 0, header, 4);
     
     // Parse header
-    uint8_t channel = header[0] & 0x0F;
-    uint16_t sequence = ((uint16_t)header[0] >> 4) | ((uint16_t)header[1] << 4);
-    uint16_t length = ((uint16_t)header[2]) | ((uint16_t)header[3] << 8);
+    uint16_t packet_length = ((uint16_t)header[0] | ((uint16_t)header[1] << 8)) & 0x7FFF; //Exclude bit 15w which is the continuation bit
+    uint8_t channel = header[2];
+    uint8_t seq_num = header[3];
     
+    uint16_t payload_length = packet_length - 4;
+
     // Allocate buffer for payload
-    uint8_t payload[length];
+    uint8_t payload[payload_length];
     
     // Read payload
-    if (length > 0) {
-        spi_read_blocking(SPI_BUS, 0, payload, length);
+    if (payload_length > 0) {
+        spi_read_blocking(SPI_BUS, 0, payload, payload_length);
     }
     
     // Pull CS high to end transaction

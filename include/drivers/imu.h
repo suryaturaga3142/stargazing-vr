@@ -37,7 +37,7 @@ typedef enum {
   CMD_ERROR_RESPONSE        = 0xFF  //Indicates invalid or failed command
 } shtp_command_t;
 
-//Sensor Report IDs for BNO085 (SH-2 protocol)
+//Sensor Report IDs for BNO085 (SHTP protocol)
 typedef enum {
   REPORT_ACCELEROMETER                  = 0x01, //Linear acceleration (m/s^2)
   REPORT_GYROSCOPE                      = 0x02, //Angular velocity (rad/s)
