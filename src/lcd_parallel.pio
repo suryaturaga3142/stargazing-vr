@@ -8,10 +8,25 @@
 ; For RGB 565 LCD
 
 .wrap_target
-    out pins, 17     ; Output 17 bits to DB0..DB15
-    out null, 15     ; this will remove the lsb
-    nop side 0 [1]   ; Drive WR low, hold for 2 cycles
-    nop side 1 [1]   ; Drive WR high, hold for 2 cycles
+    pull block      ; Wait until FIFO has data
+    mov x, osr      ; Move 32-bit word to X register
+
+    ; Extract lower 17 bits (D0-D15 + DC)
+    and x, 0x1FFF   ; Mask only lower 17 bits
+
+    ; Set pins for output (17 bits)
+    out pins, 17
+
+    ; Pulse WR (side-set)
+    nop side 0      ; WR low
+    nop side 1      ; WR high
+
+    jmp pull
+
+    ; out pins, 17     ; Output 17 bits to DB0..DB15
+    ; out null, 15     ; this will remove the lsb
+    ; nop side 0 [1]   ; Drive WR low, hold for 2 cycles
+    ; nop side 1 [1]   ; Drive WR high, hold for 2 cycles
 .wrap
 
 
@@ -31,7 +46,7 @@ static inline void lcd_parallel_program_init(
     sm_config_set_sideset_pins(&c, pin_wr);         // WR via side-set
 
     sm_config_set_out_shift(&c,
-        true,   // shift right
+        false,   // shift right
         true,   // autopull
         32);    // pull threshold
 

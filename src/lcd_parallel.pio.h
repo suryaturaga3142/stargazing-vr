@@ -58,7 +58,7 @@ static inline void lcd_parallel_program_init(
     sm_config_set_sideset_pins(&c, pin_wr);        // WR via side-set
 
     sm_config_set_out_shift(&c,
-        true,   // shift right
+        false,   // shift right
         true,   // autopull
         32);    // pull threshold
 
