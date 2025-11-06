@@ -229,7 +229,7 @@ void gps_update(void) {
 
 #endif
 
-#ifdef C2
+#ifdef CN
 /* ---------------------------- Private Constants --------------------------- */
 // Buffer to store incoming NMEA sentences from the ISR
 #define LINE_BUFFER_LENGTH 256

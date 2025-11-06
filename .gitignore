@@ -4,9 +4,5 @@
 .vscode/launch.json
 .vscode/ipch
 
-<<<<<<< HEAD
-data/
-=======
 data/sources/hipparcos.fit
 data/bin/stars.bin
->>>>>>> b9f562c6a1f830f56e753fb7dac3e13890650da7
