@@ -37,8 +37,8 @@
 static inline uint32_t build_packet(uint16_t payload, uint8_t dc)
 {
     // CORRECT MAPPING:
-    // [15 unused bits] [D/C bit at 16] [Payload[15..0] at bits 15-0]
-    return (((uint32_t)payload & 0xFFFF) | (((uint32_t)(dc & 1u)) << 16));
+    // [D/C bit at 16] [Payload[15..0] at bits 15-0] [15 unused bits] 
+    return (((uint32_t)payload & 0xFFFF) | (((uint32_t)(dc & 1u)) << 16)) << 15;
 }
 
 /**

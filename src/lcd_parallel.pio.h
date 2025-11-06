@@ -18,10 +18,10 @@
 
 static const uint16_t lcd_parallel_program_instructions[] = {
             //     .wrap_target
-    0x6041, //  0: out    pins, 17        
-    0x606f, //  1: out    null, 15        
-    0xa8c3, //  2: mov    y, y          side 0 [1] 
-    0xb8c3, //  3: mov    y, y          side 1 [1] 
+    0x6010, //  0: out    pins, 17        
+    0x606e, //  1: out    null, 15        
+    0x1282, //  2: mov    y, y          side 0 [1] 
+    0x1b83, //  3: mov    y, y          side 1 [1] 
             //     .wrap
 };
 
@@ -48,14 +48,14 @@ static inline pio_sm_config lcd_parallel_program_get_default_config(uint offset)
 
 static inline void lcd_parallel_program_init(
     PIO pio, uint sm, uint offset,
-    uint pin_data_base,    // First data pin (DB0)
-    uint pin_wr,            // WR strobe pin
+    uint pin_data_base,   // First data pin (DB0)
+    uint pin_wr,          // WR strobe pin
     float clkdiv
 ) {
     pio_sm_config c = lcd_parallel_program_get_default_config(offset);
 
     sm_config_set_out_pins(&c, pin_data_base, 17);  // DB0..DB15 + DC
-    sm_config_set_sideset_pins(&c, pin_wr);        // WR via side-set
+    sm_config_set_sideset_pins(&c, pin_wr);         // WR via side-set
 
     sm_config_set_out_shift(&c,
         false,   // shift right

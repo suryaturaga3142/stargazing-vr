@@ -3,30 +3,15 @@
 
 ; Purpose:
 ; Output 16 bits of pixel data to the LCD on each write strobe (WR).
-; Uses autopull so the SM continuously requests 18-bit words from TX FIFO.
+; Uses autopull so the SM continuously requests 32-bit words from TX FIFO.
 ; Side-set controls WR (active low pulse).
 ; For RGB 565 LCD
 
 .wrap_target
-    pull block      ; Wait until FIFO has data
-    mov x, osr      ; Move 32-bit word to X register
-
-    ; Extract lower 17 bits (D0-D15 + DC)
-    and x, 0x1FFF   ; Mask only lower 17 bits
-
-    ; Set pins for output (17 bits)
-    out pins, 17
-
-    ; Pulse WR (side-set)
-    nop side 0      ; WR low
-    nop side 1      ; WR high
-
-    jmp pull
-
-    ; out pins, 17     ; Output 17 bits to DB0..DB15
-    ; out null, 15     ; this will remove the lsb
-    ; nop side 0 [1]   ; Drive WR low, hold for 2 cycles
-    ; nop side 1 [1]   ; Drive WR high, hold for 2 cycles
+    out pins, 17  side 1    ; Output first 17 bits to DC + DB0..DB15
+    out null, 15     ; this will remove the least significant 15 bits which are unused
+    nop side 0 [2]   ; Drive WR low, hold for 2 cycles
+    nop side 1 [3]   ; Drive WR high, hold for 2 cycles
 .wrap
 
 
