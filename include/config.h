@@ -64,10 +64,10 @@
 #define PIN_SDIO_D0                     33  // D0-D3 MUST be consecutive. Uses GPIO 33-36
 
 // -- NEO-M10 GPS (GPIO Bank 38-39) --
-#define UART_PORT                       uart1
-#define GPS_UART_BAUD                   9600
-#define PIN_GPS_TX                      38 // RP2350 TX -> GPS RX (For UBX commands)
-#define PIN_GPS_RX                      39 // RP2350 RX <- GPS TX (For NMEA data)
+//#define UART_PORT                       uart1
+//#define GPS_UART_BAUD                   9600
+//#define PIN_GPS_TX                      38 // RP2350 TX -> GPS RX (For UBX commands)
+//#define PIN_GPS_RX                      39 // RP2350 RX <- GPS TX (For NMEA data)
 
 // -- User Interface (GPIO Bank 40-44) --
 // Grouped together for clean User UI routing.
