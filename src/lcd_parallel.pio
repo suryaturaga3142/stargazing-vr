@@ -10,10 +10,9 @@
 .wrap_target
     out pins, 17     ; Output 17 bits to DB0..DB15
     out null, 15     ; this will remove the lsb
-    nop side 0 [1]   ; Drive WR low, hold for 2 cycles
-    nop side 1 [1]   ; Drive WR high, hold for 2 cycles
+    nop side 0 [2]   ; Drive WR low, hold for 3 cycles
+    nop  side 1 [3]   ; Drive WR high, hold for 4 cycles
 .wrap
-
 
 % c-sdk {
 #include "pico/stdlib.h"
@@ -31,7 +30,7 @@ static inline void lcd_parallel_program_init(
     sm_config_set_sideset_pins(&c, pin_wr);         // WR via side-set
 
     sm_config_set_out_shift(&c,
-        true,   // shift right
+        false,   // shift right
         true,   // autopull
         32);    // pull threshold
 

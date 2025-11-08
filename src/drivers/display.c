@@ -58,6 +58,8 @@ static uint dma_sm;
 // data
 static volatile bool dma_complete = true;
 
+extern int star_matrix[AMOUNT_OF_STARS][2];
+
 /* ----------------------------- Private Functions -------------------------- */
 // ...
 /**
@@ -70,7 +72,8 @@ static volatile bool dma_complete = true;
  */
 static inline uint32_t build_packet(uint16_t payload, uint8_t dc)
 {
-    return (((uint32_t)(dc & 1u)) << 31) | (((uint32_t)payload) << 15);
+    // [15 unused bits] [D/C bit at 16] [Payload[15..0] at bits 15-0]
+    return ((uint32_t)payload & 0xFFFF) | (((uint32_t)(dc & 1u)) << 16);
 }
 
 /**
@@ -496,7 +499,7 @@ void display_dma_start_transfer()
     //    words from the list into the PIO FIFO.
     dma_channel_set_trans_count(
         dma_chan,
-        display_get_dma_count(), // Get the number of packets
+        display_get_dma_count(), // Get the number of packets //TEMP
         true                     // TRIGGER!
     );
 }
