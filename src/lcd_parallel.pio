@@ -8,10 +8,10 @@
 ; For RGB 565 LCD
 
 .wrap_target
-    out pins, 17  side 1    ; Output first 17 bits to DC + DB0..DB15
-    out null, 15     ; this will remove the least significant 15 bits which are unused
-    nop side 0 [2]   ; Drive WR low, hold for 2 cycles
-    nop side 1 [3]   ; Drive WR high, hold for 2 cycles
+    out pins, 17  side 1   ; Output first 17 bits to DC + DB0..DB15
+    out null, 15  side 1   ; this will remove the least significant 15 bits which are unused
+    nop side 0 [2]   ; Drive WR low, hold for 3 cycles
+    nop side 1 [3]   ; Drive WR high, hold for 4 cycles
 .wrap
 
 
@@ -25,17 +25,7 @@ static inline void lcd_parallel_program_init(
     uint pin_wr,          // WR strobe pin
     float clkdiv
 ) {
-    pio_sm_config c = lcd_parallel_program_get_default_config(offset);
-
-    sm_config_set_out_pins(&c, pin_data_base, 17);  // DB0..DB15 + DC
-    sm_config_set_sideset_pins(&c, pin_wr);         // WR via side-set
-
-    sm_config_set_out_shift(&c,
-        false,   // shift right
-        true,   // autopull
-        32);    // pull threshold
-
-    sm_config_set_clkdiv(&c, clkdiv);
+    pio_sm_set_enabled(pio, sm, false);
 
     // Init pins
     for (uint i = 0; i < 17; i++)
@@ -45,6 +35,28 @@ static inline void lcd_parallel_program_init(
     // Set directions
     pio_sm_set_consecutive_pindirs(pio, sm, pin_data_base, 17, true);
     pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_wr), (1u << pin_wr));
+
+    // Intialize WR
+    pio_sm_set_pins_with_mask(pio, sm, 1u << pin_wr, 1u << pin_wr);
+
+    pio_sm_config c = lcd_parallel_program_get_default_config(offset);
+
+    // Set clock
+    sm_config_set_clkdiv(&c, clkdiv);
+
+    // Set output pins D0-D16
+    sm_config_set_out_pin_base(&c, pin_data_base);
+    sm_config_set_out_pin_count(&c, 17);
+    sm_config_set_out_pins(&c, pin_data_base, 17);
+    
+    // Set Side-set (WR)
+    sm_config_set_sideset_pins(&c, pin_wr);         // WR via side-set
+    sm_config_set_sideset(&c, 1u, true, false);
+
+    sm_config_set_out_shift(&c,
+        true,   // shift right
+        true,   // autopull
+        32);    // pull threshold
 
     pio_sm_init(pio, sm, offset, &c);
     pio_sm_set_enabled(pio, sm, true);
