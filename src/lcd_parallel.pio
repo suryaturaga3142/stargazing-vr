@@ -1,18 +1,53 @@
 .program lcd_parallel
-.side_set 1 opt
+.side_set 2 opt
 
 ; Purpose:
 ; Output 16 bits of pixel data to the LCD on each write strobe (WR).
-; Uses autopull so the SM continuously requests 32-bit words from TX FIFO.
-; Side-set controls WR (active high pulse).
-; For RGB 565 LCD
+
+; Notes: 
+; Manually request 32-bit words from TX FIFO.
+; out command maps LSB to base_pin of pins
+; Side-set controls WR (active low pulse).
+; Set controls D/C (0 for command, 1 for data)
+; For RGB 565 LCD configuration
+
+; Block fill
+; First command is data bits, second command is the number of times to write that data
+0: pull   block           side 1     ; Pull 32 bits from FIFO, drive WR high
+1: mov    x, osr                     ; Copy bits into x
+2: pull   block                      ; Pull additional 32 bits from FIFO
+3: mov    y, osr                     ; Copy bits into y
+4: mov    osr, x          side 1     ; Copy x bits back into osr and drive WR high
+5: out    pins, 32        side 0 [1] ; Output osr data to pins and drive WR low for 2 cycles
+6: jmp    y--, 4          side 1     ; If y != 0, decrement y and jump to line 4, drive WR high
 
 .wrap_target
-    out pins, 17  side 0   ; Output first 17 bits to DC + DB0..DB15
-    out null, 15  side 0   ; this will remove the least significant 15 bits which are unused
-    nop side 1 [3]   ; Drive WR high, hold for 4 cycles
-    pull ifempty side 0 [2]   ; Drive WR low, hold for 3 cycles
+    ; Data transmit loop
+    ; Write data commands 
+    7: pull    block           side 1     ; Pull 32 bits from FIFO
+    8: out     pins, 32        side 0 [1] ; Output data to pins and drive WR low for 2 cycles
+    9: jmp     7               side 1     ; Jump to line 7, drive WR high
+    
+    ; Set addr window
+    10: set    x, 2            side 1     ; Set x = 2, drive WR high
+    11: set    pins, 0                    ; Set D/C low (command)
+    12: pull   block                      ; Pull 32 bits from FIFO
+    13: out    pins, 32        side 0     ; Output data to pins, drive WR low
+    14: jmp    !x, 19                     ; If x = 0, jump to line 19
+    15: pull   block           side 1     ; Pull 32 bits from FIFO
+    16: set    pins, 1                    ; Set D/C high (data)
+    17: out    pins, 8         side 0 [1] ; Output 8 bits of data to pins, drive WR low for 2 cycles
+    18: jmp    !osre, 17       side 1 [1] ; If osr still has data, jump to line 17, drive WR high for 2 cycles
+    19: jmp    x--, 11         side 1     ; If x != 0, decrement x and jump to line 11, drive WR high
+    20: set    pins, 1                    ; Set D/C high (data)
 .wrap
+
+;.wrap_target
+;    out pins, 17  side 0   ; Output first 17 bits to DC + DB0..DB15
+;    out null, 15  side 0   ; this will remove the least significant 15 bits which are unused
+;    nop side 1 [3]   ; Drive WR high, hold for 4 cycles
+;    pull ifempty side 0 [2]   ; Drive WR low, hold for 3 cycles
+;.wrap
 
 
 % c-sdk {
