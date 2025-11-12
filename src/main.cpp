@@ -2,7 +2,7 @@
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
 
-// 1. Include your generated PIO header
+// Include generated PIO header
 #include "lcd_parallel.pio.h"
 
 // --- Pin Definitions (CHANGE TO MATCH BOARD WIRING) ---
@@ -32,6 +32,14 @@
 #define CMD_SWRST 0x01
 #define CMD_MADCTL 0x0B
 
+#define CMD_MAD_MY  0x80
+#define CMD_MAD_MX  0x40
+#define CMD_MAD_MV  0x20
+#define CMD_MAD_ML  0x10
+#define CMD_MAD_BGR 0x08
+#define CMD_MAD_MH  0x04
+#define CMD_MAD_RGB 0x00
+
 // --- Color Definitions ---
 #define COLOR_BLACK       0x0000
 #define COLOR_NAVY        0x000F
@@ -53,6 +61,323 @@
 #define COLOR_GREENYELLOW 0xAFE5
 #define COLOR_PINK        0xF81F
 
+// Global PIO variables
+PIO lcd_pio = pio0;
+uint pio_sm = 0;
+uint pio_offset = 0;
+uint32_t pio_instr_jmp8;
+uint32_t pio_instr_fill;
+uint32_t pio_instr_addr;
+uint32_t pio_instr_set_dc;
+uint32_t pio_instr_clr_dc;
+uint32_t pull_stall_mask;
+
+#define WAIT_FOR_STALL  lcd_pio->fdebug = pull_stall_mask; while (!(lcd_pio->fdebug & pull_stall_mask))
+#define TX_FIFO  lcd_pio->txf[pio_sm]
+
+//#define ILI9486_DRIVER
+#define ST7796_DRIVER
+
+// /**
+//  * @brief Port of the TFT_eSPI pioinit() function to native picosdk
+//  * This logic is taken directly from TFT_eSPI_RP2040.c
+//  */
+void lcd_pio_init() {
+    // Find a free PIO instance
+    if (!pio_can_add_program(lcd_pio, &lcd_parallel_program)) {
+        lcd_pio = pio1;
+        if (!pio_can_add_program(lcd_pio, &lcd_parallel_program)) {
+            printf("Error: No room for PIO program\n");
+            return;
+        }
+    }
+
+    // Claim a state machine
+    pio_sm = pio_claim_unused_sm(lcd_pio, true);
+    pio_offset = pio_add_program(lcd_pio, &lcd_parallel_program);
+
+    // Configure GPIOs for PIO
+    pio_gpio_init(lcd_pio, PIN_LCD_DC);
+    pio_gpio_init(lcd_pio, PIN_LCD_WR);
+    for (int i = 0; i < 16; i++) {
+        pio_gpio_init(lcd_pio, PIN_LCD_DATA_BASE + i);
+    }
+
+    // Set pin directions
+    pio_sm_set_consecutive_pindirs(lcd_pio, pio_sm, PIN_LCD_DC, 1, true);
+    pio_sm_set_consecutive_pindirs(lcd_pio, pio_sm, PIN_LCD_WR, 1, true);
+    pio_sm_set_consecutive_pindirs(lcd_pio, pio_sm, PIN_LCD_DATA_BASE, 16, true);
+
+    // Get default PIO config and modify it
+    pio_sm_config c = lcd_parallel_program_get_default_config(pio_offset);
+
+    sm_config_set_set_pins(&c, PIN_LCD_DC, 1);
+    sm_config_set_sideset_pins(&c, PIN_LCD_WR);
+    sm_config_set_out_pins(&c, PIN_LCD_DATA_BASE, 16);
+
+    // Set clock divider
+    sm_config_set_clkdiv_int_frac(&c, PIO_CLK_DIV, 0);
+
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+    sm_config_set_out_shift(&c, false, false, 0);
+
+    // Load the config
+    pio_sm_init(lcd_pio, pio_sm, pio_offset + lcd_parallel_offset_start_tx, &c);
+
+    // Start the state machine
+    pio_sm_set_enabled(lcd_pio, pio_sm, true);
+
+    // Pre-calculate instruction variants for speed
+    pull_stall_mask = 1u << (PIO_FDEBUG_TXSTALL_LSB + pio_sm);
+    pio_instr_jmp8  = pio_encode_jmp(pio_offset + lcd_parallel_offset_start_8);
+    pio_instr_fill  = pio_encode_jmp(pio_offset + lcd_parallel_offset_block_fill);
+    pio_instr_addr  = pio_encode_jmp(pio_offset + lcd_parallel_offset_set_addr_window);
+    pio_instr_set_dc = pio_encode_set((pio_src_dest)0, 1); //Sets D/C to be 1
+    pio_instr_clr_dc = pio_encode_set((pio_src_dest)0, 0); //Sets D/C to be 0
+}
+
+/**
+ * @brief Send a 16-bit word to the PIO TX FIFO
+ */
+inline void pio_write16(uint16_t data) {
+    WAIT_FOR_STALL;
+    TX_FIFO = data;
+}
+
+/**
+ * @brief Send an 8-bit command to the LCD
+ */
+void writecommand(uint8_t cmd) {
+    WAIT_FOR_STALL;
+    lcd_pio->sm[pio_sm].instr = pio_instr_clr_dc; // Set DC low
+    lcd_pio->sm[pio_sm].instr = pio_instr_jmp8;   // Jump to 8-bit send
+    TX_FIFO = cmd;
+    WAIT_FOR_STALL;
+    lcd_pio->sm[pio_sm].instr = pio_instr_set_dc; // Set DC high
+}
+
+/**
+ * @brief Send 8-bit data to the LCD
+ */
+void writedata(uint8_t data) {
+    // DC pin is already high
+    lcd_pio->sm[pio_sm].instr = pio_instr_jmp8; // Jump to 8-bit send
+    TX_FIFO = data;
+}
+
+/**
+ * @brief Send 16-bit data to the LCD
+ */
+void writedata16(uint16_t data) {
+    // DC pin is already high
+    // The PIO program defaults to 16-bit, so no jmp needed
+    TX_FIFO = data;
+}
+
+/**
+ * @brief Set the address window for pixel writes
+ */
+void setWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
+    WAIT_FOR_STALL;
+    lcd_pio->sm[pio_sm].instr = pio_instr_addr;
+    TX_FIFO = CMD_CASET;
+    TX_FIFO = (x0 << 16) | x1;
+    TX_FIFO = CMD_PASET;
+    TX_FIFO = (y0 << 16) | y1;
+    TX_FIFO = CMD_RAMWR;
+}
+
+/**
+ * @brief Fill a block of pixels with a single color
+ */
+void pushBlock(uint16_t color, uint32_t len) {
+    if (!len) return;
+    WAIT_FOR_STALL;
+    lcd_pio->sm[pio_sm].instr = pio_instr_fill;
+    TX_FIFO = color;
+    TX_FIFO = --len; // PIO sends n+1 pixels
+}
+
+/**
+ * @brief Fill the entire screen with a color
+ */
+void fillScreen(uint16_t color) {
+    // Use the driver-specific dimensions from the header
+    setWindow(0, 0, LCD_WIDTH - 1, LCD_HEIGHT - 1);
+    pushBlock(color, (uint32_t)LCD_WIDTH * LCD_HEIGHT);
+}
+
+/**
+ * @brief Send initialization commands to set up the ST7796 driver
+ */
+void lcd_driver_init()
+{
+    sleep_ms(120);
+
+    writecommand(0x01); //Software reset
+    sleep_ms(120);
+
+    writecommand(0x11); //Sleep exit                                            
+    sleep_ms(120);
+
+    writecommand(0xF0); //Command Set control                                 
+    writedata(0xC3);    //Enable extension command 2 partI
+
+    writecommand(0xF0); //Command Set control                                 
+    writedata(0x96);    //Enable extension command 2 partII
+
+    writecommand(0x36); //Memory Data Access Control MX, MY, RGB mode                                    
+    writedata(0x48);    //X-Mirror, Top-Left to right-Buttom, RGB  
+
+    writecommand(0x3A); //Interface Pixel Format                                    
+    writedata(0x55);    //Control interface color format set to 16
+
+
+    writecommand(0xB4); //Column inversion 
+    writedata(0x01);    //1-dot inversion
+
+    writecommand(0xB6); //Display Function Control
+    writedata(0x80);    //Bypass
+    writedata(0x02);    //Source Output Scan from S1 to S960, Gate Output scan from G1 to G480, scan cycle=2
+    writedata(0x3B);    //LCD Drive Line=8*(59+1)
+
+
+    writecommand(0xE8); //Display Output Ctrl Adjust
+    writedata(0x40);
+    writedata(0x8A);	
+    writedata(0x00);
+    writedata(0x00);
+    writedata(0x29);    //Source eqaulizing period time= 22.5 us
+    writedata(0x19);    //Timing for "Gate start"=25 (Tclk)
+    writedata(0xA5);    //Timing for "Gate End"=37 (Tclk), Gate driver EQ function ON
+    writedata(0x33);
+
+    writecommand(0xC1); //Power control2                          
+    writedata(0x06);    //VAP(GVDD)=3.85+( vcom+vcom offset), VAN(GVCL)=-3.85+( vcom+vcom offset)
+        
+    writecommand(0xC2); //Power control 3                                      
+    writedata(0xA7);    //Source driving current level=low, Gamma driving current level=High
+        
+    writecommand(0xC5); //VCOM Control
+    writedata(0x18);    //VCOM=0.9
+
+    sleep_ms(120);
+
+    //ST7796 Gamma Sequence
+    writecommand(0xE0); //Gamma"+"                                             
+    writedata(0xF0);
+    writedata(0x09); 
+    writedata(0x0b);
+    writedata(0x06); 
+    writedata(0x04);
+    writedata(0x15); 
+    writedata(0x2F);
+    writedata(0x54); 
+    writedata(0x42);
+    writedata(0x3C); 
+    writedata(0x17);
+    writedata(0x14);
+    writedata(0x18); 
+    writedata(0x1B); 
+        
+    writecommand(0xE1); //Gamma"-"                                             
+    writedata(0xE0);
+    writedata(0x09); 
+    writedata(0x0B);
+    writedata(0x06); 
+    writedata(0x04);
+    writedata(0x03); 
+    writedata(0x2B);
+    writedata(0x43); 
+    writedata(0x42);
+    writedata(0x3B); 
+    writedata(0x16);
+    writedata(0x14);
+    writedata(0x17); 
+    writedata(0x1B);
+
+    sleep_ms(120);
+
+    writecommand(0xF0); //Command Set control                                 
+    writedata(0x3C);    //Disable extension command 2 partI
+
+    writecommand(0xF0); //Command Set control                                 
+    writedata(0x69);    //Disable extension command 2 partII
+
+    sleep_ms(120);
+
+    writecommand(0x29); //Display on 
+}
+
+/**
+ * @brief Initialize the LCD controller
+ */
+void lcd_init() {
+    // Init the PIO
+    lcd_pio_init();
+
+    // Init Reset Pin w/ manual reset or SW reset
+    if (PIN_LCD_RST >= 0) {
+        gpio_init(PIN_LCD_RST);
+        gpio_set_dir(PIN_LCD_RST, GPIO_OUT);
+        gpio_put(PIN_LCD_RST, 1);
+        sleep_ms(5);
+        gpio_put(PIN_LCD_RST, 0);
+        sleep_ms(20);
+        gpio_put(PIN_LCD_RST, 1);
+        sleep_ms(150);
+    } else {
+        writecommand(CMD_SWRST);
+        sleep_ms(150);
+    }
+
+    // Init CS Pin
+    if (PIN_LCD_CS >= 0) {
+        gpio_init(PIN_LCD_CS);
+        gpio_set_dir(PIN_LCD_CS, GPIO_OUT);
+        gpio_put(PIN_LCD_CS, 0); // CS Active Low
+    }
+    
+    // Send Initialization Sequence
+    lcd_driver_init();
+
+    // Set rotation (1 = Landscape)
+    writecommand(CMD_MADCTL);
+    writedata(CMD_MAD_MV | CMD_MAD_RGB); // Landscape for ST7796
+}
+
+
+int main() {
+    stdio_init_all();
+    sleep_ms(2000);
+    printf("Starting native picosdk LCD Test...\n");
+
+    lcd_init();
+
+    printf("LCD Init complete. Filling screen.\n");
+
+    for (;;) {
+        fillScreen(COLOR_BLACK);
+        sleep_ms(500);
+        fillScreen(COLOR_RED);
+        sleep_ms(500);
+        fillScreen(COLOR_GREEN);
+        sleep_ms(500);
+        fillScreen(COLOR_BLUE);
+        sleep_ms(500);
+    }
+
+    printf("Test complete.\n");
+
+    while (1) {
+        sleep_ms(1000);
+    }
+
+    return 0;
+}
+
+
+// OLD VERSION OF TEST FUNCTION
 // /**
 //  * @brief Helper function to build 32-bit PIO packets.
 //  * @note This is the corrected version.
@@ -188,290 +513,3 @@
 //         tight_loop_contents();
 //     }
 // }
-
-// #include "utils.h"
-// #include "bno08x.h"
-// #include "sh2.h"
-// #include "sh2_err.h"
-// #include <stdio.h>
-// #include "pico/stdlib.h"
-// #include "hardware/pio.h"
-// #include "hardware/gpio.h"
-// #include "hardware/dma.h"
-// #include "hardware/clocks.h"
-
-// //#define IMU_TEST
-// #define LCD_TEST
-
-// #ifdef LCD_TEST
-
-// // Includes your driver selection (ST7796_DRIVER)
-// #include "config.h" 
-// #include "lcd/pio_16bit_parallel.pio.h"
-
-// // This will now include "ST7796_Defines.h" as selected in config.h
-// #if defined(ILI9486_DRIVER)
-//   #include "ILI9486_Defines.h"
-// #elif defined(ST7796_DRIVER)
-//   #include "ST7796_Defines.h"
-// #endif
-
-// // (ST7796_Defines.h lacks these, but ILI9486_Defines.h has them)
-// #define TFT_BLACK       0x0000
-// #define TFT_NAVY        0x000F
-// #define TFT_DARKGREEN   0x03E0
-// #define TFT_DARKCYAN    0x03EF
-// #define TFT_MAROON      0x7800
-// #define TFT_PURPLE      0x780F
-// #define TFT_OLIVE       0x7BE0
-// #define TFT_LIGHTGREY   0xC618
-// #define TFT_DARKGREY    0x7BEF
-// #define TFT_BLUE        0x001F
-// #define TFT_GREEN       0x07E0
-// #define TFT_CYAN        0x07FF
-// #define TFT_RED         0xF800
-// #define TFT_MAGENTA     0xF81F
-// #define TFT_YELLOW      0xFFE0
-// #define TFT_WHITE       0xFFFF
-// #define TFT_ORANGE      0xFD20
-// #define TFT_GREENYELLOW 0xAFE5
-// #define TFT_PINK        0xF81F
-
-
-// // Global PIO variables
-PIO lcd_pio = pio0;
-uint pio_sm = 0;
-uint pio_offset = 0;
-uint32_t pio_instr_jmp8;
-uint32_t pio_instr_fill;
-uint32_t pio_instr_addr;
-uint32_t pio_instr_set_dc;
-uint32_t pio_instr_clr_dc;
-uint32_t pull_stall_mask;
-
-#define WAIT_FOR_STALL  lcd_pio->fdebug = pull_stall_mask; while (!(lcd_pio->fdebug & pull_stall_mask))
-#define TX_FIFO  lcd_pio->txf[pio_sm]
-
-
-// /**
-//  * @brief Port of the TFT_eSPI pioinit() function to native picosdk
-//  * This logic is taken directly from TFT_eSPI_RP2040.c
-//  */
-void lcd_pio_init() {
-    // Find a free PIO instance
-    if (!pio_can_add_program(lcd_pio, &lcd_parallel_program)) {
-        lcd_pio = pio1;
-        if (!pio_can_add_program(lcd_pio, &lcd_parallel_program)) {
-            printf("Error: No room for PIO program\n");
-            return;
-        }
-    }
-
-    // Claim a state machine
-    pio_sm = pio_claim_unused_sm(lcd_pio, true);
-    pio_offset = pio_add_program(lcd_pio, &lcd_parallel_program);
-
-    // Configure GPIOs for PIO
-    pio_gpio_init(lcd_pio, PIN_LCD_DC);
-    pio_gpio_init(lcd_pio, PIN_LCD_WR);
-    for (int i = 0; i < 16; i++) {
-        pio_gpio_init(lcd_pio, PIN_LCD_DATA_BASE + i);
-    }
-
-    // Set pin directions
-    pio_sm_set_consecutive_pindirs(lcd_pio, pio_sm, PIN_LCD_DC, 1, true);
-    pio_sm_set_consecutive_pindirs(lcd_pio, pio_sm, PIN_LCD_WR, 1, true);
-    pio_sm_set_consecutive_pindirs(lcd_pio, pio_sm, PIN_LCD_DATA_BASE, 16, true);
-
-    // Get default PIO config and modify it
-    pio_sm_config c = lcd_parallel_program_get_default_config(pio_offset);
-
-    sm_config_set_set_pins(&c, PIN_LCD_DC, 1);
-    sm_config_set_sideset_pins(&c, PIN_LCD_WR);
-    sm_config_set_out_pins(&c, PIN_LCD_DATA_BASE, 16);
-
-    // Set clock divider
-    sm_config_set_clkdiv_int_frac(&c, PIO_CLK_DIV, 0);
-
-    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
-    sm_config_set_out_shift(&c, false, false, 0);
-
-    // Load the config
-    pio_sm_init(lcd_pio, pio_sm, pio_offset + lcd_parallel_offset_start_tx, &c);
-
-    // Start the state machine
-    pio_sm_set_enabled(lcd_pio, pio_sm, true);
-
-    // Pre-calculate instruction variants for speed
-    pull_stall_mask = 1u << (PIO_FDEBUG_TXSTALL_LSB + pio_sm);
-    pio_instr_jmp8  = pio_encode_jmp(pio_offset + lcd_parallel_offset_start_8);
-    pio_instr_fill  = pio_encode_jmp(pio_offset + lcd_parallel_offset_block_fill);
-    pio_instr_addr  = pio_encode_jmp(pio_offset + lcd_parallel_offset_set_addr_window);
-    pio_instr_set_dc = pio_encode_set((pio_src_dest)0, 1); //Sets D/C to be 1
-    pio_instr_clr_dc = pio_encode_set((pio_src_dest)0, 0); //Sets D/C to be 0
-}
-
-/**
- * @brief Send a 16-bit word to the PIO TX FIFO
- */
-inline void pio_write16(uint16_t data) {
-    WAIT_FOR_STALL;
-    TX_FIFO = data;
-}
-
-/**
- * @brief Send an 8-bit command to the LCD
- */
-void writecommand(uint8_t cmd) {
-    WAIT_FOR_STALL;
-    lcd_pio->sm[pio_sm].instr = pio_instr_clr_dc; // Set DC low
-    lcd_pio->sm[pio_sm].instr = pio_instr_jmp8;   // Jump to 8-bit send
-    TX_FIFO = cmd;
-    WAIT_FOR_STALL;
-    lcd_pio->sm[pio_sm].instr = pio_instr_set_dc; // Set DC high
-}
-
-/**
- * @brief Send 8-bit data to the LCD
- */
-void writedata(uint8_t data) {
-    // DC pin is already high
-    lcd_pio->sm[pio_sm].instr = pio_instr_jmp8; // Jump to 8-bit send
-    TX_FIFO = data;
-}
-
-/**
- * @brief Send 16-bit data to the LCD
- */
-void writedata16(uint16_t data) {
-    // DC pin is already high
-    // The PIO program defaults to 16-bit, so no jmp needed
-    TX_FIFO = data;
-}
-
-/**
- * @brief Set the address window for pixel writes
- */
-void setWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
-    WAIT_FOR_STALL;
-    lcd_pio->sm[pio_sm].instr = pio_instr_addr;
-    TX_FIFO = CMD_CASET;
-    TX_FIFO = (x0 << 16) | x1;
-    TX_FIFO = CMD_PASET;
-    TX_FIFO = (y0 << 16) | y1;
-    TX_FIFO = CMD_RAMWR;
-}
-
-/**
- * @brief Fill a block of pixels with a single color
- */
-void pushBlock(uint16_t color, uint32_t len) {
-    if (!len) return;
-    WAIT_FOR_STALL;
-    lcd_pio->sm[pio_sm].instr = pio_instr_fill;
-    TX_FIFO = color;
-    TX_FIFO = --len; // PIO sends n+1 pixels
-}
-
-/**
- * @brief Fill the entire screen with a color
- */
-void fillScreen(uint16_t color) {
-    // Use the driver-specific dimensions from the header
-    setWindow(0, 0, LCD_WIDTH - 1, LCD_HEIGHT - 1);
-    pushBlock(color, (uint32_t)LCD_WIDTH * LCD_HEIGHT);
-}
-
-/**
- * @brief Initialize the LCD controller
- */
-void lcd_init() {
-    // Init the PIO
-    lcd_pio_init();
-
-    // Init Reset Pin
-    if (PIN_LCD_RST >= 0) {
-        gpio_init(PIN_LCD_RST);
-        gpio_set_dir(PIN_LCD_RST, GPIO_OUT);
-        gpio_put(PIN_LCD_RST, 1);
-        sleep_ms(5);
-        gpio_put(PIN_LCD_RST, 0);
-        sleep_ms(20);
-        gpio_put(PIN_LCD_RST, 1);
-        sleep_ms(150);
-    } else {
-        writecommand(CMD_SWRST);
-        sleep_ms(150);
-    }
-
-    // Init CS Pin
-    if (PIN_LCD_CS >= 0) {
-        gpio_init(PIN_LCD_CS);
-        gpio_set_dir(PIN_LCD_CS, GPIO_OUT);
-        gpio_put(PIN_LCD_CS, 0); // CS Active Low
-    }
-    
-    // --- Send Initialization Sequence ---
-    // This is a C pre-processor trick. The #include
-    // pastes the contents of the .h file here.
-    
-    // Define delay() as sleep_ms() for the init files
-    #define delay(ms) sleep_ms(ms)
-    
-    #if defined(ILI9486_DRIVER)
-      #include "ILI9486_Init.h"
-    #elif defined(ST7796_DRIVER)
-      // The ST7796 init file has begin/end_tft_write()
-      // which we don't have. We'll just define them as empty
-      // macros for the include to work.
-      #define begin_tft_write()
-      #define end_tft_write()
-      #include "ST7796_Init.h"
-    #endif
-
-    // Undefine the macros
-    #undef delay
-    #undef begin_tft_write
-    #undef end_tft_write
-
-    // Set rotation (1 = Landscape)
-    writecommand(CMD_MADCTL);
-    #if defined(ILI9486_DRIVER)
-      writedata(TFT_MAD_BGR | TFT_MAD_MV); // Landscape for ILI9486
-    #elif defined(ST7796_DRIVER)
-      // From ST7796_Rotation.h, case 1:
-      writedata(TFT_MAD_MV | TFT_MAD_COLOR_ORDER); // Landscape for ST7796
-    #endif
-}
-
-
-int main() {
-    stdio_init_all();
-    sleep_ms(2000);
-    printf("Starting native picosdk LCD Test...\n");
-
-    lcd_init();
-
-    printf("LCD Init complete. Filling screen.\n");
-
-    for (;;) {
-        fillScreen(COLOR_BLACK);
-        sleep_ms(500);
-        fillScreen(COLOR_RED);
-        sleep_ms(500);
-        fillScreen(COLOR_GREEN);
-        sleep_ms(500);
-        fillScreen(COLOR_BLUE);
-        sleep_ms(500);
-    }
-
-    printf("Test complete.\n");
-
-    while (1) {
-        sleep_ms(1000);
-    }
-
-    return 0;
-}
-
-//#endif

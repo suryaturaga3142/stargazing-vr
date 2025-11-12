@@ -1,5 +1,56 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; @file       lcd_parallel.pio
+; @brief      PIO assembly program to drive an ILI9486 display via a 16-bit 8080 parallel interface.
+; @author     LED Chasers
+; @date       2025-11-12
+; @version    2.0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; DETAILED DESCRIPTION:
+; =====================
+; This program implements a high-speed, 16-bit 8080 parallel bus master. It is
+; specifically timed to meet the requirements of the ILI9486 display controller.
+; The program is designed to be fed a continuous stream of 32-bit words from
+; the DMA controller, offloading all data transfer from the CPU.
+;
+;
+; HEADSET INTERACTION:
+; ====================
+; This file is the lowest-level hardware driver for the VR headset's dual LCDs.
+; It directly generates the electrical signals that send commands and pixel
+; data to the screens.
+;
+;
+; DEPENDENCIES:
+; =============
+;   - DEPENDS ON:
+;     - The DMA controller to continuously feed its TX FIFO.
+;     - The C code in `display.c` to correctly initialize the PIO state machine,
+;       configure the pin mappings, and set the clock speed.
+;
+;   - REQUIRED BY:
+;     - The `pioasm` build tool, which compiles this file into `lcd_parallel.pio.h`.
+;     - `display.c`, which includes the auto-generated header to load this program.
+;
+;
+; PIO PROGRAM STRUCTURE:
+; ======================
+;   - PINS:
+;     - `out` pins (16): Mapped to the D0-D15 data bus.
+;     - `set` pins (1): Mapped to the D/C control line.
+;     - `side_set` pins (1): Mapped to the /WR control line.
+;
+;   - DATA FORMAT:
+;     - Expects 32-bit words from the TX FIFO.
+;     - Bits 15-0 are the 16-bit data/command payload for the `out` instruction.
+;
+;   - TIMING:
+;     - The loop is timed to respect the ILI9486's minimum write cycle (~66ns).
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 .program lcd_parallel
-.side_set 2 opt
+.side_set 1 opt
 
 ; Purpose:
 ; Output 16 bits of pixel data to the LCD on each write strobe (WR).
@@ -42,58 +93,10 @@
     20: set    pins, 1                    ; Set D/C high (data)
 .wrap
 
+; Old version of program, no longer in use
 ;.wrap_target
 ;    out pins, 17  side 0   ; Output first 17 bits to DC + DB0..DB15
 ;    out null, 15  side 0   ; this will remove the least significant 15 bits which are unused
 ;    nop side 1 [3]   ; Drive WR high, hold for 4 cycles
 ;    pull ifempty side 0 [2]   ; Drive WR low, hold for 3 cycles
 ;.wrap
-
-
-% c-sdk {
-#include "pico/stdlib.h"
-#include "hardware/pio.h"
-
-static inline void lcd_parallel_program_init(
-    PIO pio, uint sm, uint offset,
-    uint pin_data_base,   // First data pin (DB0)
-    uint pin_wr,          // WR strobe pin
-    float clkdiv
-) {
-    pio_sm_set_enabled(pio, sm, false);
-
-    // Init pins
-    for (uint i = 0; i < 17; i++)
-        pio_gpio_init(pio, pin_data_base + i);
-    pio_gpio_init(pio, pin_wr);
-
-    // Set directions
-    pio_sm_set_consecutive_pindirs(pio, sm, pin_data_base, 17, true);
-    pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_wr), (1u << pin_wr));
-
-    // Intialize WR
-    pio_sm_set_pins_with_mask(pio, sm, 1u << pin_wr, 1u << pin_wr);
-
-    pio_sm_config c = lcd_parallel_program_get_default_config(offset);
-
-    // Set clock
-    sm_config_set_clkdiv(&c, clkdiv);
-
-    // Set output pins D0-D16
-    sm_config_set_out_pin_base(&c, pin_data_base);
-    sm_config_set_out_pin_count(&c, 17);
-    sm_config_set_out_pins(&c, pin_data_base, 17);
-    
-    // Set Side-set (WR)
-    sm_config_set_sideset_pins(&c, pin_wr);         // WR via side-set
-    sm_config_set_sideset(&c, 1u, true, false);
-
-    sm_config_set_out_shift(&c,
-        true,   // shift right
-        true,   // autopull
-        0);    // pull threshold
-
-    pio_sm_init(pio, sm, offset, &c);
-    pio_sm_set_enabled(pio, sm, true);
-}
-%}
