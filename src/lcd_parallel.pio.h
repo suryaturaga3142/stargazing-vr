@@ -20,10 +20,10 @@
 // This program is 4 instructions long.
 static const uint16_t lcd_parallel_program_instructions[] = {
     //     .wrap_target
-    0x7051, //  0: out    pins, 17       side 1 
-    0x700f, //  1: out    null, 15       side 1 
-    0x02ad, //  2: mov    y, y           side 0 [2] ; (nop)
-    0x13ad, //  3: mov    y, y           side 1 [3] ; (nop)
+    0xa0a0, // out pins, 17 side 0
+    0xa02f, // out null, 15 side 0
+    0xa042, // nop side 1 [3]
+    0x8082, // pull ifempty side 0 [2]
     //     .wrap
 };
 
@@ -90,7 +90,7 @@ static inline void lcd_parallel_program_init(
     sm_config_set_out_shift(&c,
         true,   // shift right
         true,   // autopull
-        32);    // pull threshold
+        0);    // pull threshold
 
     pio_sm_init(pio, sm, offset, &c);
     pio_sm_set_enabled(pio, sm, true);

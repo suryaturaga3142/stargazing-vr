@@ -4,14 +4,14 @@
 ; Purpose:
 ; Output 16 bits of pixel data to the LCD on each write strobe (WR).
 ; Uses autopull so the SM continuously requests 32-bit words from TX FIFO.
-; Side-set controls WR (active low pulse).
+; Side-set controls WR (active high pulse).
 ; For RGB 565 LCD
 
 .wrap_target
-    out pins, 17  side 1   ; Output first 17 bits to DC + DB0..DB15
-    out null, 15  side 1   ; this will remove the least significant 15 bits which are unused
-    nop side 0 [2]   ; Drive WR low, hold for 3 cycles
+    out pins, 17  side 0   ; Output first 17 bits to DC + DB0..DB15
+    out null, 15  side 0   ; this will remove the least significant 15 bits which are unused
     nop side 1 [3]   ; Drive WR high, hold for 4 cycles
+    pull ifempty side 0 [2]   ; Drive WR low, hold for 3 cycles
 .wrap
 
 
@@ -56,7 +56,7 @@ static inline void lcd_parallel_program_init(
     sm_config_set_out_shift(&c,
         true,   // shift right
         true,   // autopull
-        32);    // pull threshold
+        0);    // pull threshold
 
     pio_sm_init(pio, sm, offset, &c);
     pio_sm_set_enabled(pio, sm, true);
