@@ -77,7 +77,7 @@ uint32_t pull_stall_mask;
 
 //#define EXAMPLE_PIO_TEST
 #define DMA_COMPATIBLE_PIO_TEST
-#define DMA_TEST
+//#define DMA_TEST
 
 #ifdef EXAMPLE_PIO_TEST
 /**
@@ -427,16 +427,16 @@ void lcd_pio_init() {
     sm_config_set_out_shift(&c, false, false, 0);
 
     // Load the config
-    pio_sm_init(lcd_pio, pio_sm, pio_offset + lcd_parallel_offset_start_tx, &c);
+    pio_sm_init(lcd_pio, pio_sm, pio_offset, &c);
 
     // Start the state machine
     pio_sm_set_enabled(lcd_pio, pio_sm, true);
 
     // Pre-calculate instruction variants for speed
     pull_stall_mask = 1u << (PIO_FDEBUG_TXSTALL_LSB + pio_sm);
-    pio_instr_jmp8  = pio_encode_jmp(pio_offset + lcd_parallel_offset_start_8);
-    pio_instr_fill  = pio_encode_jmp(pio_offset + lcd_parallel_offset_block_fill);
-    pio_instr_addr  = pio_encode_jmp(pio_offset + lcd_parallel_offset_set_addr_window);
+    //pio_instr_jmp8  = pio_encode_jmp(pio_offset + lcd_parallel_offset_start_8);
+    //pio_instr_fill  = pio_encode_jmp(pio_offset + lcd_parallel_offset_block_fill);
+    //pio_instr_addr  = pio_encode_jmp(pio_offset + lcd_parallel_offset_set_addr_window);
     pio_instr_set_dc = pio_encode_set((pio_src_dest)0, 1); //Sets D/C to be 1
     pio_instr_clr_dc = pio_encode_set((pio_src_dest)0, 0); //Sets D/C to be 0
 }
@@ -451,18 +451,18 @@ void writecommand(uint8_t cmd) {
 }
 
 /**
- * @brief Send 8-bit data to the LCD
- */
-void writedata(uint8_t data) {
-    writedata16(data);
-}
-
-/**
  * @brief Send 16-bit data to the LCD
  */
 void writedata16(uint16_t data) {
     WAIT_FOR_STALL;
     TX_FIFO = (1u << 16) | data;
+}
+
+/**
+ * @brief Send 8-bit data to the LCD
+ */
+void writedata(uint8_t data) {
+    writedata16(data);
 }
 
 /**
@@ -484,7 +484,7 @@ void setWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
  */
 void pushBlock(uint16_t color, uint32_t len) {
     if (!len) return;
-    for (int i = 0; i < len; i++)
+    for (uint32_t i = 0; i < len; i++)
     {
         WAIT_FOR_STALL;
         writedata16(color);
