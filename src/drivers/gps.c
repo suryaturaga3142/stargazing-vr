@@ -27,10 +27,11 @@
 #include "hardware/irq.h"
 #include <string.h> // For strcpy
 #include <stdio.h>  // For printf
+#include <stdlib.h>
 // ...
 
 //#define C3
-#define C2
+#define CN
 
 
 #ifdef C3
@@ -299,44 +300,121 @@ static void on_uart_rx() {
  * @brief Parses a complete NMEA sentence and updates the g_latest_gps_data global.
  * @param line The NMEA sentence string.
  */
-static void parse_line(const char *line) {
-    switch (minmea_sentence_id(line, false)) {
-        case MINMEA_SENTENCE_RMC: {
-            struct minmea_sentence_rmc frame;
-            if (minmea_parse_rmc(&frame, line)) {
-                g_latest_gps_data.is_valid = frame.valid;
-                if (frame.valid) {
-                    g_latest_gps_data.latitude = minmea_tofloat(&frame.latitude);
-                    g_latest_gps_data.longitude = minmea_tofloat(&frame.longitude);
-                    
-                    g_latest_gps_data.time.year   = frame.date.year + 2000;
-                    g_latest_gps_data.time.month  = frame.date.month;
-                    g_latest_gps_data.time.day    = frame.date.day;
-                    g_latest_gps_data.time.hour   = frame.time.hours;
-                    g_latest_gps_data.time.minute = frame.time.minutes;
-                    g_latest_gps_data.time.second = frame.time.seconds;
+static void parse_line(const char *line) 
+{
+    if (!line || line[0] != '$') 
+        return;
+
+    // --- Step 1: Compute and optionally check checksum ---
+    unsigned char cs = 0;
+    const char *p = line + 1; // skip '$'
+    while (*p && *p != '*') {
+        cs ^= (unsigned char)(*p++);
+    }
+
+    const char *asterisk = strchr(line, '*');
+    if (asterisk && strlen(asterisk) >= 3) {
+        unsigned int provided_cs;
+        if (sscanf(asterisk + 1, "%2x", &provided_cs) == 1) {
+            if (cs != (unsigned char)provided_cs) {
+                printf("Checksum mismatch: computed %02X vs provided %02X\n", cs, provided_cs);
+                return;
+            }
+        }
+    }
+
+    // --- Step 2: Only parse RMC sentences ---
+    if (minmea_sentence_id(line, true) != MINMEA_SENTENCE_RMC)
+        return;
+
+    struct minmea_sentence_rmc frame;
+
+    // --- Step 3: Try parsing with minmea first ---
+    if (minmea_parse_rmc(&frame, line)) 
+    {
+        bool parsed_valid = frame.valid;
+
+        // --- Step 4: Also check raw status field in case of extra fields ---
+        const char *p = strchr(line, ','); // after $GxRMC
+        if (p) {
+            p++; // skip time field
+            const char *q = strchr(p, ','); // end of time
+            if (q) {
+                const char *status_field = q + 1;
+                if (status_field && (*status_field == 'A' || *status_field == 'V')) {
+                    parsed_valid = (*status_field == 'A');
                 }
             }
-            break;
         }
 
-        case MINMEA_SENTENCE_GGA: {
-            struct minmea_sentence_gga frame;
-            if (minmea_parse_gga(&frame, line)) {
-                if (frame.fix_quality > 0) {
-                    g_latest_gps_data.is_valid = true; 
-                    g_latest_gps_data.latitude = minmea_tofloat(&frame.latitude);
-                    g_latest_gps_data.longitude = minmea_tofloat(&frame.longitude);
-                } else {
-                    g_latest_gps_data.is_valid = false;
-                }
-            }
-            break;
+        // --- Step 5: Update global GPS structure ---
+        g_latest_gps_data.is_valid = parsed_valid;
+        if (parsed_valid) {
+            g_latest_gps_data.latitude  = minmea_tofloat(&frame.latitude);
+            g_latest_gps_data.longitude = minmea_tofloat(&frame.longitude);
+
+            g_latest_gps_data.time.year   = frame.date.year + 2000;
+            g_latest_gps_data.time.month  = frame.date.month;
+            g_latest_gps_data.time.day    = frame.date.day;
+            g_latest_gps_data.time.hour   = frame.time.hours;
+            g_latest_gps_data.time.minute = frame.time.minutes;
+            g_latest_gps_data.time.second = frame.time.seconds;
         }
-        default:
-            break; // Ignore other sentences
+    } 
+    else
+    {
+        // --- Step 6: Fallback manual parsing for non-standard extra fields ---
+        // Split sentence manually and read first 10-12 fields
+        char copy[128];
+        strncpy(copy, line, sizeof(copy));
+        copy[sizeof(copy)-1] = '\0';
+
+        char *tokens[16]; // enough for RMC + extra fields
+        int i = 0;
+        char *tok = strtok(copy, ",");
+        while (tok && i < 16) {
+            tokens[i++] = tok;
+            tok = strtok(NULL, ",");
+        }
+
+
+        // --- Step 6: Fallback manual parsing for non-standard extra fields ---
+        if (i >= 10) // enough fields for time, status, lat, lon, date
+        {
+            // Status: A = valid, V = invalid
+            g_latest_gps_data.is_valid = (tokens[2][0] == 'A');
+
+            double lat_raw = atof(tokens[3]);
+            int lat_deg = (int)(lat_raw / 100);
+            double lat_min = lat_raw - (lat_deg * 100);
+            double latitude = lat_deg + (lat_min / 60.0);
+            if (tokens[4][0] == 'S') latitude = -latitude;
+            g_latest_gps_data.latitude = latitude;
+
+            double lon_raw = atof(tokens[5]);
+            int lon_deg = (int)(lon_raw / 100);
+            double lon_min = lon_raw - (lon_deg * 100);
+            double longitude = lon_deg + (lon_min / 60.0);
+            if (tokens[6][0] == 'W') longitude = -longitude;
+            g_latest_gps_data.longitude = longitude;
+
+            // Parse time (hhmmss.ss) and date (ddmmyy)
+            int raw_time = atoi(tokens[1]);
+            g_latest_gps_data.time.hour   = raw_time / 10000;
+            g_latest_gps_data.time.minute = (raw_time / 100) % 100;
+            g_latest_gps_data.time.second = raw_time % 100;
+
+            int raw_date = atoi(tokens[9]);
+            g_latest_gps_data.time.day    = raw_date / 10000;
+            g_latest_gps_data.time.month  = (raw_date / 100) % 100;
+            g_latest_gps_data.time.year   = (raw_date % 100) + 2000;
+        }
+
+
     }
 }
+
+
 void disable_unwanted_nmea_msgs(void) {
     // List of PUBX disable commands for unwanted NMEA messages (as ASCII strings)
     const char *disable_cmds[] = {
@@ -357,8 +435,8 @@ void disable_unwanted_nmea_msgs(void) {
 
 void gps_init(void) {
     // --- Pin setup ---
-    #define TEST_PIN_GPS_TX 8
-    #define TEST_PIN_GPS_RX 9
+    #define TEST_PIN_GPS_TX 36
+    #define TEST_PIN_GPS_RX 37
 
     gpio_set_function(TEST_PIN_GPS_TX, GPIO_FUNC_UART);
     gpio_set_function(TEST_PIN_GPS_RX, GPIO_FUNC_UART);
@@ -371,15 +449,14 @@ void gps_init(void) {
     uart_write_blocking(UART_PORT, (const uint8_t *)"$PUBX,40,RMC,0,1,0,0*46\r\n", 19);
     sleep_ms(150);
 
-     uart_write_blocking(UART_PORT, (const uint8_t *)"$PUBX,40,VTG,0,0,0,0*48\r\n", 19);
+    uart_write_blocking(UART_PORT, (const uint8_t *)"$PUBX,40,VTG,0,0,0,0*48\r\n", 19);
     sleep_ms(150);
 
     disable_unwanted_nmea_msgs();
 
     // --- Enable UART interrupts and ISR ---
-    int UART_IRQ = (UART_PORT == uart0) ? UART0_IRQ : UART1_IRQ;
-    irq_set_exclusive_handler(UART_IRQ, on_uart_rx);
-    irq_set_enabled(UART_IRQ, true);
+    irq_set_exclusive_handler(UART1_IRQ, on_uart_rx);
+    irq_set_enabled(UART1_IRQ, true);
     uart_set_irq_enables(UART_PORT, true, false);
 }
 
@@ -404,6 +481,21 @@ void gps_update(void) {
 
     if (minmea_check(line_to_process, false)) {
         parse_line(line_to_process);
+
+        if (g_latest_gps_data.is_valid) {
+        printf("GPS FIX: %02d-%02d-%04d %02d:%02d:%02d | Lat: %.6f | Lon: %.6f\n",
+            g_latest_gps_data.time.day,
+            g_latest_gps_data.time.month,
+            g_latest_gps_data.time.year,
+            g_latest_gps_data.time.hour,
+            g_latest_gps_data.time.minute,
+            g_latest_gps_data.time.second,
+            g_latest_gps_data.latitude,
+            g_latest_gps_data.longitude
+        );
+        } else {
+            printf("No valid GPS fix yet.\n");
+        }
     }
 }
 

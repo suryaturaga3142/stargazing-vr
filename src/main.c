@@ -44,17 +44,20 @@
 #include <stdio.h>
 #include <string.h>
 #include "pico/stdlib.h"
-#include "ff.h"       // FatFS header
-#include "f_util.h"   // FatFS utility header
+//#include "ff.h"       // FatFS header
+//#include "f_util.h"   // FatFS utility header
 #include "sd_card.h"  // The library's header
 
 // Buffer to store file contents
 #define BUFFER_SIZE 512
 char my_buffer[BUFFER_SIZE];
 
+#define GPS_RAW_TEST
+
 // Forward declaration for our config function
 void setup_sd_card_config();
 
+#ifdef PIO_SDIO
 int main() {
     stdio_init_all();
     sleep_ms(2000);
@@ -141,7 +144,7 @@ void setup_sd_card_config() {
     pSD->sdio_if.dma_chan = 0;    // Use DMA channel 0
 }
 
-
+#endif
 
 
 
@@ -250,7 +253,7 @@ int main() {
 
     // Initialize the GPS driver
     gps_init();
-    printf("GPS driver initialized. Forcing NMEA output at 9600 baud...\n");
+    printf("GPS driver initialized. Forcing NMEA output at 38400 baud...\n");
     printf("Listening for NMEA sentences from NEO-M10:\n\n");
 
     // Main application loop
