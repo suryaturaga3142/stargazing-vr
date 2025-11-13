@@ -57,45 +57,12 @@
 
 ; Notes: 
 ; Manually request 32-bit words from TX FIFO.
-; out command maps LSB to base_pin of pins
+; out command maps LSB to data pins and D/C (0 for command, 1 for data)
 ; Side-set controls WR (active low pulse).
-; Set controls D/C (0 for command, 1 for data)
 ; For RGB 565 LCD configuration
 
-; Block fill
-; First command is data bits, second command is the number of times to write that data
-0: pull   block           side 1     ; Pull 32 bits from FIFO, drive WR high
-1: mov    x, osr                     ; Copy bits into x
-2: pull   block                      ; Pull additional 32 bits from FIFO
-3: mov    y, osr                     ; Copy bits into y
-4: mov    osr, x          side 1     ; Copy x bits back into osr and drive WR high
-5: out    pins, 32        side 0 [1] ; Output osr data to pins and drive WR low for 2 cycles
-6: jmp    y--, 4          side 1     ; If y != 0, decrement y and jump to line 4, drive WR high
-
 .wrap_target
-    ; Data transmit loop
-    ; Write data commands 
-    7: pull    block           side 1     ; Pull 32 bits from FIFO
-    8: out     pins, 32        side 0 [1] ; Output data to pins and drive WR low for 2 cycles
-    9: jmp     7               side 1     ; Jump to line 7, drive WR high
-    
-    ; Set addr window
-    10: set    x, 2            side 1     ; Set x = 2, drive WR high
-    11: set    pins, 0                    ; Set D/C low (command)
-    12: pull   block                      ; Pull 32 bits from FIFO
-    13: out    pins, 32        side 0     ; Output data to pins, drive WR low
-    14: jmp    !x, 19                     ; If x = 0, jump to line 19
-    15: pull   block           side 1     ; Pull 32 bits from FIFO
-    16: set    pins, 1                    ; Set D/C high (data)
-    17: out    pins, 8         side 0 [1] ; Output 8 bits of data to pins, drive WR low for 2 cycles
-    18: jmp    !osre, 17       side 1 [1] ; If osr still has data, jump to line 17, drive WR high for 2 cycles
-    19: jmp    x--, 11         side 1     ; If x != 0, decrement x and jump to line 11, drive WR high
-    20: set    pins, 1                    ; Set D/C high (data)
+    pull   block       side 1      ; Pull 32 bits from FIFO, drive WR high
+    out    pins, 32    side 1 [1]  ; Output osr bits to DB0..DB15 and D/C, drive WR high for 2 cycles
+    nop                side 0 [3]  ; Drive WR low for 4 cycles
 .wrap
-
-; DMA compatible version, untested
-;.wrap_target
-;    pull   block       side 1      ; Pull 32 bits from FIFO, drive WR high
-;    out    pins, 32    side 1 [1]  ; Output osr bits to DB0..DB15 and D/C, drive WR high for 2 cycles
-;    nop                side 0 [3]  ; Drive WR low for 4 cycles
-;.wrap

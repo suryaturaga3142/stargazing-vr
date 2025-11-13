@@ -18,6 +18,7 @@
 #include "stdint.h"
 #include "hardware/dma.h"
 #include "hardware/irq.h" 
+#include <stdio.h>
 
 // ...
 
@@ -28,7 +29,7 @@
 #define PACKET_PER_STAR 20
 #define ERASE_DMA_CAP (PIXEL_AMOUNT * PACKET_PER_STAR)
 #define DRAW_DMA_CAP (PIXEL_AMOUNT * PACKET_PER_STAR)
-#define FINAL_DMA_CAP (ERASE_DMA_CAP + DRAW_DMA_CAP)
+#define FINAL_DMA_CAP ((80 * 480) + 8) //(ERASE_DMA_CAP + DRAW_DMA_CAP)
 
 #define COLOR_WHITE 0xFFFFu
 #define COLOR_LIGHTGRAY 0xC618u
@@ -156,6 +157,8 @@ static void dma_complete_isr()
 {
     // Clear the interrupt request flag
     dma_irqn_acknowledge_channel(DMA_IRQ_0, dma_chan);
+
+    printf("DMA transfer finished");
     
     // Signal that the transfer is complete
     dma_complete = true;
@@ -478,6 +481,7 @@ void display_dma_start_transfer()
 {
     // Don't start a new transfer if the old one is still running
     if (!dma_complete) {
+        printf("DMA hasn't completed, can't start new transfer");
         return;
     }
     
@@ -499,6 +503,8 @@ void display_dma_start_transfer()
         display_get_dma_count(), // Get the number of packets
         true                     // TRIGGER!
     );
+
+    printf("DMA transfer started");
 }
 
 //For testing purposes
@@ -514,7 +520,7 @@ void color_entire_screen(uint16_t color)
     dma_transfer_list[index++] = build_packet(479, 1);
     dma_transfer_list[index++] = build_packet(CMD_RAMWR, 0);
 
-    for (int i = 0; i < (320 * 480); i++)
+    for (int i = 0; i < (5); i++)
     {
         dma_transfer_list[index++] = build_packet(color, 1);
     }

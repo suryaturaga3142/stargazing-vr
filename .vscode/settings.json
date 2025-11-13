@@ -3,7 +3,9 @@
         "quaternions.h": "c",
         "star_movement.h": "c",
         "math.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "pio.h": "c",
+        "stdint.h": "c"
     },
     "cortex-debug.variableUseNaturalFormat": false
 }
