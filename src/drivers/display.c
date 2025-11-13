@@ -62,7 +62,7 @@ static volatile bool dma_complete = true;
 // ...
 /**
  * @brief Talks to the PIO and takes data and formats it for the PIO. This is 
- * ordered in MSB so PIO will grab 31:15 and throw away 14:0.
+ * ordered so PIO will grab 16:0 and throw away 31:17.
  * 
  * @param payload this is the 16 bits of data like what color to send and draw
  * @param dc this is the command bit tells PIO whether its sending command or data
@@ -70,7 +70,7 @@ static volatile bool dma_complete = true;
  */
 static inline uint32_t build_packet(uint16_t payload, uint8_t dc)
 {
-    return (((uint32_t)(dc & 1u)) << 31) | (((uint32_t)payload) << 15);
+    return (((uint32_t)(dc & 1u)) << 16) | (((uint32_t)payload));
 }
 
 /**

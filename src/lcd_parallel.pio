@@ -93,10 +93,9 @@
     20: set    pins, 1                    ; Set D/C high (data)
 .wrap
 
-; Old version of program, no longer in use
+; DMA compatible version, untested
 ;.wrap_target
-;    out pins, 17  side 0   ; Output first 17 bits to DC + DB0..DB15
-;    out null, 15  side 0   ; this will remove the least significant 15 bits which are unused
-;    nop side 1 [3]   ; Drive WR high, hold for 4 cycles
-;    pull ifempty side 0 [2]   ; Drive WR low, hold for 3 cycles
+;    pull   block       side 1      ; Pull 32 bits from FIFO, drive WR high
+;    out    pins, 32    side 1 [1]  ; Output osr bits to DB0..DB15 and D/C, drive WR high for 2 cycles
+;    nop                side 0 [3]  ; Drive WR low for 4 cycles
 ;.wrap
