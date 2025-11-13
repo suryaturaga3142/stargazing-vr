@@ -94,5 +94,7 @@ bool display_dma_is_busy(void);
  */
 void display_dma_start_transfer(void);
 
+//For testing purposes
+void color_entire_screen(uint16_t color);
 
 #endif // DISPLAY_H

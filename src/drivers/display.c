@@ -500,6 +500,25 @@ void display_dma_start_transfer()
         true                     // TRIGGER!
     );
 }
+
+//For testing purposes
+void color_entire_screen(uint16_t color)
+{
+    int index = 0;
+    //Set window
+    dma_transfer_list[index++] = build_packet(CMD_CASET, 0);
+    dma_transfer_list[index++] = build_packet(0, 1);
+    dma_transfer_list[index++] = build_packet(319, 1);
+    dma_transfer_list[index++] = build_packet(CMD_PASET, 0);
+    dma_transfer_list[index++] = build_packet(0, 1);
+    dma_transfer_list[index++] = build_packet(479, 1);
+    dma_transfer_list[index++] = build_packet(CMD_RAMWR, 0);
+
+    for (int i = 0; i < (320 * 480); i++)
+    {
+        dma_transfer_list[index++] = build_packet(color, 1);
+    }
+}
 //cfunc - this is for func header
 //csrc - is for file header
 //chdr - is for header file

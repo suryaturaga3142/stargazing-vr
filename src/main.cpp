@@ -16,8 +16,8 @@
 #define PIN_LCD_BL 22        // Backlight control
 
 // --- PIO Definitions ---
-#define PIO_DISP pio0
-#define SM_DISP 0
+//#define PIO_DISP pio0
+//#define SM_DISP 0
 #define PIO_CLK_DIV 4.0f
 #define LCD_WIDTH 320
 #define LCD_HEIGHT 480
@@ -75,8 +75,9 @@ uint32_t pull_stall_mask;
 #define WAIT_FOR_STALL  lcd_pio->fdebug = pull_stall_mask; while (!(lcd_pio->fdebug & pull_stall_mask))
 #define TX_FIFO  lcd_pio->txf[pio_sm]
 
-#define EXAMPLE_PIO_TEST
-//#define DMA_COMPATIBLE_PIO_TEST
+//#define EXAMPLE_PIO_TEST
+#define DMA_COMPATIBLE_PIO_TEST
+#define DMA_TEST
 
 #ifdef EXAMPLE_PIO_TEST
 /**
@@ -378,7 +379,7 @@ int main() {
 }
 #endif
 
-#ifdef PIO_COMPATIBLE_PIO_TEST
+#ifdef DMA_COMPATIBLE_PIO_TEST
 /************************************************************* */
 // DMA Compatible Version of Test Function, still need to test */
 /************************************************************* */
@@ -638,6 +639,7 @@ void lcd_init() {
     writedata(CMD_MAD_MV | CMD_MAD_RGB); // Landscape for ST7796
 }
 
+#ifndef DMA_TEST
 
 int main() {
     stdio_init_all();
@@ -667,4 +669,43 @@ int main() {
 
     return 0;
 }
+
+#endif
+
+#ifdef DMA_TEST
+#include "display.h"
+extern uint32_t dma_transfer_list[];
+
+int main() {
+    stdio_init_all();
+    sleep_ms(2000);
+    printf("Starting native picosdk LCD Test...\n");
+
+    lcd_init();
+
+    printf("LCD Init complete.");
+
+    display_dma_init(lcd_pio, pio_sm);
+
+    printf("DMA Init complete. Filling screen.\n");
+    for (;;) {
+        color_entire_screen(COLOR_BLACK);
+        display_dma_start_transfer();
+        sleep_ms(500);
+        color_entire_screen(COLOR_RED);
+        display_dma_start_transfer();
+        sleep_ms(500);
+        color_entire_screen(COLOR_GREEN);
+        display_dma_start_transfer();
+        sleep_ms(500);
+        color_entire_screen(COLOR_BLUE);
+        display_dma_start_transfer();
+        sleep_ms(500);
+    }
+    
+    return 0;
+}
+
+#endif
+
 #endif
