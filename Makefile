@@ -5,9 +5,9 @@
 
 # --- Configuration ---
 # The directory where your KiCad project is.
-PROJECT_DIR := pcb_stargazing
+PROJECT_DIR := pcb-stargazing
 # The base name of your project files.
-PROJECT_NAME := pcb_stargazing
+PROJECT_NAME := pcb-stargazing
 
 # --- File Lists ---
 # Create the full paths for the core project files
