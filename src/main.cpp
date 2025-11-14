@@ -389,13 +389,17 @@ int main() {
 
     printf("DMA Init complete. Filling screen.\n");
     
-    color_entire_screen(COLOR_BLACK);
-    display_dma_start_transfer();
+    //When pulling these two functions, they work just fine
+    // color_entire_screen(COLOR_WHITE); 
+    // display_dma_start_transfer();
+    // sleep_ms(2000);
+    // color_entire_screen(COLOR_BLACK);
+    // display_dma_start_transfer();
 
     for (;;) {
-        // color_entire_screen(COLOR_BLACK);
-        // display_dma_start_transfer();
-        // sleep_ms(10000);
+        color_entire_screen(COLOR_BLACK); //get through the building packet
+        display_dma_start_transfer();
+        sleep_ms(2000);
         // color_entire_screen(COLOR_RED);
         // display_dma_start_transfer();
         // sleep_ms(500);
@@ -405,9 +409,12 @@ int main() {
         // color_entire_screen(COLOR_BLUE);
         // display_dma_start_transfer();
         // sleep_ms(500);
-        // color_entire_screen(COLOR_WHITE);
-        // display_dma_start_transfer();
-        // sleep_ms(10000);
+        // while(!dma_is_complete()){
+           
+        // }
+        color_entire_screen(COLOR_WHITE);
+        display_dma_start_transfer();
+        sleep_ms(2000);
     }
     
     return 0;

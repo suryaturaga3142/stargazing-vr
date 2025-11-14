@@ -415,6 +415,7 @@ uint32_t *display_get_dma_ptr(void)
 }
 int display_get_dma_count(void)
 {
+    dma_count = 12;
     return dma_count;
 }
 
@@ -454,7 +455,7 @@ void display_dma_init(PIO pio, uint sm)
     // 4. Apply this config to the channel
     //    We set the write address *now* (it's permanent)
     //    The read address and count are set just before transfer
-    dma_channel_configure(
+    dma_channel_configure( //set this up manually
         dma_chan,
         &c,
         &pio->txf[sm], // Permanent Write address: PIO TX FIFO
@@ -480,7 +481,7 @@ bool display_dma_is_busy()
 void display_dma_start_transfer() 
 {
     // Don't start a new transfer if the old one is still running
-    if (!dma_complete) {
+    if (!dma_complete) {  //got an error here saying "expection has occurred"
         printf("DMA hasn't completed, can't start new transfer");
         return;
     }
@@ -504,6 +505,14 @@ void display_dma_start_transfer()
         true                     // TRIGGER!
     );
 
+    while(!(dma_hw->intr & 1u << dma_chan)) // page 1111
+    {
+        printf("waiting ");
+    }
+    dma_hw->ints0 = 1u << dma_chan;
+    dma_complete = true;
+    //dma_hw->ch[0].transfer_count = 12u << 0;
+
     printf("DMA transfer started");
 }
 
@@ -524,6 +533,12 @@ void color_entire_screen(uint16_t color)
     {
         dma_transfer_list[index++] = build_packet(color, 1);
     }
+}
+ //for debugging purposes
+int dma_is_complete()
+{
+    printf("Time ticking");
+    return dma_complete;
 }
 //cfunc - this is for func header
 //csrc - is for file header
