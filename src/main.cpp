@@ -16,9 +16,11 @@ specific language governing permissions and limitations under the License.
 //
 #include "pico/stdlib.h"
 //
-#include "f_util.h"
-#include "ff.h"
-#include "hw_config.h"
+#include <FatFsSd.h>
+#include <ff.h>
+#include <hw_config.h>
+#include <f_util.h>
+
 
 /*
 
