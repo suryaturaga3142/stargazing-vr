@@ -59,9 +59,13 @@
 
 // -- SD Card (via SDIO on a high bank) --
 // Uses a second PIO for implementing SDIO.
-#define PIN_SDIO_CLK                    31
-#define PIN_SDIO_CMD                    32
-#define PIN_SDIO_D0                     33  // D0-D3 MUST be consecutive. Uses GPIO 33-36
+// #define PIN_SDIO_CLK                    31
+// #define PIN_SDIO_CMD                    32
+// #define PIN_SDIO_D0                     33  // D0-D3 MUST be consecutive. Uses GPIO 33-36
+#define SD_MISO                         36
+#define SD_CS                           33
+#define SD_SCK                          38
+#define SD_MOSI                         35
 
 // -- NEO-M10 GPS (GPIO Bank 38-39) --
 #define UART_PORT                       uart1

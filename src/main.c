@@ -24,13 +24,17 @@
 #include "gps.h"     // The driver we are testing
 #include "imu.h"
 
-#include "pico/stdlib.h"
+#include "hardware/spi.h"
+#include "ff.h"
+#include "diskio.h"
+#include <string.h>
 
 /* ---------------------------- Private Constants --------------------------- */
 // #define LCD_SPI_TEST
 // #define GPS_DUMB_TEST
 // #define GPS_RAW_TEST
 // #define IMU_TEST
+// #define SD_TEST
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
@@ -52,7 +56,7 @@
 #define BUFFER_SIZE 512
 char my_buffer[BUFFER_SIZE];
 
-#define GPS_RAW_TEST
+#define SD_TEST
 
 // Forward declaration for our config function
 void setup_sd_card_config();
@@ -273,11 +277,91 @@ int main() {
 #endif
 
 
-#ifdef IMU_TEST
+#ifdef SD_TEST
+
+void init_spi_sdcard() 
+{
+    gpio_set_function(SD_MISO, GPIO_FUNC_SPI);
+    gpio_set_function(SD_MOSI, GPIO_FUNC_SPI);
+    gpio_set_function(SD_SCK, GPIO_FUNC_SPI);
+
+    gpio_set_function(SD_CS, GPIO_FUNC_SIO);
+    gpio_set_dir(SD_CS, GPIO_OUT);
+    gpio_put(SD_CS, true);
+
+    spi_init(spi0, 400000);
+    spi_set_format(spi0,8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+    // fill in.
+}
+
+void send_spi_cmd(spi_inst_t* spi, uint16_t value) 
+{
+    while(spi_is_busy(spi))
+    {
+        tight_loop_contents();
+    }
+    spi_get_hw(spi)->dr = value;
+}
+
+void send_spi_data(spi_inst_t* spi, uint16_t value) 
+{
+    uint16_t temp = value | 0x100;
+    send_spi_cmd(spi, temp); 
+}
+
+
+void disable_sdcard() 
+{
+    gpio_put(SD_CS, 1);
+
+    // Provide required extra clocks
+    uint8_t temp = 0xFF;
+    spi_write_blocking(spi0, &temp, 1);
+
+    // Release MOSI line — must be high when idle
+    gpio_set_function(SD_MOSI, GPIO_FUNC_SIO);
+    gpio_set_dir(SD_MOSI, GPIO_OUT);
+    gpio_put(SD_MOSI, 1);
+}
+
+void enable_sdcard() 
+{
+    gpio_put(SD_CS, 0);
+    gpio_set_function(SD_MOSI, GPIO_FUNC_SPI);
+    // fill in.
+}
+
+void sdcard_io_high_speed() 
+{
+    spi_set_baudrate(spi0, 12000000);
+    // fill in.
+}
+
+void init_sdcard_io() 
+{
+    init_spi_sdcard();
+    disable_sdcard();
+    // fill in.
+}
+
+/*******************************************************************/
+
+void init_uart();
+void init_uart_irq();
+void date(int argc, char *argv[]);
+void command_shell();
 
 int main() {
+    // Initialize the standard input/output library
+    init_uart();
+    init_uart_irq();
+    
+    init_sdcard_io();
+    
+    // SD card functions will initialize everything.
+    command_shell();
 
-    return 0;
+    for(;;);
 }
 
 #endif
