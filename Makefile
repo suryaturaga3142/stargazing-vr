@@ -15,7 +15,7 @@ CORE_EXTS := .kicad_prl .kicad_pro .kicad_sch .kicad_pcb .kicad_dru
 CORE_FILES := $(addprefix $(PROJECT_DIR)/$(PROJECT_NAME), $(CORE_EXTS))
 
 # Add other critical files that are often modified
-OTHER_FILES := $(PROJECT_DIR)/fp-lib-table
+OTHER_FILES := $(PROJECT_DIR)/fp-lib-table $(PROJECT_NAME)/breakout.kicad_sch
 
 # Combine all files into one list
 KICAD_FILES := $(CORE_FILES) $(OTHER_FILES)
