@@ -18,7 +18,7 @@
 // --- PIO Definitions ---
 //#define PIO_DISP pio0
 //#define SM_DISP 0
-#define PIO_CLK_DIV 4.0f
+#define PIO_CLK_DIV 20.0f
 #define LCD_WIDTH 320
 #define LCD_HEIGHT 480
 
@@ -65,18 +65,19 @@
 PIO lcd_pio = pio0;
 uint pio_sm = 0;
 uint pio_offset = 0;
-uint32_t pio_instr_jmp8;
-uint32_t pio_instr_fill;
-uint32_t pio_instr_addr;
-uint32_t pio_instr_set_dc;
-uint32_t pio_instr_clr_dc;
+//uint32_t pio_instr_jmp8;
+//uint32_t pio_instr_fill;
+//uint32_t pio_instr_addr;
+//uint32_t pio_instr_set_dc;
+//uint32_t pio_instr_clr_dc;
 uint32_t pull_stall_mask;
 
 #define WAIT_FOR_STALL  lcd_pio->fdebug = pull_stall_mask; while (!(lcd_pio->fdebug & pull_stall_mask))
 #define TX_FIFO  lcd_pio->txf[pio_sm]
 
 #define DMA_COMPATIBLE_PIO_TEST
-#define DMA_TEST
+// #define DMA_TEST
+//#define TEST_STARS
 
 #ifdef DMA_COMPATIBLE_PIO_TEST
 /************************************************************* */
@@ -108,16 +109,16 @@ void lcd_pio_init() {
     }
 
     // Set pin directions
-    pio_sm_set_consecutive_pindirs(lcd_pio, pio_sm, PIN_LCD_DC, 1, true);
+    //pio_sm_set_consecutive_pindirs(lcd_pio, pio_sm, PIN_LCD_DC, 1, true);
     pio_sm_set_consecutive_pindirs(lcd_pio, pio_sm, PIN_LCD_WR, 1, true);
-    pio_sm_set_consecutive_pindirs(lcd_pio, pio_sm, PIN_LCD_DATA_BASE, 16, true);
+    pio_sm_set_consecutive_pindirs(lcd_pio, pio_sm, PIN_LCD_DATA_BASE, 17, true);
 
     // Get default PIO config and modify it
     pio_sm_config c = lcd_parallel_program_get_default_config(pio_offset);
 
-    sm_config_set_set_pins(&c, PIN_LCD_DC, 1);
-    sm_config_set_sideset_pins(&c, PIN_LCD_WR);
-    sm_config_set_out_pins(&c, PIN_LCD_DATA_BASE, 16);
+    sm_config_set_set_pins(&c, PIN_LCD_WR, 1);
+    //sm_config_set_sideset_pins(&c, PIN_LCD_WR);
+    sm_config_set_out_pins(&c, PIN_LCD_DATA_BASE, 17);
 
     // Set clock divider
     sm_config_set_clkdiv_int_frac(&c, PIO_CLK_DIV, 0);
@@ -136,8 +137,8 @@ void lcd_pio_init() {
     //pio_instr_jmp8  = pio_encode_jmp(pio_offset + lcd_parallel_offset_start_8);
     //pio_instr_fill  = pio_encode_jmp(pio_offset + lcd_parallel_offset_block_fill);
     //pio_instr_addr  = pio_encode_jmp(pio_offset + lcd_parallel_offset_set_addr_window);
-    pio_instr_set_dc = pio_encode_set((pio_src_dest)0, 1); //Sets D/C to be 1
-    pio_instr_clr_dc = pio_encode_set((pio_src_dest)0, 0); //Sets D/C to be 0
+    //pio_instr_set_dc = pio_encode_set((pio_src_dest)0, 1); //Sets D/C to be 1
+    //pio_instr_clr_dc = pio_encode_set((pio_src_dest)0, 0); //Sets D/C to be 0
 }
 
 /**
@@ -145,7 +146,7 @@ void lcd_pio_init() {
  */
 void writecommand(uint8_t cmd) {
     WAIT_FOR_STALL;
-    TX_FIFO = cmd;
+    TX_FIFO = (uint32_t) cmd;
     WAIT_FOR_STALL;
 }
 
@@ -409,9 +410,9 @@ int main() {
         // color_entire_screen(COLOR_BLUE);
         // display_dma_start_transfer();
         // sleep_ms(500);
-        // while(!dma_is_complete()){
+        while(!dma_is_complete()){
            
-        // }
+        }
         color_entire_screen(COLOR_WHITE);
         display_dma_start_transfer();
         sleep_ms(2000);
@@ -422,4 +423,44 @@ int main() {
 
 #endif
 
+#ifdef TEST_STARS
+#include "display.h"
+    int main()
+    {
+        stdio_init_all();
+        sleep_ms(2000); 
+        lcd_init();
+        printf("LCD has finished Intializing");
+        display_dma_init(lcd_pio, pio_sm);
+        display_init_star_cache();
+        //initialize matrix
+        int matrix[AMOUNT_OF_STARS][2];
+        //putting stars in matrix
+
+        matrix[0][0] = 100;
+        matrix[0][1] = 50;
+
+        matrix[1][0] = 240;
+        matrix[1][1] = 160;
+
+        matrix[2][0] = 400;
+        matrix[2][1] = 300;
+
+        matrix[3][0] = 10;
+        matrix[3][1] = 10;
+
+        color_entire_screen(COLOR_BLACK);
+
+        display_dma_start_transfer();
+
+        sleep_ms(100);
+        place_new_stars(matrix);
+        display_dma_start_transfer();
+
+        while(1){
+            tight_loop_contents();
+        }
+    }
+
+#endif
 #endif

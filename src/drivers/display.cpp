@@ -25,7 +25,7 @@
 /* ---------------------------- Private Constants --------------------------- */
 // ...
 #define PIXEL_AMOUNT 1000
-#define AMOUNT_OF_STARS 1000
+#define AMOUNT_OF_STARS 50
 #define PACKET_PER_STAR 20
 #define ERASE_DMA_CAP (PIXEL_AMOUNT * PACKET_PER_STAR)
 #define DRAW_DMA_CAP (PIXEL_AMOUNT * PACKET_PER_STAR)
@@ -156,12 +156,13 @@ static inline void append_param_to_draw(uint16_t param)
 static void dma_complete_isr()
 {
     // Clear the interrupt request flag
-    dma_irqn_acknowledge_channel(DMA_IRQ_0, dma_chan);
-
-    printf("DMA transfer finished");
+    //dma_irqn_acknowledge_channel(DMA_IRQ_0, dma_chan);
+    dma_complete = true;
+    dma_hw->ints0 = 1u << dma_chan;
+    //printf("DMA transfer finished");
     
     // Signal that the transfer is complete
-    dma_complete = true;
+    // dma_complete = true;
 }
 
 /**
@@ -415,7 +416,6 @@ uint32_t *display_get_dma_ptr(void)
 }
 int display_get_dma_count(void)
 {
-    dma_count = 12;
     return dma_count;
 }
 
@@ -505,12 +505,12 @@ void display_dma_start_transfer()
         true                     // TRIGGER!
     );
 
-    while(!(dma_hw->intr & 1u << dma_chan)) // page 1111
-    {
-        printf("waiting ");
-    }
-    dma_hw->ints0 = 1u << dma_chan;
-    dma_complete = true;
+    // while(!(dma_hw->intr & 1u << dma_chan)) // page 1111
+    // {
+    //     printf("waiting ");
+    // }
+    // dma_hw->ints0 = 1u << dma_chan;
+    // dma_complete = true;
     //dma_hw->ch[0].transfer_count = 12u << 0;
 
     printf("DMA transfer started");
@@ -537,7 +537,7 @@ void color_entire_screen(uint16_t color)
  //for debugging purposes
 int dma_is_complete()
 {
-    printf("Time ticking");
+    //printf("Time ticking");
     return dma_complete;
 }
 //cfunc - this is for func header

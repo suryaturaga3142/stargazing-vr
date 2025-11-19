@@ -62,7 +62,13 @@
 ; For RGB 565 LCD configuration
 
 .wrap_target
-    pull   block       side 1      ; Pull 32 bits from FIFO, drive WR high
-    out    pins, 32    side 1 [1]  ; Output osr bits to DB0..DB15 and D/C, drive WR high for 2 cycles
-    nop                side 0 [3]  ; Drive WR low for 4 cycles
+    set    pins, 1
+    pull   block       ;side 1      Pull 32 bits from FIFO, drive WR high
+    out    pins, 32    ;side 1 [1]  Output osr bits to DB0..DB15 and D/C, drive WR high for 2 cycles
+    set    pins, 0
+    nop                ;side 0 [3]  Drive WR low for 4 cycles
+    nop
+    nop
+    nop
+    set    pins, 1
 .wrap

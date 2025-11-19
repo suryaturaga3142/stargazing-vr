@@ -6,17 +6,20 @@
 #include "hardware/pio.h"
 
 #define lcd_parallel_wrap_target 0
-#define lcd_parallel_wrap 2
+#define lcd_parallel_wrap 6
 
 // Program memory contains 3 instructions
 static const uint16_t lcd_parallel_program_instructions[] = {
     //     .wrap_target
-    //  0: pull block side 1       ; 100 11000 10100000 -> 0x98a0
-    0x98a0, // pull block side 1
-    //  1: out pins, 32 side 1 [1] ; 011 11001 00000000 -> 0x7900
-    0x7900, // out pins, 32 side 1 [1]
-    //  2: nop side 0 [3]          ; 101 10011 01000010 -> 0xB342 (Alias for mov y, y)
-    0xB342, // mov y, y side 0 [3]
+    0xE001, // set pins, 1; 1110 00000 000 00001
+    0x80A0, // pull block
+    0x6000, // out pins, 32 
+    0xE000, // set pins, 0; 1110 00000 000 00000
+    0xA042, // nop
+    0xA042, // nop
+    0xA042, // nop
+    0xA042, // nop
+    0xE001, // set pins, 1; 1110 00000 000 00001
     //     .wrap
 };
 
@@ -27,14 +30,14 @@ static const uint16_t lcd_parallel_program_instructions[] = {
 #if !PICO_NO_HARDWARE
 static const struct pio_program lcd_parallel_program = {
     .instructions = lcd_parallel_program_instructions,
-    .length = 3,
+    .length = 7,
     .origin = -1,
 };
 
 static inline pio_sm_config lcd_parallel_program_get_default_config(uint offset) {
     pio_sm_config c = pio_get_default_sm_config();
     sm_config_set_wrap(&c, offset + lcd_parallel_wrap_target, offset + lcd_parallel_wrap);
-    sm_config_set_sideset(&c, 1, true, false);
+    sm_config_set_sideset(&c, 0, true, false);
     return c;
 }
 #endif

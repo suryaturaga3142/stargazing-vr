@@ -50,3 +50,36 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 .program ili9486_pio
+    ; This program uses 2 side-set pins.
+    ; We assume:
+    ; - side_base pin 0 = /WR (Write Strobe, active LOW)
+    ; - side_base pin 1 = D/C (Data/Command, 0=CMD, 1=DATA)
+    ;
+    ; side_set 0b01 = D/C=0 (CMD),  /WR=1 (IDLE)
+    ; side_set 0b11 = D/C=1 (DATA), /WR=1 (IDLE)
+    ; side_set 0b00 = D/C=0 (CMD),  /WR=0 (WRITE)
+    ; side_set 0b10 = D/C=1 (DATA), /WR=0 (WRITE)
+    ;
+    ; We also assume out_base is set to D0-D15 (16 pins).
+    
+    .wrap_target
+        pull block          ; 1. Pull 32-bit word from DMA
+        out x, 1            ; 2. Get D/C bit (bit 16) into X scratch register
+        mov osr, null       ; 3. Clear OSR (we're done with bits 31:17)
+        out osr, 16         ; 4. Get payload (bits 15:0) into OSR
+        
+        ; OSR now has the 16-bit data, X has the D/C bit
+        jmp !x, is_cmd      ; 5. Jump if X is 0 (it's a command)
+    
+    is_data:
+        ; D/C bit was 1 (DATA)
+        mov pins, osr side 0b10 [2] ; 6. Output data, set D/C=1, /WR=0 (WRITE)
+        nop           side 0b11 [1] ; 7. Hold data, set D/C=1, /WR=1 (IDLE)
+        jmp .wrap_target            ;    (Delay values [2] and [1] may need
+                                    ;     tuning for your clock speed to
+                                    ;     meet the ~66ns target)
+    is_cmd:
+        ; D/C bit was 0 (COMMAND)
+        mov pins, osr side 0b00 [2] ; 6. Output cmd, set D/C=0, /WR=0 (WRITE)
+        nop           side 0b01 [1] ; 7. Hold cmd, set D/C=0, /WR=1 (IDLE)
+    .wrap
