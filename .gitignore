@@ -6,6 +6,7 @@
 
 data/sources/hipparcos.fit
 data/bin/stars.bin
+pcb-stargazing/production/backups/
 
 # KiCad auto-generated files
 *.kicad_prl
