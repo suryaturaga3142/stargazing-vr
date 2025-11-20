@@ -30,7 +30,7 @@
 #define CMD_RAMWR 0x2C
 #define CMD_PIXEL_FORMAT 0x3A
 #define CMD_SWRST 0x01
-#define CMD_MADCTL 0x0B
+#define CMD_MADCTL 0x36
 
 #define CMD_MAD_MY  0x80
 #define CMD_MAD_MX  0x40
@@ -76,7 +76,7 @@ uint32_t pull_stall_mask;
 #define TX_FIFO  lcd_pio->txf[pio_sm]
 
 #define DMA_COMPATIBLE_PIO_TEST
-// #define DMA_TEST
+//#define DMA_TEST
 //#define TEST_STARS
 
 #ifdef DMA_COMPATIBLE_PIO_TEST
@@ -410,9 +410,9 @@ int main() {
         // color_entire_screen(COLOR_BLUE);
         // display_dma_start_transfer();
         // sleep_ms(500);
-        while(!dma_is_complete()){
+        //while(!dma_is_complete()){
            
-        }
+        //}
         color_entire_screen(COLOR_WHITE);
         display_dma_start_transfer();
         sleep_ms(2000);

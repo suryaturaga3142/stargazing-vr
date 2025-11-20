@@ -6,20 +6,21 @@
 #include "hardware/pio.h"
 
 #define lcd_parallel_wrap_target 0
-#define lcd_parallel_wrap 6
+#define lcd_parallel_wrap 9
 
 // Program memory contains 3 instructions
 static const uint16_t lcd_parallel_program_instructions[] = {
     //     .wrap_target
-    0xE001, // set pins, 1; 1110 00000 000 00001
-    0x80A0, // pull block
-    0x6000, // out pins, 32 
     0xE000, // set pins, 0; 1110 00000 000 00000
-    0xA042, // nop
-    0xA042, // nop
+    0x80A0, // pull block
+    0x6000, // out pins, 32
     0xA042, // nop
     0xA042, // nop
     0xE001, // set pins, 1; 1110 00000 000 00001
+    0xA042, // nop
+    0xA042, // nop
+    0xA042, // nop
+    0xA042, // nop
     //     .wrap
 };
 
@@ -30,7 +31,7 @@ static const uint16_t lcd_parallel_program_instructions[] = {
 #if !PICO_NO_HARDWARE
 static const struct pio_program lcd_parallel_program = {
     .instructions = lcd_parallel_program_instructions,
-    .length = 7,
+    .length = 10,
     .origin = -1,
 };
 
