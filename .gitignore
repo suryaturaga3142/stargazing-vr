@@ -6,3 +6,30 @@
 
 data/sources/hipparcos.fit
 data/bin/stars.bin
+pcb-stargazing/production/backups/
+
+# KiCad auto-generated files
+*.kicad_prl
+*.kicad_pro.lck
+*.kicad_sch.lck
+*.kicad_pcb.lck
+fp-info-cache
+*-save.pro
+*-save.sch
+*-save.pcb
+*.net
+
+# Backup files
+*-backups/
+*.bak
+*.bck
+
+# Manufacturing outputs
+/gerbers/
+/plots/
+*.gbr
+*.drl
+*.pos
+*.rpt
+-bom.
+-cpl.
