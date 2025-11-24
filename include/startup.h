@@ -13,7 +13,6 @@
 #ifndef STARTUP_H
 #define STARTUP_H
 
-void startup_peripherals(void);
 void startup_ui(void);
 void startup_check_sd(void);
 void startup_imu(void);

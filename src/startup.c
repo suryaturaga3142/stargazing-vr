@@ -15,7 +15,10 @@
 /* ----------------------------- Private Includes --------------------------- */
 #include <stdio.h>
 #include <stdint.h>
+#include "pico/stdlib.h"
+#include "hardware/gpio.h"
 #include "startup.h"
+#include "user_ui.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -33,19 +36,13 @@
 /* ----------------------------- Public Functions --------------------------- */
 
 /**
- * @brief Starts the UART, SPI, PIO, PWM, etc.
- */
-void startup_peripherals(void) {
-    // Initialize core peripherals: GPIO, I2C (for IMU), UART (for GPS), PWM (for LED/Backlight), DMA.
-}
-
-/**
  * @brief Starts up all user interface tasks
  */
 void startup_ui(void) {
+    // Call a function from user_ui.c
+    // Initialize the Pushbuttons (Drift Correct, etc.) as inputs with pull-ups.
     // Initialize the RGB LED pins with PWM (1kHz frequency).
     // Set the LED state to "Booting" (Pulsing White).
-    // Initialize the Pushbuttons (Drift Correct, etc.) as inputs with pull-ups.
     // Start a low-priority timer or task (e.g., 10Hz) to poll button states (with debouncing) and update the LED PWM based on the current system state enum.
 }
 

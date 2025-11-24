@@ -45,7 +45,7 @@ int main()
 {
     // PHASE 1: Power On
     stdio_init_all();
-    startup_peripherals();
+    // Show something if watchdog caused last reboot
     //Note: Must "pet" this watchdog inside any subsequent long wait loops (like the SD card retry loop).
     watchdog_enable(5000, true);
     startup_ui();
