@@ -24,6 +24,7 @@
 #include "hardware/irq.h"
 #include "hardware/spi.h"
 #include "hardware/i2c.h"
+
 #include "watchdog.h"
 
 #include "config.h"
@@ -57,6 +58,10 @@ int main()
 
     user_ui_init();
     // Do something like an LED flash if rebooting happened from watchdog.
+    if (watchdog_caused_reboot()) {
+        printf("Watchdog caused a reboot!\r\n");
+        // LED flash or something
+    }
     // Setup watchdog with 5sec timeout during startup procedures. Pet it during long processes.
     watchdog_enable(5000, true);
 

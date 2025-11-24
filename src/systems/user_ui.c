@@ -15,6 +15,10 @@
 
 /* ----------------------------- Private Includes --------------------------- */
 #include "user_ui.h"
+#include "config.h"
+#include "hardware/gpio.h"
+#include "hardware/pwm.h"
+#include "pico/time.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -40,7 +44,24 @@ volatile bool g_toggle_mode_request = false;
 bool user_ui_init(void)
 {
     // Initialize pushbutton GPIOs with interrupts
+    gpio_init(PIN_BTN_DRIFT_CORRECT);
+    gpio_set_dir(PIN_BTN_DRIFT_CORRECT, GPIO_IN);
+    gpio_init(PIN_BTN_LOCATION_TOGGLE);
+    gpio_set_dir(PIN_BTN_LOCATION_TOGGLE, GPIO_IN);
+
+    gpio_set_irq_enabled_with_callback(PIN_BTN_DRIFT_CORRECT, GPIO_IRQ_EDGE_RISE, true, NULL);
+    gpio_set_irq_enabled_with_callback(PIN_BTN_LOCATION_TOGGLE, GPIO_IRQ_EDGE_RISE, true, NULL);
+
     // Initialize LED GPIOs just because
+    gpio_init(PIN_LED_1);
+    gpio_init(PIN_LED_2);
+    gpio_init(PIN_LED_3);
+    gpio_init(PIN_LED_4);
+    gpio_set_dir(PIN_LED_1, GPIO_OUT);
+    gpio_set_dir(PIN_LED_2, GPIO_OUT);
+    gpio_set_dir(PIN_LED_3, GPIO_OUT);
+    gpio_set_dir(PIN_LED_4, GPIO_OUT);
+
     // Initialize PWM for RGB LED control
     // Set initial LED state (e.g., off)
     return true;
