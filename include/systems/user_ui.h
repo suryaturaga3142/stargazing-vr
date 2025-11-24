@@ -41,10 +41,19 @@
 extern "C" {
 #endif
 
+/**
+ * @brief A globally accessed enum to control the state
+ * @details All modules can access to change RGB LED
+ */
+typedef enum {
+    STATE_READY
+} LEDState_e;
+
 extern volatile bool g_drift_correct_request;     // Set by button ISR, handled by main.
 extern volatile bool g_toggle_mode_request;       // Set by button ISR, handled by main.
 
 bool user_ui_init(void);
+bool user_ui_set_state(LEDState_e state);
 
 #ifdef __cplusplus
 }

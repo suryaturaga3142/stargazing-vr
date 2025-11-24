@@ -134,37 +134,6 @@ typedef struct {
     bool      is_valid;
 } GPSData_t;
 
-/* ---------------------------- System State Types -------------------------- */
-
-/**
- * @brief Represents the current state of the RGB LED indicator.
- * @details Used by the UI manager to control the color and pattern of the
- * user-facing status LED.
- */
-typedef struct {
-    enum {
-        LED_COLOR_OFF,
-        LED_COLOR_WHITE,
-        LED_COLOR_BLUE,
-        LED_COLOR_YELLOW,
-        LED_COLOR_GREEN,
-        LED_COLOR_CYAN,
-        LED_COLOR_RED,
-        LED_COLOR_ORANGE,
-        LED_COLOR_MAGENTA,
-        LED_COLOR_PURPLE
-    } LED_Color_t;
-    enum {
-        LED_SOLID,
-        LED_BLINK,
-        LED_PULSE
-    } pattern;
-    enum {
-        LED_SPEED_SLOW,
-        LED_SPEED_MEDIUM,
-        LED_SPEED_FAST
-    } speed;
-} LEDState_t;
 
 
 #endif /* STRUCTS_H */

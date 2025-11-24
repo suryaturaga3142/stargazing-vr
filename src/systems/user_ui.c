@@ -22,6 +22,36 @@
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
+/**
+ * @brief Represents the current state of the RGB LED indicator.
+ * @details Used by the UI manager to control the color and pattern of the
+ * user-facing status LED based on the system state.
+ */
+typedef struct {
+    enum {
+        LED_COLOR_OFF,
+        LED_COLOR_WHITE,
+        LED_COLOR_BLUE,
+        LED_COLOR_YELLOW,
+        LED_COLOR_GREEN,
+        LED_COLOR_CYAN,
+        LED_COLOR_RED,
+        LED_COLOR_ORANGE,
+        LED_COLOR_MAGENTA,
+        LED_COLOR_PURPLE
+    } LED_Color_t;
+    enum {
+        LED_SOLID,
+        LED_BLINK,
+        LED_PULSE
+    } pattern;
+    enum {
+        LED_SPEED_SLOW,
+        LED_SPEED_MEDIUM,
+        LED_SPEED_FAST
+    } speed;
+} StateDetails_t;
+
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
@@ -64,5 +94,32 @@ bool user_ui_init(void)
 
     // Initialize PWM for RGB LED control
     // Set initial LED state (e.g., off)
+    return true;
+}
+
+/*
+notes:
+any function can go user_ui_set_state(...).
+*/
+
+/**
+ * @brief Function for modules to set the system state
+ * 
+ * @param state The desired LED state to set
+ * @return true if it was set correctly.
+ */
+bool user_ui_set_state(LEDState_e state)
+{
+    // Set the RGB LED color and pattern based on the provided state
+    switch (state) {
+        case STATE_READY:
+            // Example: Set LED to solid green
+            // Set PWM values for green color
+            break;
+        // Handle other states as needed
+        default:
+            // Turn off LED for unknown states
+            break;
+    }
     return true;
 }
