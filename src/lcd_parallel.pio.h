@@ -11,8 +11,8 @@
 // Program memory contains 3 instructions
 static const uint16_t lcd_parallel_program_instructions[] = {
     //     .wrap_target
-    0xE000, // set pins, 0; 1110 00000 000 00000
     0x80A0, // pull block
+    0xE000, // set pins, 0; 1110 00000 000 00000
     0x6000, // out pins, 32
     0xA042, // nop
     0xA042, // nop
