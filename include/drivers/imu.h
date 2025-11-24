@@ -13,6 +13,10 @@
 #ifndef IMU_H
 #define IMU_H
 
+#include "structs.h"
+#include "config.h"
+
+extern volatile IMUData_t g_latest_imu_data;      // Updated by the 100Hz IMU ISR.
 
 
 #endif /* IMU_H */

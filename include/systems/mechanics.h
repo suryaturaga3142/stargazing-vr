@@ -14,6 +14,18 @@
 #ifndef MECHANICS_H
 #define MECHANICS_H
 
+#include <stdbool.h>
+#include "structs.h"
+#include "config.h"
+
+// --- Star Catalog Data Structures ---
+// These large arrays hold the pre-processed star data.
+extern Star_t all_stars[STAR_CATALOG_SIZE_MAX];
+extern SkyPatch_t sky_database[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
+
+extern volatile JulianDate_t g_current_time_jd;   // The high-precision master simulation clock.
+
+extern volatile bool g_use_gps_location;          // Toggles between GPS and J2000 reference.
 
 
 #endif /* MECHANICS_H */

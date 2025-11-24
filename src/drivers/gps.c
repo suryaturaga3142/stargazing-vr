@@ -26,5 +26,10 @@
 /* ----------------------------- Private Functions -------------------------- */
 // ...
 
+/* ----------------------------- Public Variables --------------------------- */
+volatile GPSData_t g_latest_gps_data = {0};
+
+volatile bool g_gps_correction_needed = false;
+
 /* ----------------------------- Public Functions --------------------------- */
 

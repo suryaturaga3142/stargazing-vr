@@ -26,5 +26,9 @@
 /* ----------------------------- Private Functions -------------------------- */
 // ...
 
+/* ----------------------------- Public Variables --------------------------- */
+volatile bool g_drift_correct_request = false;
+volatile bool g_toggle_mode_request = false;
+
 /* ----------------------------- Public Functions --------------------------- */
 

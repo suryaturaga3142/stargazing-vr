@@ -26,5 +26,16 @@
 /* ----------------------------- Private Functions -------------------------- */
 // ...
 
+/* ----------------------------- Public Variables -------------------------- */
+
+// --- Star Catalog Data Structure Definitions ---
+// The actual memory for our star catalog and spatial culling grid is allocated here.
+Star_t all_stars[STAR_CATALOG_SIZE_MAX];
+SkyPatch_t sky_database[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
+
+volatile JulianDate_t g_current_time_jd = {0.0};
+
+volatile bool g_use_gps_location = true; // Default to using GPS location on startup
+
 /* ----------------------------- Public Functions --------------------------- */
 

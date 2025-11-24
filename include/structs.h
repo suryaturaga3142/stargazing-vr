@@ -15,9 +15,7 @@
 #define STRUCTS_H
 
 #include <stdint.h>
-#include "globals.h"
-
-// sandy move gps struct here pls
+#include <stdbool.h>
 
 /* -------------------------- Core Math Data Types -------------------------- */
 

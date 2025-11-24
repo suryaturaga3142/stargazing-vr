@@ -13,6 +13,7 @@
 #ifndef USER_UI_H
 #define USER_UI_H
 
+#include <stdbool.h>
 #include "structs.h"
 
 // -- LED Related Definitions --
@@ -35,5 +36,8 @@
 #define LED_VAL_R(hex)          (hex >> 16) & 0xFF
 #define LED_VAL_G(hex)          (hex >>  8) & 0xFF
 #define LED_VAL_B(hex)          (hex >>  0) & 0xFF
+
+extern volatile bool g_drift_correct_request;     // Set by button ISR, handled by main.
+extern volatile bool g_toggle_mode_request;       // Set by button ISR, handled by main.
 
 #endif /* USER_UI_H */

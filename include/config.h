@@ -45,12 +45,12 @@
 
 // -- In Built Zone (GPIO 21-26) --
 // Connected to Proton board PBs and LEDs.
-#define PIN_PB_A  21
-#define PIN_PB_B  26
-#define PIN_LED_A 22
-#define PIN_LED_B 23
-#define PIN_LED_C 24
-#define PIN_LED_D 25
+#define PIN_PB_1  21
+#define PIN_PB_2  26
+#define PIN_LED_1 22
+#define PIN_LED_2 23
+#define PIN_LED_3 24
+#define PIN_LED_4 25
 
 // -- BNO085 IMU (GPIO Bank 27-30) --
 // Grouped together for clean I2C routing.
@@ -78,7 +78,7 @@
 #define PIN_LED_R                       40
 #define PIN_LED_G                       41
 #define PIN_LED_B                       42
-#define PIN_BTN_DRIFT_CORRECT           PIN_PB_A
-#define PIN_BTN_LOCATION_TOGGLE         PIN_PB_B
+#define PIN_BTN_DRIFT_CORRECT           PIN_PB_1
+#define PIN_BTN_LOCATION_TOGGLE         PIN_PB_2
 
 #endif /* CONFIG_H */
