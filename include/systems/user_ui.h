@@ -46,7 +46,7 @@ extern "C" {
  * @details All modules can access to change RGB LED
  */
 typedef enum {
-    STATE_READY
+    LED_STATE_READY
 } LEDState_e;
 
 extern volatile bool g_drift_correct_request;     // Set by button ISR, handled by main.

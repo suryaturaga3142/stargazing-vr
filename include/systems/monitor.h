@@ -24,9 +24,9 @@ typedef enum {
 } system_module_t;
 
 // Called by drivers to confirm health
-void system_checkin(system_module_t module);
+void monitor_checkin(system_module_t module);
 
 // Called by main loop to verify all health and pet the watchdog
-void system_monitor_update(void);
+void monitor_update(void);
 
 #endif /* MONITOR_H */

@@ -28,6 +28,7 @@
  * user-facing status LED based on the system state.
  */
 typedef struct {
+    LEDState_e state;
     enum {
         LED_COLOR_OFF,
         LED_COLOR_WHITE,
@@ -55,6 +56,13 @@ typedef struct {
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
+static StateDetails_t current_state = {
+    .state = LED_STATE_READY,
+    .LED_Color_t = LED_COLOR_OFF,
+    .pattern = LED_SOLID,
+    .speed = LED_SPEED_MEDIUM
+};
+
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */
@@ -97,11 +105,6 @@ bool user_ui_init(void)
     return true;
 }
 
-/*
-notes:
-any function can go user_ui_set_state(...).
-*/
-
 /**
  * @brief Function for modules to set the system state
  * 
@@ -112,14 +115,14 @@ bool user_ui_set_state(LEDState_e state)
 {
     // Set the RGB LED color and pattern based on the provided state
     switch (state) {
-        case STATE_READY:
+        case LED_STATE_READY:
             // Example: Set LED to solid green
             // Set PWM values for green color
             break;
         // Handle other states as needed
         default:
             // Turn off LED for unknown states
-            break;
+            return false;
     }
     return true;
 }

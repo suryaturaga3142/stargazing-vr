@@ -60,7 +60,7 @@ int main()
     // Do something like an LED flash if rebooting happened from watchdog.
     if (watchdog_caused_reboot()) {
         printf("Watchdog caused a reboot!\r\n");
-        // LED flash or something
+        user_ui_set_state(LED_STATE_READY);
     }
     // Setup watchdog with 5sec timeout during startup procedures. Pet it during long processes.
     watchdog_enable(5000, true);
@@ -68,6 +68,7 @@ int main()
     // PHASE 2: Connectivity Check
     sd_init();     // Initialize and check SD Card presence only. Do NOT mount or access data yet.
     // If not present, run a 10 second warning while polling sd_check()
+    watchdog_update();
 
     imu_init();     // Check IMU presence and initialize
     display_init(); // Initialize PIO related stuff, it'll be a fast function.
@@ -80,12 +81,16 @@ int main()
     
     // PHASE 4: Handover process
     // Set complete watchdog health
+    watchdog_update();
     // Enable all other interrupts and timers remaining like rendering
     // Set final RGB status
+    user_ui_set_state(LED_STATE_READY);
     // Reconfigure watchdog for main loop checking
+    watchdog_enable(200, true);
 
     // Loop
     while (true) {
+        // All long stuff should be here, procedural stuff based on flags.
     }
 
     // Should never reach here.
