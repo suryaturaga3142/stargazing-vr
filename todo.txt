@@ -4,7 +4,6 @@ Phase 1: Power-On and Low-Level Initialization
 1. System Clock & Peripherals:
 - Initialize the RP2350 system clock (125MHz or higher if overclocking).
 - Initialize standard I/O (stdio_init_all()) for debugging.
-- Initialize core peripherals: GPIO, I2C (for IMU), UART (for GPS), PWM (for LED/Backlight), DMA.
 
 2. Watchdog Timer (Early Safety):
 - Enable the watchdog timer with a long timeout (e.g., 5 seconds). This protects against lock-ups during the potentially slow hardware checks that follow.

@@ -14,6 +14,22 @@
 #ifndef SD_CARD_H
 #define SD_CARD_H
 
+#include <stdbool.h>
+#include "structs.h"
+#include "config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
+bool sd_check(void);
+bool sd_init(void);
+bool sd_load_data(void);
+bool sd_buf_sort(void);
+bool sd_deinit(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SD_CARD_H */

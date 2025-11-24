@@ -33,3 +33,12 @@ volatile bool g_gps_correction_needed = false;
 
 /* ----------------------------- Public Functions --------------------------- */
 
+/**
+ * @brief Initialize the GPS module and enable the location and date/time
+ * 
+ * @return true if initialization was successful
+ */
+bool gps_init(void) {
+    // Initialize UART, pins, and any other low level stuff for the GPS.
+    return true;
+}

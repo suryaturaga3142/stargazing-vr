@@ -32,3 +32,16 @@ volatile bool g_toggle_mode_request = false;
 
 /* ----------------------------- Public Functions --------------------------- */
 
+/**
+ * @brief Initializes GPIO peripherals and RGB LED stuff
+ * 
+ * @return true if everything was successful
+ */
+bool user_ui_init(void)
+{
+    // Initialize pushbutton GPIOs with interrupts
+    // Initialize LED GPIOs just because
+    // Initialize PWM for RGB LED control
+    // Set initial LED state (e.g., off)
+    return true;
+}

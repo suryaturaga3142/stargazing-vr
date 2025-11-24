@@ -23,11 +23,21 @@
 #include "hardware/dma.h"
 #include "hardware/irq.h"
 #include "hardware/spi.h"
-#include "hardware/watchdog.h"
+#include "hardware/i2c.h"
+#include "watchdog.h"
 
 #include "config.h"
 #include "structs.h"
+
+#include "display.h"
+#include "gps.h"
+#include "imu.h"
+#include "sd_card.h"
+
+#include "mechanics.h"
 #include "monitor.h"
+#include "rendering.h"
+#include "user_ui.h"
 
 /* ---------------------------- Private Constants --------------------------- */
 // ...
@@ -42,23 +52,39 @@
 
 int main()
 {
-    // PHASE 1: Power On
+    // PHASE 1: Power On Setup
     stdio_init_all();
-    //if (watchdog_enable_caused_reboot()) printf("Rebooted by watchdog!\r\nRestarting now...\r\n");
-    // Show something if watchdog caused last reboot
-    //Note: Must "pet" this watchdog inside any subsequent long wait loops (like the SD card retry loop).
-    //watchdog_enable(5000, true);
-    
 
+    user_ui_init();
+    // Do something like an LED flash if rebooting happened from watchdog.
+    // Setup watchdog with 5sec timeout during startup procedures. Pet it during long processes.
+    watchdog_enable(5000, true);
+
+    // PHASE 2: Connectivity Check
+    sd_init();     // Initialize and check SD Card presence only. Do NOT mount or access data yet.
+    // If not present, run a 10 second warning while polling sd_check()
+
+    imu_init();     // Check IMU presence and initialize
+    display_init(); // Initialize PIO related stuff, it'll be a fast function.
+
+    // PHASE 3: Heavy Lifting (PET THE WATCHDOG MANY TIMES!)
+    sd_load_data(); // Mount and bulk read the SD card data
+    sd_buf_sort();  // Sorts data in 3 pass algorithm
+    sd_deinit();    // Unmount the SD card
+    gps_init();     // Initialize GPS module and enable GNRMC. Sync loc/RTC or use default
+    
+    // PHASE 4: Handover process
+    // Set complete watchdog health
+    // Enable all other interrupts and timers remaining like rendering
+    // Set final RGB status
+    // Reconfigure watchdog for main loop checking
 
     // Loop
     while (true) {
-        tight_loop_contents();
     }
 
-    for(;;) {
-        // Should never reach here.
-    }
+    // Should never reach here.
+    for(;;) tight_loop_contents();
 
     return 0;
 }

@@ -37,7 +37,17 @@
 #define LED_VAL_G(hex)          (hex >>  8) & 0xFF
 #define LED_VAL_B(hex)          (hex >>  0) & 0xFF
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern volatile bool g_drift_correct_request;     // Set by button ISR, handled by main.
 extern volatile bool g_toggle_mode_request;       // Set by button ISR, handled by main.
+
+bool user_ui_init(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* USER_UI_H */

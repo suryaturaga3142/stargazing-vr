@@ -15,6 +15,7 @@
  ******************************************************************************/
 
 /* ----------------------------- Private Includes --------------------------- */
+#include <stdbool.h>
 #include "display.h"
 // ...
 
@@ -29,3 +30,15 @@
 
 /* ----------------------------- Public Functions --------------------------- */
 
+/**
+ * @brief Initialization of the LCD display with PIO and DMA
+ * 
+ * @return true if initialization was successful
+ */
+bool display_init(void) {
+    // Initialize PIO, DMA, and any other low level stuff for driving the display.
+    // This function should be fast and non-blocking. No verification is needed
+    // Set the screen to dark blue.
+
+    return true;
+}

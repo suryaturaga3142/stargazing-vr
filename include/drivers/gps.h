@@ -17,8 +17,18 @@
 #include "structs.h"
 #include "config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
 extern volatile GPSData_t g_latest_gps_data;      // Updated by the main loop from GPS data.
 
 extern volatile bool g_gps_correction_needed;     // Set by RTC alarm, handled by main.
+
+bool gps_init(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GPS_H */

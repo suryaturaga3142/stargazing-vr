@@ -31,3 +31,12 @@ volatile IMUData_t g_latest_imu_data = {0};
 
 /* ----------------------------- Public Functions --------------------------- */
 
+/**
+ * @brief Initializes the IMU in I2C and configures Game Rotation Vectors with interrupt
+ * 
+ * @return true if initialization was successful
+ */
+bool imu_init(void) {
+    // Initialize the IMU module in I2C, configure game rotation vectors with interrupts at 200Hz.
+    return true;
+}

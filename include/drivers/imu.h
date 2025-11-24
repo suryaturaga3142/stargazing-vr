@@ -13,10 +13,21 @@
 #ifndef IMU_H
 #define IMU_H
 
+#include <stdbool.h>
 #include "structs.h"
 #include "config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
 extern volatile IMUData_t g_latest_imu_data;      // Updated by the 100Hz IMU ISR.
 
+bool imu_init(void);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* IMU_H */
