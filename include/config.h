@@ -61,23 +61,24 @@
 #define PIN_IMU_INT                     30  // Interrupt pin
 #define PIN_IMU_RST                     31  // Reset pin
 
-// -- SD Card (via SDIO on a high bank) --
+// -- SD Card (via SDIO) --
 // Uses a second PIO for implementing SDIO.
 #define PIN_SDIO_CLK                    32
 #define PIN_SDIO_CMD                    33
 #define PIN_SDIO_D0                     34  // D0-D3 MUST be consecutive. Uses GPIO 34-37
+#define PIN_SDIO_DET                    38
 
-// -- NEO-M10 GPS (GPIO Bank 38-39) --
+// -- NEO-M10 GPS (GPIO Bank 40-41) --
 #define UART_PORT                       uart1
 #define GPS_UART_BAUD                   38400
-#define PIN_GPS_TX                      38 // RP2350 TX -> GPS RX (For UBX commands)
-#define PIN_GPS_RX                      39 // RP2350 RX <- GPS TX (For NMEA data)
+#define PIN_GPS_TX                      40 // RP2350 TX -> GPS RX (For UBX commands)
+#define PIN_GPS_RX                      41 // RP2350 RX <- GPS TX (For NMEA data)
 
-// -- User Interface (GPIO Bank 40-44) --
+// -- User Interface (GPIO Bank 42-44) --
 // Grouped together for clean User UI routing.
-#define PIN_LED_R                       40
-#define PIN_LED_G                       41
-#define PIN_LED_B                       42
+#define PIN_LED_R                       42
+#define PIN_LED_G                       43
+#define PIN_LED_B                       44
 #define PIN_BTN_DRIFT_CORRECT           PIN_PB_1
 #define PIN_BTN_LOCATION_TOGGLE         PIN_PB_2
 
