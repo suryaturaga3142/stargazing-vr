@@ -29,6 +29,7 @@
 
 #include "config.h"
 #include "structs.h"
+#include "interrupts.h"
 
 #include "display.h"
 #include "gps.h"
@@ -60,7 +61,7 @@ int main()
     // Do something like an LED flash if rebooting happened from watchdog.
     if (watchdog_caused_reboot()) {
         printf("Watchdog caused a reboot!\r\n");
-        user_ui_set_state(LED_STATE_READY);
+        user_ui_set_state(LED_STATE_REBOOTED);
     }
     // Setup watchdog with 5sec timeout during startup procedures. Pet it during long processes.
     watchdog_enable(5000, true);
@@ -84,7 +85,7 @@ int main()
     watchdog_update();
     // Enable all other interrupts and timers remaining like rendering
     // Set final RGB status
-    user_ui_set_state(LED_STATE_READY);
+    user_ui_set_state(LED_STATE_RUN);
     // Reconfigure watchdog for main loop checking
     watchdog_enable(200, true);
 

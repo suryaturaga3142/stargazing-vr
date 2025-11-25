@@ -17,6 +17,6 @@
 #include "config.h"
 #include "structs.h"
 
-extern volatile bool g_is_rendering;              // Prevents render ISR overruns.
+bool run_main_render(void);
 
 #endif /* RENDERING_H */

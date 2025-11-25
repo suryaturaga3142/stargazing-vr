@@ -16,12 +16,35 @@
 /* ----------------------------- Private Includes --------------------------- */
 #include "user_ui.h"
 #include "config.h"
+#include "interrupts.h"
 #include "hardware/gpio.h"
 #include "hardware/pwm.h"
 #include "pico/time.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
+
+// -- LED Related Definitions --
+// These define the actual periods in milliseconds for the LED patterns.
+#define LED_PERIOD_SLOW_MS      1000
+#define LED_PERIOD_MEDIUM_MS    500
+#define LED_PERIOD_FAST_MS      250
+// -- LED Color Definitions (24-bit RGB Hex: 0x00RRGGBB) --
+#define LED_HEX_OFF             0x00000000
+#define LED_HEX_WHITE           0x00FFFFFF
+#define LED_HEX_BLUE            0x000000FF
+#define LED_HEX_YELLOW          0x00FFFF00
+#define LED_HEX_GREEN           0x0000FF00
+#define LED_HEX_CYAN            0x0000FFFF
+#define LED_HEX_RED             0x00FF0000
+#define LED_HEX_ORANGE          0x00FFA500
+#define LED_HEX_MAGENTA         0x00FF00FF
+#define LED_HEX_PURPLE          0x00800080
+// -- LED RGB Isolation Macros --
+#define LED_VAL_R(hex)          (hex >> 16) & 0xFF
+#define LED_VAL_G(hex)          (hex >>  8) & 0xFF
+#define LED_VAL_B(hex)          (hex >>  0) & 0xFF
+
 /**
  * @brief Represents the current state of the RGB LED indicator.
  * @details Used by the UI manager to control the color and pattern of the
@@ -40,7 +63,7 @@ typedef struct {
         LED_COLOR_ORANGE,
         LED_COLOR_MAGENTA,
         LED_COLOR_PURPLE
-    } LED_Color_t;
+    } color;
     enum {
         LED_SOLID,
         LED_BLINK,
@@ -56,11 +79,12 @@ typedef struct {
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
+
 static StateDetails_t current_state = {
-    .state = LED_STATE_READY,
-    .LED_Color_t = LED_COLOR_OFF,
+    .state   = LED_STATE_BOOTING,
+    .color   = LED_COLOR_OFF,
     .pattern = LED_SOLID,
-    .speed = LED_SPEED_MEDIUM
+    .speed   = LED_SPEED_MEDIUM
 };
 
 // ...
@@ -69,8 +93,9 @@ static StateDetails_t current_state = {
 // ...
 
 /* ----------------------------- Public Variables --------------------------- */
+
 volatile bool g_drift_correct_request = false;
-volatile bool g_toggle_mode_request = false;
+volatile bool g_use_actual_gps =        true;
 
 /* ----------------------------- Public Functions --------------------------- */
 
@@ -101,7 +126,21 @@ bool user_ui_init(void)
     gpio_set_dir(PIN_LED_4, GPIO_OUT);
 
     // Initialize PWM for RGB LED control
-    // Set initial LED state (e.g., off)
+    gpio_init(PIN_LED_R);
+    gpio_init(PIN_LED_G);
+    gpio_init(PIN_LED_B);
+    gpio_set_function(PIN_LED_R, GPIO_FUNC_PWM);
+    gpio_set_function(PIN_LED_G, GPIO_FUNC_PWM);
+    gpio_set_function(PIN_LED_B, GPIO_FUNC_PWM);
+
+    /* Setup pwm channels as-
+    - PWM channels with PSC 50-1, ARR 25500-1 for 1kHz freq
+    - Initialy setting completely off. use pwm_hw. 
+    - use pwm_hw->inte and then enable on PWM_IRQ_WRAP_0 on 1 pwm channel for wrapping interrupts
+    */
+
+    user_ui_set_state(LED_STATE_BOOTING);
+
     return true;
 }
 
@@ -113,9 +152,10 @@ bool user_ui_init(void)
  */
 bool user_ui_set_state(LEDState_e state)
 {
+    current_state.state = state;
     // Set the RGB LED color and pattern based on the provided state
     switch (state) {
-        case LED_STATE_READY:
+        case LED_STATE_BOOTING:
             // Example: Set LED to solid green
             // Set PWM values for green color
             break;

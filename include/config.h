@@ -40,7 +40,7 @@
 #define PIN_LCD_DC                      2  // Data/Command
 #define PIN_LCD_WR                      3  // Write Strobe
 #define PIN_LCD_RESET                   4
-#define PIN_LCD_D0                      5   // D0-D15 MUST be consecutive. Uses GPIO 5-20.
+#define PIN_LCD_D0                      5  // D0-D15 MUST be consecutive. Uses GPIO 5-20.
 #define PIN_LCD_BL                      27
 
 // -- In Built Zone (GPIO 21-26) --
@@ -76,9 +76,9 @@
 
 // -- User Interface (GPIO Bank 42-44) --
 // Grouped together for clean User UI routing.
-#define PIN_LED_R                       42
+#define PIN_LED_B                       42
 #define PIN_LED_G                       43
-#define PIN_LED_B                       44
+#define PIN_LED_R                       44
 #define PIN_BTN_DRIFT_CORRECT           PIN_PB_1
 #define PIN_BTN_LOCATION_TOGGLE         PIN_PB_2
 

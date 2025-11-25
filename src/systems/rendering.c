@@ -24,13 +24,21 @@
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
+static volatile bool g_is_rendering = false;
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */
 // ...
 
 /* ----------------------------- Public Variables --------------------------- */
-volatile bool g_is_rendering = false;
 
 /* ----------------------------- Public Functions --------------------------- */
 
+bool run_main_render(void) {
+    if (g_is_rendering) return false;
+
+    g_is_rendering = true;
+    // run everything
+
+    return true;
+}
