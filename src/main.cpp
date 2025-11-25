@@ -24,8 +24,7 @@
 #include "hardware/irq.h"
 #include "hardware/spi.h"
 #include "hardware/i2c.h"
-
-#include "watchdog.h"
+#include "hardware/watchdog.h"
 
 #include "config.h"
 #include "structs.h"
