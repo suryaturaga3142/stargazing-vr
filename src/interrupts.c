@@ -42,7 +42,7 @@
  * @param gpio Pin that caused the interrupt.
  * @param events Event mask that triggered the interrupt.
  */
-void gpio_irq_handler(uint gpio, uint32_t events)
+void irq_gpio_handler(uint gpio, uint32_t events)
 {
     if (gpio == PIN_IMU_INT) {
         gpio_acknowledge_irq(PIN_IMU_INT, events);
@@ -57,4 +57,11 @@ void gpio_irq_handler(uint gpio, uint32_t events)
         g_use_actual_gps = !g_use_actual_gps;
     }
     return;
+}
+
+/**
+ * @brief Handler for User UI RGB LED state handler on wrap
+ */
+void irq_on_pwm_wrap(void) {
+
 }

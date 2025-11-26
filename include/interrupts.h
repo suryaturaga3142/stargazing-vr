@@ -24,7 +24,8 @@
 extern "C" {
 #endif
 
-
+void irq_gpio_handler(uint gpio, uint32_t events);
+void irq_on_pwm_wrap(void);
 
 
 

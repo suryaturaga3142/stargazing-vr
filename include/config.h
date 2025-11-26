@@ -82,4 +82,10 @@
 #define PIN_BTN_DRIFT_CORRECT           PIN_PB_1
 #define PIN_BTN_LOCATION_TOGGLE         PIN_PB_2
 
+//------------------------------------------------------------------------------
+// RANDOM STUFF
+//------------------------------------------------------------------------------
+
+#define GP(x) (1 << x)
+
 #endif /* CONFIG_H */

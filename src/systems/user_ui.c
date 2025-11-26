@@ -41,9 +41,9 @@
 #define LED_HEX_MAGENTA         0x00FF00FF
 #define LED_HEX_PURPLE          0x00800080
 // -- LED RGB Isolation Macros --
-#define LED_VAL_R(hex)          (hex >> 16) & 0xFF
-#define LED_VAL_G(hex)          (hex >>  8) & 0xFF
-#define LED_VAL_B(hex)          (hex >>  0) & 0xFF
+#define LED_VAL_R(hex)          (10 * ((hex >> 16) & 0xFF))
+#define LED_VAL_G(hex)          (10 * ((hex >>  8) & 0xFF))
+#define LED_VAL_B(hex)          (10 * ((hex >>  0) & 0xFF))
 
 /**
  * @brief Represents the current state of the RGB LED indicator.
@@ -112,8 +112,8 @@ bool user_ui_init(void)
     gpio_init(PIN_BTN_LOCATION_TOGGLE);
     gpio_set_dir(PIN_BTN_LOCATION_TOGGLE, GPIO_IN);
 
-    gpio_set_irq_enabled_with_callback(PIN_BTN_DRIFT_CORRECT, GPIO_IRQ_EDGE_RISE, true, NULL);
-    gpio_set_irq_enabled_with_callback(PIN_BTN_LOCATION_TOGGLE, GPIO_IRQ_EDGE_RISE, true, NULL);
+    gpio_set_irq_enabled_with_callback(PIN_BTN_DRIFT_CORRECT, GPIO_IRQ_EDGE_RISE, true, irq_gpio_handler);
+    gpio_set_irq_enabled(PIN_BTN_LOCATION_TOGGLE, GPIO_IRQ_EDGE_RISE, true);
 
     // Initialize LED GPIOs just because
     gpio_init(PIN_LED_1);
@@ -133,11 +133,24 @@ bool user_ui_init(void)
     gpio_set_function(PIN_LED_G, GPIO_FUNC_PWM);
     gpio_set_function(PIN_LED_B, GPIO_FUNC_PWM);
 
-    /* Setup pwm channels as-
-    - PWM channels with PSC 50-1, ARR 25500-1 for 1kHz freq
-    - Initialy setting completely off. use pwm_hw. 
-    - use pwm_hw->inte and then enable on PWM_IRQ_WRAP_0 on 1 pwm channel for wrapping interrupts
-    */
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_R) ].div = 6 << PWM_CH0_DIV_INT_LSB;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_G) ].div = 6 << PWM_CH0_DIV_INT_LSB;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_B) ].div = 6 << PWM_CH0_DIV_INT_LSB;
+
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_R) ].top = 25500 - 1;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_G) ].top = 25500 - 1;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_B) ].top = 25500 - 1;
+
+    pwm_hw->inte = GP(pwm_gpio_to_slice_num(PIN_LED_R)) |
+                   GP(pwm_gpio_to_slice_num(PIN_LED_G)) |
+                   GP(pwm_gpio_to_slice_num(PIN_LED_B));
+
+    irq_set_exclusive_handler(PWM_IRQ_WRAP_0, irq_on_pwm_wrap);
+    irq_set_enabled(PWM_IRQ_WRAP_0, true);
+
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_R) ].csr |= PWM_CH0_CSR_EN_BITS;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_G) ].csr |= PWM_CH0_CSR_EN_BITS;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_B) ].csr |= PWM_CH0_CSR_EN_BITS;
 
     user_ui_set_state(LED_STATE_BOOTING);
 
@@ -158,8 +171,16 @@ bool user_ui_set_state(LEDState_e state)
         case LED_STATE_BOOTING:
             // Example: Set LED to solid green
             // Set PWM values for green color
+            current_state.color = LED_COLOR_GREEN;
+            current_state.pattern = LED_SOLID;
+            current_state.speed = LED_SPEED_MEDIUM;
             break;
-        // Handle other states as needed
+        case LED_STATE_REBOOTED:
+            // Example: Set LED to blinking yellow
+            current_state.color = LED_COLOR_YELLOW;
+            current_state.pattern = LED_BLINK;
+            current_state.speed = LED_SPEED_MEDIUM;
+            break;
         default:
             // Turn off LED for unknown states
             return false;
