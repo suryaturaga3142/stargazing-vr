@@ -4,6 +4,9 @@
 .vscode/launch.json
 .vscode/ipch
 
+src/third_party/watchdog.c
+include/third_party/watchdog.h
+
 data/sources/hipparcos.fit
 data/bin/stars.bin
 pcb-stargazing/production/backups/

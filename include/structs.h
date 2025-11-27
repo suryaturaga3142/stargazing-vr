@@ -114,7 +114,7 @@ typedef struct {
 
 /**
  * @brief A complete, timestamped measurement snapshot from the IMU.
- * @details Bundles the orientation and velocity from a single 100Hz IMU update
+ * @details Bundles the orientation and velocity from a single 200Hz IMU update
  * to ensure they are always synchronized.
  */
 typedef struct {
@@ -135,5 +135,55 @@ typedef struct {
 } GPSData_t;
 
 
+/* -------------------------- User UI ------------------------- */
+
+/**
+ * @brief A globally accessed enum to control the state
+ * @details All modules can access to change RGB LED
+ */
+typedef enum {
+    LED_STATE_BOOTING,          // White / Pulse
+    LED_STATE_SD_LOADING,       // Blue / Pulse
+    LED_STATE_GPS_SEARCHING,    // Yellow / Pulse
+    LED_STATE_RUN,              // Green / Solid (GPS Mode)
+    LED_STATE_RUN_J2000,        // Cyan / Solid (J2000 Mode)
+    LED_STATE_TIMELAPSE,        // Purple / Pulse
+    LED_STATE_RUN_NO_FIX,       // Red / Slow Blink
+    LED_STATE_WARN_OVERHEAT,    // Orange / Pulse
+    LED_STATE_ERR_CRITICAL,     // Red / Fast Blink
+    LED_STATE_REBOOTED,         // Magenta / Blink (Watchdog Reset)
+    LED_STATE_DRIFT_CONFIRM     // Cyan / Fast Blink (Feedback)
+} LEDState_e;
+
+/**
+ * @brief Represents the current state of the RGB LED indicator.
+ * @details Used by the UI manager to control the color and pattern of the
+ * user-facing status LED based on the system state.
+ */
+typedef struct {
+    LEDState_e state;
+    enum {
+        LED_COLOR_OFF,
+        LED_COLOR_WHITE,
+        LED_COLOR_BLUE,
+        LED_COLOR_YELLOW,
+        LED_COLOR_GREEN,
+        LED_COLOR_CYAN,
+        LED_COLOR_RED,
+        LED_COLOR_ORANGE,
+        LED_COLOR_MAGENTA,
+        LED_COLOR_PURPLE
+    } color;
+    enum {
+        LED_SOLID,
+        LED_BLINK,
+        LED_PULSE
+    } pattern;
+    enum {
+        LED_SPEED_SLOW,
+        LED_SPEED_MEDIUM,
+        LED_SPEED_FAST
+    } speed;
+} StateDetails_t;
 
 #endif /* STRUCTS_H */

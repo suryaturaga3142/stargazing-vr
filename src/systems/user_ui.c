@@ -24,63 +24,11 @@
 
 /* ---------------------------- Private Constants --------------------------- */
 
-// -- LED Related Definitions --
-// These define the actual periods in milliseconds for the LED patterns.
-#define LED_PERIOD_SLOW_MS      1000
-#define LED_PERIOD_MEDIUM_MS    500
-#define LED_PERIOD_FAST_MS      250
-// -- LED Color Definitions (24-bit RGB Hex: 0x00RRGGBB) --
-#define LED_HEX_OFF             0x00000000
-#define LED_HEX_WHITE           0x00FFFFFF
-#define LED_HEX_BLUE            0x000000FF
-#define LED_HEX_YELLOW          0x00FFFF00
-#define LED_HEX_GREEN           0x0000FF00
-#define LED_HEX_CYAN            0x0000FFFF
-#define LED_HEX_RED             0x00FF0000
-#define LED_HEX_ORANGE          0x00FFA500
-#define LED_HEX_MAGENTA         0x00FF00FF
-#define LED_HEX_PURPLE          0x00800080
-// -- LED RGB Isolation Macros --
-#define LED_VAL_R(hex)          (hex >> 16) & 0xFF
-#define LED_VAL_G(hex)          (hex >>  8) & 0xFF
-#define LED_VAL_B(hex)          (hex >>  0) & 0xFF
-
-/**
- * @brief Represents the current state of the RGB LED indicator.
- * @details Used by the UI manager to control the color and pattern of the
- * user-facing status LED based on the system state.
- */
-typedef struct {
-    LEDState_e state;
-    enum {
-        LED_COLOR_OFF,
-        LED_COLOR_WHITE,
-        LED_COLOR_BLUE,
-        LED_COLOR_YELLOW,
-        LED_COLOR_GREEN,
-        LED_COLOR_CYAN,
-        LED_COLOR_RED,
-        LED_COLOR_ORANGE,
-        LED_COLOR_MAGENTA,
-        LED_COLOR_PURPLE
-    } color;
-    enum {
-        LED_SOLID,
-        LED_BLINK,
-        LED_PULSE
-    } pattern;
-    enum {
-        LED_SPEED_SLOW,
-        LED_SPEED_MEDIUM,
-        LED_SPEED_FAST
-    } speed;
-} StateDetails_t;
-
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
 
-static StateDetails_t current_state = {
+StateDetails_t current_state = {
     .state   = LED_STATE_BOOTING,
     .color   = LED_COLOR_OFF,
     .pattern = LED_SOLID,
@@ -112,8 +60,8 @@ bool user_ui_init(void)
     gpio_init(PIN_BTN_LOCATION_TOGGLE);
     gpio_set_dir(PIN_BTN_LOCATION_TOGGLE, GPIO_IN);
 
-    gpio_set_irq_enabled_with_callback(PIN_BTN_DRIFT_CORRECT, GPIO_IRQ_EDGE_RISE, true, NULL);
-    gpio_set_irq_enabled_with_callback(PIN_BTN_LOCATION_TOGGLE, GPIO_IRQ_EDGE_RISE, true, NULL);
+    gpio_set_irq_enabled_with_callback(PIN_BTN_DRIFT_CORRECT, GPIO_IRQ_EDGE_RISE, true, irq_gpio_handler);
+    gpio_set_irq_enabled(PIN_BTN_LOCATION_TOGGLE, GPIO_IRQ_EDGE_RISE, true);
 
     // Initialize LED GPIOs just because
     gpio_init(PIN_LED_1);
@@ -133,11 +81,24 @@ bool user_ui_init(void)
     gpio_set_function(PIN_LED_G, GPIO_FUNC_PWM);
     gpio_set_function(PIN_LED_B, GPIO_FUNC_PWM);
 
-    /* Setup pwm channels as-
-    - PWM channels with PSC 50-1, ARR 25500-1 for 1kHz freq
-    - Initialy setting completely off. use pwm_hw. 
-    - use pwm_hw->inte and then enable on PWM_IRQ_WRAP_0 on 1 pwm channel for wrapping interrupts
-    */
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_R) ].div = LED_PWM_DIV << PWM_CH0_DIV_INT_LSB;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_G) ].div = LED_PWM_DIV << PWM_CH0_DIV_INT_LSB;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_B) ].div = LED_PWM_DIV << PWM_CH0_DIV_INT_LSB;
+
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_R) ].top = LED_PWM_TOP - 1;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_G) ].top = LED_PWM_TOP - 1;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_B) ].top = LED_PWM_TOP - 1;
+
+    pwm_hw->inte = GP(pwm_gpio_to_slice_num(PIN_LED_R)) |
+                   GP(pwm_gpio_to_slice_num(PIN_LED_G)) |
+                   GP(pwm_gpio_to_slice_num(PIN_LED_B));
+
+    irq_set_exclusive_handler(PWM_IRQ_WRAP_0, irq_on_pwm_wrap);
+    irq_set_enabled(PWM_IRQ_WRAP_0, true);
+
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_R) ].csr |= PWM_CH0_CSR_EN_BITS;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_G) ].csr |= PWM_CH0_CSR_EN_BITS;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_B) ].csr |= PWM_CH0_CSR_EN_BITS;
 
     user_ui_set_state(LED_STATE_BOOTING);
 
@@ -153,16 +114,87 @@ bool user_ui_init(void)
 bool user_ui_set_state(LEDState_e state)
 {
     current_state.state = state;
-    // Set the RGB LED color and pattern based on the provided state
+
     switch (state) {
+        // --- Normal Operations ---
         case LED_STATE_BOOTING:
-            // Example: Set LED to solid green
-            // Set PWM values for green color
+            current_state.color   = LED_COLOR_WHITE;
+            current_state.pattern = LED_PULSE;
+            current_state.speed   = LED_SPEED_MEDIUM;
             break;
-        // Handle other states as needed
+
+        case LED_STATE_SD_LOADING:
+            current_state.color   = LED_COLOR_BLUE;
+            current_state.pattern = LED_PULSE;
+            current_state.speed   = LED_SPEED_MEDIUM;
+            break;
+
+        case LED_STATE_GPS_SEARCHING:
+            current_state.color   = LED_COLOR_YELLOW;
+            current_state.pattern = LED_PULSE;
+            current_state.speed   = LED_SPEED_MEDIUM;
+            break;
+
+        case LED_STATE_RUN: // GPS Mode
+            current_state.color   = LED_COLOR_GREEN;
+            current_state.pattern = LED_SOLID;
+            current_state.speed   = LED_SPEED_MEDIUM;
+            break;
+
+        case LED_STATE_RUN_J2000: // J2000 Mode
+            current_state.color   = LED_COLOR_CYAN;
+            current_state.pattern = LED_SOLID;
+            current_state.speed   = LED_SPEED_MEDIUM;
+            break;
+
+        case LED_STATE_TIMELAPSE:
+            current_state.color   = LED_COLOR_PURPLE;
+            current_state.pattern = LED_PULSE;
+            current_state.speed   = LED_SPEED_MEDIUM;
+            break;
+
+        // --- Warnings & Non-Critical ---
+        case LED_STATE_RUN_NO_FIX: // Warning: No GPS
+            current_state.color   = LED_COLOR_RED;
+            current_state.pattern = LED_BLINK;
+            current_state.speed   = LED_SPEED_SLOW;
+            break;
+
+        case LED_STATE_WARN_OVERHEAT:
+            current_state.color   = LED_COLOR_ORANGE;
+            current_state.pattern = LED_PULSE;
+            current_state.speed   = LED_SPEED_MEDIUM;
+            break;
+
+        // --- Critical Errors & System Events ---
+        case LED_STATE_ERR_CRITICAL:
+            current_state.color   = LED_COLOR_RED;
+            current_state.pattern = LED_BLINK;
+            current_state.speed   = LED_SPEED_FAST;
+            break;
+
+        case LED_STATE_REBOOTED: // Watchdog Reset
+            // "Single Flash" simulated by Fast Blink. 
+            // Application should switch out of this state after a short delay.
+            current_state.color   = LED_COLOR_MAGENTA;
+            current_state.pattern = LED_BLINK;
+            current_state.speed   = LED_SPEED_FAST;
+            break;
+
+        case LED_STATE_DRIFT_CONFIRM:
+            // "Single Flash" simulated by Fast Blink.
+            current_state.color   = LED_COLOR_CYAN;
+            current_state.pattern = LED_BLINK;
+            current_state.speed   = LED_SPEED_FAST;
+            break;
+
         default:
-            // Turn off LED for unknown states
+            // Fallback for undefined behavior: Solid Red
+            current_state.color   = LED_COLOR_RED;
+            current_state.pattern = LED_SOLID;
+            current_state.speed   = LED_SPEED_MEDIUM;
             return false;
     }
+
     return true;
 }

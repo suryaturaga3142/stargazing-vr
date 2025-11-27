@@ -16,6 +16,7 @@
 
 /* ----------------------------- Private Includes --------------------------- */
 #include <stdbool.h>
+#include "pico/stdlib.h"
 #include "display.h"
 // ...
 
@@ -39,6 +40,7 @@ bool display_init(void) {
     // Initialize PIO, DMA, and any other low level stuff for driving the display.
     // This function should be fast and non-blocking. No verification is needed
     // Set the screen to dark blue.
+    sleep_ms(3000);
 
     return true;
 }
