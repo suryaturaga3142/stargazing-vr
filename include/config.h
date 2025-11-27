@@ -76,9 +76,9 @@
 
 // -- User Interface (GPIO Bank 42-44) --
 // Grouped together for clean User UI routing.
-#define PIN_LED_B                       42
-#define PIN_LED_G                       43
-#define PIN_LED_R                       44
+#define PIN_LED_R                       42
+#define PIN_LED_B                       43
+#define PIN_LED_G                       44
 #define PIN_BTN_DRIFT_CORRECT           PIN_PB_1
 #define PIN_BTN_LOCATION_TOGGLE         PIN_PB_2
 

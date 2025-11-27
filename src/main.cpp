@@ -55,36 +55,90 @@ int main()
 {
     // PHASE 1: Power On Setup
     stdio_init_all();
-
     user_ui_init();
-    // Do something like an LED flash if rebooting happened from watchdog.
+    printf("Starting up...\r\n");
+
+    // Alerts if rebooted
     if (watchdog_caused_reboot()) {
         printf("Watchdog caused a reboot!\r\n");
         user_ui_set_state(LED_STATE_REBOOTED);
+        sleep_ms(2000);
+        user_ui_set_state(LED_STATE_BOOTING);
     }
     // Setup watchdog with 5sec timeout during startup procedures. Pet it during long processes.
     watchdog_enable(5000, true);
 
     // PHASE 2: Connectivity Check
-    sd_init();     // Initialize and check SD Card presence only. Do NOT mount or access data yet.
+    printf("Initializing peripherals...\r\nSearching SD Card...\r\n");
+    bool sd_inserted = sd_init();     // Initialize and check SD Card presence only. Do NOT mount or access data yet.
+    user_ui_set_state(LED_STATE_RUN);
     // If not present, run a 10 second warning while polling sd_check()
+    if (!sd_inserted) {
+        printf("No SD Card detected! Please insert one.\r\nWaiting...\r\n");
+        user_ui_set_state(LED_STATE_SD_LOADING);
+        for (int i = 0; i < 100; i++) {
+            sleep_ms(100);
+            watchdog_update();
+            sd_inserted = sd_check();
+            if (sd_inserted) break;
+        }
+    }
+    // If a timeout occured the error state is entered.
+    if (!sd_inserted) {
+        watchdog_disable();
+        printf("Error: SD Card Connectivity Timeout Occured.\r\nPlease insert SD Card and restart.\r\n");
+        user_ui_set_state(LED_STATE_ERR_CRITICAL);
+        for(;;) {
+            tight_loop_contents();
+        }
+    }
+    user_ui_set_state(LED_STATE_BOOTING);
     watchdog_update();
-
-    imu_init();     // Check IMU presence and initialize
+    printf("SD Card detected!\r\nChecking IMU...\r\n");
+    bool imu_connected = imu_init();     // Check IMU presence and initialize
+    if (imu_connected) watchdog_update();
+    else {
+        watchdog_disable();
+        printf("Error: IMU not detected!\r\nPlease check connections and restart.\r\n");
+        user_ui_set_state(LED_STATE_ERR_CRITICAL);
+        for (;;) {
+            tight_loop_contents();
+        }
+    }
+    printf("IMU detected!\r\nStarting LCD...\r\n");
     display_init(); // Initialize PIO related stuff, it'll be a fast function.
+    watchdog_update();
 
     // PHASE 3: Heavy Lifting (PET THE WATCHDOG MANY TIMES!)
-    sd_load_data(); // Mount and bulk read the SD card data
-    sd_buf_sort();  // Sorts data in 3 pass algorithm
+    printf("Initialized LCD!\r\nMounting & Bulk Reading SD Card...\r\n");
+    bool data_loaded = sd_load_data(); // Mount and bulk read the SD card data
+    if (data_loaded) watchdog_update();
+    else {
+        watchdog_disable();
+        printf("Error: Unable to read SD Card. Check if stars.bin is present & correct?\r\n");
+        user_ui_set_state(LED_STATE_ERR_CRITICAL);
+        for (;;) {
+            tight_loop_contents();
+        }
+    }
+    printf("Data Read!\r\nUnmounting card & sorting data...\r\n");
     sd_deinit();    // Unmount the SD card
-    gps_init();     // Initialize GPS module and enable GNRMC. Sync loc/RTC or use default
+    watchdog_update();
+    sd_buf_sort();  // Sorts data in 3 pass algorithm
+    watchdog_update();
+    printf("SD Card unmounted & data sorted!\r\nInitializing GPS (This will take time)...\r\n");
+    bool gps_fixed = gps_init();     // Initialize GPS module and enable GNRMC. Sync loc/RTC or use default
+    watchdog_disable();
+    if (gps_fixed) {
+        printf("GPS Lock found! Starting rendering...\r\nEnjoy!!\r\n");
+        user_ui_set_state(LED_STATE_RUN);
+    }
+    else {
+        printf("No GPS Lock found. Starting with no location fix.\r\nEnjoy!!\r\n");
+        user_ui_set_state(LED_STATE_RUN_NO_FIX);
+    }
     
     // PHASE 4: Handover process
-    // Set complete watchdog health
-    watchdog_update();
-    // Enable all other interrupts and timers remaining like rendering
-    // Set final RGB status
-    user_ui_set_state(LED_STATE_RUN);
     // Reconfigure watchdog for main loop checking
     watchdog_enable(200, true);
 

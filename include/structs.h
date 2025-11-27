@@ -142,14 +142,17 @@ typedef struct {
  * @details All modules can access to change RGB LED
  */
 typedef enum {
-    LED_STATE_BOOTING,
-    LED_STATE_REBOOTED,
-    LED_STATE_SD_LOADING,
-    LED_STATE_GPS_SEARCHING,
-    LED_STATE_ERR_CRITICAL,
-    LED_STATE_ERR_GENERIC,
-    LED_STATE_RUN_NO_FIX,
-    LED_STATE_RUN
+    LED_STATE_BOOTING,          // White / Pulse
+    LED_STATE_SD_LOADING,       // Blue / Pulse
+    LED_STATE_GPS_SEARCHING,    // Yellow / Pulse
+    LED_STATE_RUN,              // Green / Solid (GPS Mode)
+    LED_STATE_RUN_J2000,        // Cyan / Solid (J2000 Mode)
+    LED_STATE_TIMELAPSE,        // Purple / Pulse
+    LED_STATE_RUN_NO_FIX,       // Red / Slow Blink
+    LED_STATE_WARN_OVERHEAT,    // Orange / Pulse
+    LED_STATE_ERR_CRITICAL,     // Red / Fast Blink
+    LED_STATE_REBOOTED,         // Magenta / Blink (Watchdog Reset)
+    LED_STATE_DRIFT_CONFIRM     // Cyan / Fast Blink (Feedback)
 } LEDState_e;
 
 /**

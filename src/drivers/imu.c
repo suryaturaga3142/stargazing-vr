@@ -15,6 +15,7 @@
 
 /* ----------------------------- Private Includes --------------------------- */
 #include "imu.h"
+#include "pico/stdlib.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -38,5 +39,6 @@ volatile IMUData_t g_latest_imu_data = {0};
  */
 bool imu_init(void) {
     // Initialize the IMU module in I2C, configure game rotation vectors with interrupts at 200Hz.
+    sleep_ms(3000);
     return true;
 }

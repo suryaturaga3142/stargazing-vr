@@ -114,24 +114,87 @@ bool user_ui_init(void)
 bool user_ui_set_state(LEDState_e state)
 {
     current_state.state = state;
-    // Set the RGB LED color and pattern based on the provided state
+
     switch (state) {
+        // --- Normal Operations ---
         case LED_STATE_BOOTING:
-            // Example: Set LED to solid green
-            // Set PWM values for green color
-            current_state.color = LED_COLOR_GREEN;
+            current_state.color   = LED_COLOR_WHITE;
+            current_state.pattern = LED_PULSE;
+            current_state.speed   = LED_SPEED_MEDIUM;
+            break;
+
+        case LED_STATE_SD_LOADING:
+            current_state.color   = LED_COLOR_BLUE;
+            current_state.pattern = LED_PULSE;
+            current_state.speed   = LED_SPEED_MEDIUM;
+            break;
+
+        case LED_STATE_GPS_SEARCHING:
+            current_state.color   = LED_COLOR_YELLOW;
+            current_state.pattern = LED_PULSE;
+            current_state.speed   = LED_SPEED_MEDIUM;
+            break;
+
+        case LED_STATE_RUN: // GPS Mode
+            current_state.color   = LED_COLOR_GREEN;
             current_state.pattern = LED_SOLID;
-            current_state.speed = LED_SPEED_MEDIUM;
+            current_state.speed   = LED_SPEED_MEDIUM;
             break;
-        case LED_STATE_REBOOTED:
-            // Example: Set LED to blinking yellow
-            current_state.color = LED_COLOR_YELLOW;
+
+        case LED_STATE_RUN_J2000: // J2000 Mode
+            current_state.color   = LED_COLOR_CYAN;
+            current_state.pattern = LED_SOLID;
+            current_state.speed   = LED_SPEED_MEDIUM;
+            break;
+
+        case LED_STATE_TIMELAPSE:
+            current_state.color   = LED_COLOR_PURPLE;
+            current_state.pattern = LED_PULSE;
+            current_state.speed   = LED_SPEED_MEDIUM;
+            break;
+
+        // --- Warnings & Non-Critical ---
+        case LED_STATE_RUN_NO_FIX: // Warning: No GPS
+            current_state.color   = LED_COLOR_RED;
             current_state.pattern = LED_BLINK;
-            current_state.speed = LED_SPEED_MEDIUM;
+            current_state.speed   = LED_SPEED_SLOW;
             break;
+
+        case LED_STATE_WARN_OVERHEAT:
+            current_state.color   = LED_COLOR_ORANGE;
+            current_state.pattern = LED_PULSE;
+            current_state.speed   = LED_SPEED_MEDIUM;
+            break;
+
+        // --- Critical Errors & System Events ---
+        case LED_STATE_ERR_CRITICAL:
+            current_state.color   = LED_COLOR_RED;
+            current_state.pattern = LED_BLINK;
+            current_state.speed   = LED_SPEED_FAST;
+            break;
+
+        case LED_STATE_REBOOTED: // Watchdog Reset
+            // "Single Flash" simulated by Fast Blink. 
+            // Application should switch out of this state after a short delay.
+            current_state.color   = LED_COLOR_MAGENTA;
+            current_state.pattern = LED_BLINK;
+            current_state.speed   = LED_SPEED_FAST;
+            break;
+
+        case LED_STATE_DRIFT_CONFIRM:
+            // "Single Flash" simulated by Fast Blink.
+            current_state.color   = LED_COLOR_CYAN;
+            current_state.pattern = LED_BLINK;
+            current_state.speed   = LED_SPEED_FAST;
+            break;
+
         default:
-            // Turn off LED for unknown states
+            // Fallback for undefined behavior: Solid Red
+            current_state.color   = LED_COLOR_RED;
+            current_state.pattern = LED_SOLID;
+            current_state.speed   = LED_SPEED_MEDIUM;
             return false;
     }
+
     return true;
 }
