@@ -145,29 +145,38 @@ int main()
 
     // Loop
     while (true) {
-        // All long stuff should be here, procedural stuff based on flags.
-        // Task 1: HIGHEST PRIORITY: Read IMU data on I2C
-        // Lower priority: pushbuttons handling and stuff
+
         // Sleep until an interrupt fires
         __wfi();
 
         // Awake now bc interrupt fired. Do the events in order of priority.
         if (imu_check_and_read()) {
             monitor_checkin(SYS_MODULE_IMU);
-            //printf("Data ready\r\n");
-            //printf("%f\r\n", g_latest_imu_data.orientation.w);
             printf("Game: %f %f %f %f\r\n", g_latest_imu_data.orientation.x, g_latest_imu_data.orientation.y, g_latest_imu_data.orientation.z, g_latest_imu_data.orientation.w);
             run_main_render();
             // Calculate draw list
+            monitor_checkin(SYS_MODULE_DISPLAY);
             // Trigger DMA
         }
-        // Check the lower priority stuff now.
-        // Update states and flags based on buttons
-        // Check and update GPS reading and checkin
 
+        // READ GPS IN THE SAME METHOD AS IMU
+        /*
+        if (gps_check_and_read()) {
+            ...
+            monitor_checkin(SYS_MODULE_GPS);
+        }
+        */
 
-        monitor_checkin(SYS_MODULE_DISPLAY);
-        monitor_checkin(SYS_MODULE_GPS);
+        if (g_drift_correct_request) {
+            user_ui_set_state(LED_STATE_DRIFT_CONFIRM);
+            imu_recenter_yaw();
+        }
+        if (g_use_actual_gps) {
+            // Figure out what goes here. Overwrite the quaternion basically
+            // Note; might be better to use the toggle request to avoid excess branching
+        }
+
+        //monitor_checkin(SYS_MODULE_GPS);
         monitor_checkin(SYS_MODULE_MAIN);
     }
 

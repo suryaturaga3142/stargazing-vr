@@ -129,3 +129,9 @@ bool imu_check_and_read(void) {
     }
     return false;
 }
+
+bool imu_recenter_yaw(void) {
+    
+    if (imu.tareNow(true, SH2_TARE_BASIS_GAMING_ROTATION_VECTOR)) return true;
+    else return false;
+}

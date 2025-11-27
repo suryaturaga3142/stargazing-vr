@@ -26,6 +26,7 @@ extern volatile IMUData_t g_latest_imu_data;      // Updated by main reading
 
 bool imu_init(void);
 bool imu_check_and_read(void);
+bool imu_recenter_yaw(void);
 
 #ifdef __cplusplus
 }
