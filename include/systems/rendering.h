@@ -17,6 +17,14 @@
 #include "config.h"
 #include "structs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 bool run_main_render(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* RENDERING_H */

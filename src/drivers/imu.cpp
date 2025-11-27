@@ -110,7 +110,7 @@ bool imu_check_and_read(void) {
     }
 
     if (imu.getSensorEvent()) {
-        // Switch off flag before reading
+        // Switch off flag before reading to make the data 'stale'
         g_imu_data_ready = false;
 
         if (imu.getSensorEventID() == SH2_GAME_ROTATION_VECTOR) {

@@ -54,8 +54,7 @@ void irq_gpio_handler(uint gpio, uint32_t events)
 {
     if (gpio == PIN_IMU_INT) {
         gpio_acknowledge_irq(PIN_IMU_INT, events);
-        g_imu_data_ready = true;
-        //run_main_render(); dont do this here
+        g_imu_data_ready = true; // Set flag for main to read IMU data
         return;
     }
     if (gpio == PIN_BTN_DRIFT_CORRECT) {

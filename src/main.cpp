@@ -41,17 +41,6 @@
 #include "rendering.h"
 #include "user_ui.h"
 
-/* ---------------------------- Private Constants --------------------------- */
-// ...
-
-/* ----------------------------- Private Variables -------------------------- */
-//static struct repeating_timer monitor_timer;
-// ...
-
-/* ----------------------------- Private Functions -------------------------- */
-// ...
-
-/* ----------------------------- Public Functions --------------------------- */
 
 int main()
 {
@@ -148,7 +137,9 @@ int main()
     
     // PHASE 4: Handover process
     // Reconfigure watchdog for main loop checking and setup monitoring supervisor
-    //add_repeating_timer_ms(-WATCHDOG_SUPERVISOR_INTERVAL_MS, irq_timer_monitor_callback, NULL, &monitor_timer);
+    irq_set_priority(IO_IRQ_BANK0, 0x10);   // IMU INT and PB
+    irq_set_priority(PWM_IRQ_WRAP_0, 0x20); // RGB LED State
+    irq_set_priority(TIMER0_IRQ_0, 0x30);   // Monitor Checkin
     monitor_init();
     watchdog_enable(WATCHDOG_TIMEOUT_MS, true);
 
@@ -157,7 +148,26 @@ int main()
         // All long stuff should be here, procedural stuff based on flags.
         // Task 1: HIGHEST PRIORITY: Read IMU data on I2C
         // Lower priority: pushbuttons handling and stuff
+        // Sleep until an interrupt fires
         __wfi();
+
+        // Awake now bc interrupt fired. Do the events in order of priority.
+        if (imu_check_and_read()) {
+            monitor_checkin(SYS_MODULE_IMU);
+            printf("Data ready\r\n");
+            printf("%f\r\n", g_latest_imu_data.orientation.w);
+            run_main_render();
+            // Calculate draw list
+            // Trigger DMA
+        }
+        // Check the lower priority stuff now.
+        // Update states and flags based on buttons
+        // Check and update GPS reading and checkin
+
+
+        monitor_checkin(SYS_MODULE_DISPLAY);
+        monitor_checkin(SYS_MODULE_GPS);
+        monitor_checkin(SYS_MODULE_MAIN);
     }
 
     // Should never reach here.

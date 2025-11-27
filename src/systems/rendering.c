@@ -18,6 +18,7 @@
 
 /* ----------------------------- Private Includes --------------------------- */
 #include "rendering.h"
+#include "pico/stdlib.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -34,11 +35,18 @@ static volatile bool g_is_rendering = false;
 
 /* ----------------------------- Public Functions --------------------------- */
 
+/**
+ * @brief The center of this program. Goes through the actual rendering process.
+ * 
+ * @return true if rendering of stars was successful.
+ */
 bool run_main_render(void) {
     if (g_is_rendering) return false;
 
     g_is_rendering = true;
     // run everything
+    sleep_ms(50); // Simulate the heavy rendering load
+    g_is_rendering = false;
 
     return true;
 }
