@@ -114,7 +114,7 @@ typedef struct {
 
 /**
  * @brief A complete, timestamped measurement snapshot from the IMU.
- * @details Bundles the orientation and velocity from a single 100Hz IMU update
+ * @details Bundles the orientation and velocity from a single 200Hz IMU update
  * to ensure they are always synchronized.
  */
 typedef struct {

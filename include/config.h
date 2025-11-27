@@ -20,8 +20,11 @@
 
 #define TARGET_REFRESH_RATE_HZ          200
 #define GPS_CORRECTION_INTERVAL_MIN     1
-#define WATCHDOG_SUPERVISOR_INTERVAL_MS 100
+#define WATCHDOG_INIT_TIMEOUT_MS        5000
 #define WATCHDOG_TIMEOUT_MS             200
+#define WATCHDOG_SUPERVISOR_INTERVAL_MS 100
+#define SD_CARD_INIT_HZ                 400000
+#define SD_CARD_READ_HZ                 5000000
 
 //------------------------------------------------------------------------------
 // STAR CATALOG & CULLING CONSTANTS

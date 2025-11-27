@@ -67,7 +67,7 @@ int main()
         user_ui_set_state(LED_STATE_BOOTING);
     }
     // Setup watchdog with 5sec timeout during startup procedures. Pet it during long processes.
-    watchdog_enable(5000, true);
+    watchdog_enable(WATCHDOG_INIT_TIMEOUT_MS, true);
 
     // PHASE 2: Connectivity Check
     printf("Initializing peripherals...\r\nSearching SD Card...\r\n");
@@ -147,11 +147,12 @@ int main()
     
     // PHASE 4: Handover process
     // Reconfigure watchdog for main loop checking
-    watchdog_enable(200, true);
+    watchdog_enable(WATCHDOG_TIMEOUT_MS, true);
 
     // Loop
     while (true) {
         // All long stuff should be here, procedural stuff based on flags.
+        __wfi();
     }
 
     // Should never reach here.
