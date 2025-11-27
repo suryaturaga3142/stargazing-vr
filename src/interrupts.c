@@ -15,9 +15,12 @@
 /* ----------------------------- Private Includes --------------------------- */
 #include "config.h"
 #include "interrupts.h"
+#include "monitor.h"
 #include "hardware/gpio.h"
 #include "hardware/pwm.h"
+#include "pico/time.h"
 
+#include "imu.h"
 #include "user_ui.h"
 #include "rendering.h"
 
@@ -49,7 +52,8 @@ void irq_gpio_handler(uint gpio, uint32_t events)
 {
     if (gpio == PIN_IMU_INT) {
         gpio_acknowledge_irq(PIN_IMU_INT, events);
-        run_main_render();
+        g_imu_data_ready = true;
+        //run_main_render(); dont do this here
         return;
     }
     if (gpio == PIN_BTN_DRIFT_CORRECT) {
@@ -164,4 +168,17 @@ void irq_on_pwm_wrap(void) {
     pwm_set_gpio_level(PIN_LED_R, LED_PWM_TOP - final_r);
     pwm_set_gpio_level(PIN_LED_G, LED_PWM_TOP - final_g);
     pwm_set_gpio_level(PIN_LED_B, LED_PWM_TOP - final_b);
+
+    return;
+}
+
+/**
+ * @brief IRQ for a repeating timer to check in health of all systems
+ * 
+ * @param t repeating timer struct pointer required by pico sdk
+ * @return true to keep the timer running.
+ */
+bool irq_timer_monitor_callback(repeating_timer_t* t) {
+    monitor_update();
+    return true;
 }

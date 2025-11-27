@@ -45,6 +45,7 @@
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
+static struct repeating_timer monitor_timer;
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */
@@ -146,12 +147,15 @@ int main()
     }
     
     // PHASE 4: Handover process
-    // Reconfigure watchdog for main loop checking
+    // Reconfigure watchdog for main loop checking and setup monitoring supervisor
+    add_repeating_timer_ms(-WATCHDOG_SUPERVISOR_INTERVAL_MS, irq_timer_monitor_callback, NULL, &monitor_timer);
     watchdog_enable(WATCHDOG_TIMEOUT_MS, true);
 
     // Loop
     while (true) {
         // All long stuff should be here, procedural stuff based on flags.
+        // Task 1: HIGHEST PRIORITY: Read IMU data on I2C
+        // Lower priority: pushbuttons handling and stuff
         __wfi();
     }
 

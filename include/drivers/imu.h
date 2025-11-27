@@ -21,10 +21,11 @@
 extern "C" {
 #endif
     
-extern volatile IMUData_t g_latest_imu_data;      // Updated by the 100Hz IMU ISR.
+extern volatile bool g_imu_data_ready;          // Set by IMU ISR when new data is available
+extern volatile IMUData_t g_latest_imu_data;      // Updated by main reading
 
 bool imu_init(void);
-
+bool imu_check_and_read(void);
 
 #ifdef __cplusplus
 }

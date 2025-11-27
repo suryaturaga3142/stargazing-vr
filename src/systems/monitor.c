@@ -32,13 +32,21 @@ const uint8_t ALL_SYSTEMS_GO = (SYS_MODULE_IMU | SYS_MODULE_GPS | SYS_MODULE_DIS
 
 /* ----------------------------- Public Functions --------------------------- */
 
-
+/**
+ * @brief Allows main to verify health of a certain part.
+ * 
+ * @param module The module checking in
+ */
 void monitor_checkin(system_module_t module) {
     // Atomically set the bit for this module
     // (In simple systems, |= is atomic enough, or use critical sections)
     checkin_flags |= module;
 }
 
+/**
+ * @brief Called by a repeating timer ISR to verify all health
+ * 
+ */
 void monitor_update(void) {
     // Check if EVERYONE has reported in
     if (checkin_flags == ALL_SYSTEMS_GO) {

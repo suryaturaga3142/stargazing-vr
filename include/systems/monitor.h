@@ -23,10 +23,7 @@ typedef enum {
     SYS_MODULE_MAIN    = (1 << 3)
 } system_module_t;
 
-// Called by drivers to confirm health
 void monitor_checkin(system_module_t module);
-
-// Called by main loop to verify all health and pet the watchdog
 void monitor_update(void);
 
 #endif /* MONITOR_H */

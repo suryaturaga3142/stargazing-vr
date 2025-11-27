@@ -19,6 +19,7 @@
 //------------------------------------------------------------------------------
 
 #define TARGET_REFRESH_RATE_HZ          200
+#define TARGET_REFRESH_PERIOD_MS        (1000 / TARGET_REFRESH_RATE_HZ)
 #define GPS_CORRECTION_INTERVAL_MIN     1
 #define WATCHDOG_INIT_TIMEOUT_MS        5000
 #define WATCHDOG_TIMEOUT_MS             200
