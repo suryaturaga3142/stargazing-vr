@@ -61,12 +61,21 @@
 #define PIN_IMU_INT                     30  // Interrupt pin
 #define PIN_IMU_RST                     31  // Reset pin
 
-// -- SD Card (via SDIO) --
-// Uses a second PIO for implementing SDIO.
-#define PIN_SDIO_CLK                    32
-#define PIN_SDIO_CMD                    33
-#define PIN_SDIO_D0                     34  // D0-D3 MUST be consecutive. Uses GPIO 34-37
-#define PIN_SDIO_DET                    38
+// // -- SD Card (via SDIO) --
+// // Uses a second PIO for implementing SDIO.
+// #define PIN_SDIO_CLK                    32
+// #define PIN_SDIO_CMD                    33
+// #define PIN_SDIO_D0                     34  // D0-D3 MUST be consecutive. Uses GPIO 34-37
+// #define PIN_SDIO_DET                    38
+
+// -- SD Card (via SPI) --
+#define PIN_SPI_MISO                    36
+#define PIN_SPI_CS                      33
+#define PIN_SPI_SCK                     38
+#define PIN_SPI_MOSI                    35
+#define PIN_SPI_DET                     32
+
+
 
 // -- NEO-M10 GPS (GPIO Bank 40-41) --
 #define UART_PORT                       uart1

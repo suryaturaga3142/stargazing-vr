@@ -16,6 +16,7 @@
 #include "sd_card.h"
 #include "hardware/gpio.h"
 #include "hardware/pio.h"
+#include "hardware/spi.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -44,10 +45,26 @@ bool sd_check(void) {
  * 
  * @return true if initialization was successful
  */
-bool sd_init(void) {
+bool sd_init(void) 
+{
+    
     // Initialize SD card interface and pins here. Do not mount yet.
     // gpio_init(PIN_SDIO_CLK);
     // gpio_set_function(PIN_SDIO_CLK, GPIO_FUNC_PIO0);
+    gpio_set_function(PIN_SPI_MISO, GPIO_FUNC_SPI);
+    gpio_set_function(PIN_SPI_MOSI, GPIO_FUNC_SPI);
+    gpio_set_function(PIN_SPI_SCK, GPIO_FUNC_SPI);
+
+    gpio_set_function(PIN_SPI_DET, GPIO_FUNC_SIO);
+    gpio_set_dir(PIN_SPI_DET, GPIO_IN);
+
+
+    gpio_set_function(PIN_SPI_CS, GPIO_FUNC_SIO);
+    gpio_set_dir(PIN_SPI_CS, GPIO_OUT);
+    gpio_put(PIN_SPI_CS, true);
+
+    spi_init(spi0, 400000);
+    spi_set_format(spi0,8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     return true;
 }
 
