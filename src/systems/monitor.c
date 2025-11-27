@@ -13,8 +13,13 @@
  ******************************************************************************/
 
 /* ----------------------------- Private Includes --------------------------- */
+#include "config.h"
 #include "monitor.h"
+#include "interrupts.h"
 #include "hardware/watchdog.h"
+#include "hardware/timer.h"
+#include "hardware/irq.h"
+#include "pico/stdlib.h"
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -31,6 +36,18 @@ const uint8_t ALL_SYSTEMS_GO = (SYS_MODULE_IMU | SYS_MODULE_GPS | SYS_MODULE_DIS
 /* ----------------------------- Public Variables -------------------------- */
 
 /* ----------------------------- Public Functions --------------------------- */
+
+/**
+ * @brief Sets up a repeating timer for the supervisor
+ * 
+ */
+bool monitor_init(void) {
+    timer0_hw->inte |= TIMER_INTE_ALARM_0_BITS;
+    irq_set_exclusive_handler(TIMER0_IRQ_0, irq_timer_monitor_callback);
+    irq_set_enabled(TIMER0_IRQ_0, true);
+    timer0_hw->alarm[0] = timer_hw->timerawl + (WATCHDOG_SUPERVISOR_INTERVAL_MS * 1000);
+    return true;
+}
 
 /**
  * @brief Allows main to verify health of a certain part.

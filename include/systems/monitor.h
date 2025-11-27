@@ -14,6 +14,11 @@
 #define MONITOR_H
 
 #include <stdint.h>
+#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Assign a unique bit to each critical subsystem
 typedef enum {
@@ -23,7 +28,12 @@ typedef enum {
     SYS_MODULE_MAIN    = (1 << 3)
 } system_module_t;
 
+bool monitor_init(void);
 void monitor_checkin(system_module_t module);
 void monitor_update(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MONITOR_H */

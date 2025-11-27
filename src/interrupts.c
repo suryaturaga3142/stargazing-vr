@@ -18,6 +18,8 @@
 #include "monitor.h"
 #include "hardware/gpio.h"
 #include "hardware/pwm.h"
+#include "hardware/timer.h"
+#include "hardware/irq.h"
 #include "pico/time.h"
 
 #include "imu.h"
@@ -175,10 +177,10 @@ void irq_on_pwm_wrap(void) {
 /**
  * @brief IRQ for a repeating timer to check in health of all systems
  * 
- * @param t repeating timer struct pointer required by pico sdk
- * @return true to keep the timer running.
  */
-bool irq_timer_monitor_callback(repeating_timer_t* t) {
+void irq_timer_monitor_callback(void) {
+    timer0_hw->intr &= TIMER_INTR_ALARM_0_BITS;
     monitor_update();
-    return true;
+    timer0_hw->alarm[0] = timer_hw->timerawl + (WATCHDOG_SUPERVISOR_INTERVAL_MS * 1000);
+    return;
 }

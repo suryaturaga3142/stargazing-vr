@@ -66,30 +66,17 @@ bool imu_init(void) {
     i2c_inst* i2c_port = I2C_PORT;
     initI2C(i2c_port, false); //given by imu library
 
-    absolute_time_t deadline = make_timeout_time_ms(10000);
-    bool connected = false;
-
-    while (!time_reached(deadline)) {
-        if (imu.begin(IMU_I2C_ADDR, i2c_port)) {
-            connected = true;
-            break;
-        }
-        
-        printf("IMU not detected. Retrying...\n");
-
+    if (!imu.begin(IMU_I2C_ADDR, i2c_port)) {
+        printf("IMU not detected!\n");
         watchdog_update();
-        
-        // Scan bus to debug connection issues
+        // Scan bus to debug connection issues (does NOT auto-scan)
         scan_i2c_bus(); 
-        
-        watchdog_update();
-        sleep_ms(500);
-    }
-
-    if (!connected) {
-        printf("[IMU] Critical Failure: Connection Timeout.\n");
+        printf("/r/n[IMU] Critical Failure: Connection Timeout.\n");
         return false;
     }
+    
+    watchdog_update();
+    sleep_ms(500);
 
     printf("[IMU] Connected! Configuring Reports...\n");
 

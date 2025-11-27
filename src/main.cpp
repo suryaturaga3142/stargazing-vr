@@ -45,7 +45,7 @@
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
-static struct repeating_timer monitor_timer;
+//static struct repeating_timer monitor_timer;
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */
@@ -88,7 +88,7 @@ int main()
     // If a timeout occured the error state is entered.
     if (!sd_alive) {
         watchdog_disable();
-        printf("Error: SD Card Connectivity Timeout Occured.\r\nPlease insert SD Card and restart.\r\n");
+        printf("Error: SD Card Connectivity Timeout Occured. SD Card missing / unresponsive.\r\nPlease insert working SD Card and restart.\r\n");
         user_ui_set_state(LED_STATE_ERR_CRITICAL);
         for(;;) {
             __wfi();
@@ -148,7 +148,8 @@ int main()
     
     // PHASE 4: Handover process
     // Reconfigure watchdog for main loop checking and setup monitoring supervisor
-    add_repeating_timer_ms(-WATCHDOG_SUPERVISOR_INTERVAL_MS, irq_timer_monitor_callback, NULL, &monitor_timer);
+    //add_repeating_timer_ms(-WATCHDOG_SUPERVISOR_INTERVAL_MS, irq_timer_monitor_callback, NULL, &monitor_timer);
+    monitor_init();
     watchdog_enable(WATCHDOG_TIMEOUT_MS, true);
 
     // Loop
