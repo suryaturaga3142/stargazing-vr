@@ -82,10 +82,41 @@
 #define PIN_BTN_DRIFT_CORRECT           PIN_PB_1
 #define PIN_BTN_LOCATION_TOGGLE         PIN_PB_2
 
+
+//------------------------------------------------------------------------------
+// USER UI
+//------------------------------------------------------------------------------
+
+// -- LED Related Definitions --
+// Defines the TOP and PSC values
+#define LED_PWM_DIV             6
+#define LED_PWM_TOP             25500
+// These define the actual periods in milliseconds for the LED patterns.
+#define LED_PERIOD_SLOW_MS      1000
+#define LED_PERIOD_MEDIUM_MS    500
+#define LED_PERIOD_FAST_MS      250
+// -- LED Color Definitions (24-bit RGB Hex: 0x00RRGGBB) --
+#define LED_HEX_OFF             0x00000000
+#define LED_HEX_WHITE           0x00FFFFFF
+#define LED_HEX_BLUE            0x000000FF
+#define LED_HEX_YELLOW          0x00FFFF00
+#define LED_HEX_GREEN           0x0000FF00
+#define LED_HEX_CYAN            0x0000FFFF
+#define LED_HEX_RED             0x00FF0000
+#define LED_HEX_ORANGE          0x00FFA500
+#define LED_HEX_MAGENTA         0x00FF00FF
+#define LED_HEX_PURPLE          0x00800080
+// -- LED RGB Isolation Macros --
+#define LED_VAL_R(hex)          (LED_PWM_TOP / 255 * ((hex >> 16) & 0xFF))
+#define LED_VAL_G(hex)          (LED_PWM_TOP / 255 * ((hex >>  8) & 0xFF))
+#define LED_VAL_B(hex)          (LED_PWM_TOP / 255 * ((hex >>  0) & 0xFF))
+
+
 //------------------------------------------------------------------------------
 // RANDOM STUFF
 //------------------------------------------------------------------------------
 
 #define GP(x) (1 << x)
+
 
 #endif /* CONFIG_H */

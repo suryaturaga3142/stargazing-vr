@@ -135,5 +135,52 @@ typedef struct {
 } GPSData_t;
 
 
+/* -------------------------- User UI ------------------------- */
+
+/**
+ * @brief A globally accessed enum to control the state
+ * @details All modules can access to change RGB LED
+ */
+typedef enum {
+    LED_STATE_BOOTING,
+    LED_STATE_REBOOTED,
+    LED_STATE_SD_LOADING,
+    LED_STATE_GPS_SEARCHING,
+    LED_STATE_ERR_CRITICAL,
+    LED_STATE_ERR_GENERIC,
+    LED_STATE_RUN_NO_FIX,
+    LED_STATE_RUN
+} LEDState_e;
+
+/**
+ * @brief Represents the current state of the RGB LED indicator.
+ * @details Used by the UI manager to control the color and pattern of the
+ * user-facing status LED based on the system state.
+ */
+typedef struct {
+    LEDState_e state;
+    enum {
+        LED_COLOR_OFF,
+        LED_COLOR_WHITE,
+        LED_COLOR_BLUE,
+        LED_COLOR_YELLOW,
+        LED_COLOR_GREEN,
+        LED_COLOR_CYAN,
+        LED_COLOR_RED,
+        LED_COLOR_ORANGE,
+        LED_COLOR_MAGENTA,
+        LED_COLOR_PURPLE
+    } color;
+    enum {
+        LED_SOLID,
+        LED_BLINK,
+        LED_PULSE
+    } pattern;
+    enum {
+        LED_SPEED_SLOW,
+        LED_SPEED_MEDIUM,
+        LED_SPEED_FAST
+    } speed;
+} StateDetails_t;
 
 #endif /* STRUCTS_H */

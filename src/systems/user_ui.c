@@ -24,63 +24,11 @@
 
 /* ---------------------------- Private Constants --------------------------- */
 
-// -- LED Related Definitions --
-// These define the actual periods in milliseconds for the LED patterns.
-#define LED_PERIOD_SLOW_MS      1000
-#define LED_PERIOD_MEDIUM_MS    500
-#define LED_PERIOD_FAST_MS      250
-// -- LED Color Definitions (24-bit RGB Hex: 0x00RRGGBB) --
-#define LED_HEX_OFF             0x00000000
-#define LED_HEX_WHITE           0x00FFFFFF
-#define LED_HEX_BLUE            0x000000FF
-#define LED_HEX_YELLOW          0x00FFFF00
-#define LED_HEX_GREEN           0x0000FF00
-#define LED_HEX_CYAN            0x0000FFFF
-#define LED_HEX_RED             0x00FF0000
-#define LED_HEX_ORANGE          0x00FFA500
-#define LED_HEX_MAGENTA         0x00FF00FF
-#define LED_HEX_PURPLE          0x00800080
-// -- LED RGB Isolation Macros --
-#define LED_VAL_R(hex)          (10 * ((hex >> 16) & 0xFF))
-#define LED_VAL_G(hex)          (10 * ((hex >>  8) & 0xFF))
-#define LED_VAL_B(hex)          (10 * ((hex >>  0) & 0xFF))
-
-/**
- * @brief Represents the current state of the RGB LED indicator.
- * @details Used by the UI manager to control the color and pattern of the
- * user-facing status LED based on the system state.
- */
-typedef struct {
-    LEDState_e state;
-    enum {
-        LED_COLOR_OFF,
-        LED_COLOR_WHITE,
-        LED_COLOR_BLUE,
-        LED_COLOR_YELLOW,
-        LED_COLOR_GREEN,
-        LED_COLOR_CYAN,
-        LED_COLOR_RED,
-        LED_COLOR_ORANGE,
-        LED_COLOR_MAGENTA,
-        LED_COLOR_PURPLE
-    } color;
-    enum {
-        LED_SOLID,
-        LED_BLINK,
-        LED_PULSE
-    } pattern;
-    enum {
-        LED_SPEED_SLOW,
-        LED_SPEED_MEDIUM,
-        LED_SPEED_FAST
-    } speed;
-} StateDetails_t;
-
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
 
-static StateDetails_t current_state = {
+StateDetails_t current_state = {
     .state   = LED_STATE_BOOTING,
     .color   = LED_COLOR_OFF,
     .pattern = LED_SOLID,
@@ -133,13 +81,13 @@ bool user_ui_init(void)
     gpio_set_function(PIN_LED_G, GPIO_FUNC_PWM);
     gpio_set_function(PIN_LED_B, GPIO_FUNC_PWM);
 
-    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_R) ].div = 6 << PWM_CH0_DIV_INT_LSB;
-    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_G) ].div = 6 << PWM_CH0_DIV_INT_LSB;
-    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_B) ].div = 6 << PWM_CH0_DIV_INT_LSB;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_R) ].div = LED_PWM_DIV << PWM_CH0_DIV_INT_LSB;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_G) ].div = LED_PWM_DIV << PWM_CH0_DIV_INT_LSB;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_B) ].div = LED_PWM_DIV << PWM_CH0_DIV_INT_LSB;
 
-    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_R) ].top = 25500 - 1;
-    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_G) ].top = 25500 - 1;
-    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_B) ].top = 25500 - 1;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_R) ].top = LED_PWM_TOP - 1;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_G) ].top = LED_PWM_TOP - 1;
+    pwm_hw->slice[ pwm_gpio_to_slice_num(PIN_LED_B) ].top = LED_PWM_TOP - 1;
 
     pwm_hw->inte = GP(pwm_gpio_to_slice_num(PIN_LED_R)) |
                    GP(pwm_gpio_to_slice_num(PIN_LED_G)) |

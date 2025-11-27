@@ -20,20 +20,8 @@
 extern "C" {
 #endif
 
-/**
- * @brief A globally accessed enum to control the state
- * @details All modules can access to change RGB LED
- */
-typedef enum {
-    LED_STATE_BOOTING,
-    LED_STATE_REBOOTED,
-    LED_STATE_SD_LOADING,
-    LED_STATE_GPS_SEARCHING,
-    LED_STATE_ERR_CRITICAL,
-    LED_STATE_ERR_GENERIC,
-    LED_STATE_RUN_NO_FIX,
-    LED_STATE_RUN
-} LEDState_e;
+
+extern StateDetails_t current_state;
 
 extern volatile bool g_drift_correct_request;     // Set by button ISR, handled by main.
 extern volatile bool g_use_actual_gps;            // Set by button ISR, handled by main.
