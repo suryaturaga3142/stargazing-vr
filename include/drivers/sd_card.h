@@ -25,8 +25,8 @@ extern "C" {
 bool sd_check(void);
 bool sd_init(void);
 bool sd_load_data(void);
-bool sd_buf_sort(void);
 bool sd_deinit(void);
+bool sd_buf_sort(void);
 
 #ifdef __cplusplus
 }

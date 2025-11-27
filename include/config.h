@@ -61,8 +61,15 @@
 #define PIN_IMU_INT                     30  // Interrupt pin
 #define PIN_IMU_RST                     31  // Reset pin
 
-// -- SD Card (via SDIO) --
-// Uses a second PIO for implementing SDIO.
+// -- SD Card (via SDIO or SPI) --
+// Uses a second PIO for implementing SDIO, or default SPI.
+#define SPI_PORT                        spi0
+#define PIN_SD_RX                       32
+#define PIN_SD_CSN                      33
+#define PIN_SD_SCK                      34
+#define PIN_SD_TX                       35
+#define PIN_SD_DET                      38
+
 #define PIN_SDIO_CLK                    32
 #define PIN_SDIO_CMD                    33
 #define PIN_SDIO_D0                     34  // D0-D3 MUST be consecutive. Uses GPIO 34-37

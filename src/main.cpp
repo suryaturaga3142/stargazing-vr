@@ -24,6 +24,7 @@
 #include "hardware/irq.h"
 #include "hardware/spi.h"
 #include "hardware/i2c.h"
+#include "hardware/sync.h"
 #include "hardware/watchdog.h"
 
 #include "config.h"
@@ -70,31 +71,32 @@ int main()
 
     // PHASE 2: Connectivity Check
     printf("Initializing peripherals...\r\nSearching SD Card...\r\n");
-    bool sd_inserted = sd_init();     // Initialize and check SD Card presence only. Do NOT mount or access data yet.
-    user_ui_set_state(LED_STATE_RUN);
+    bool sd_alive = sd_init();
+
     // If not present, run a 10 second warning while polling sd_check()
-    if (!sd_inserted) {
+    if (!sd_alive) {
         printf("No SD Card detected! Please insert one.\r\nWaiting...\r\n");
         user_ui_set_state(LED_STATE_SD_LOADING);
         for (int i = 0; i < 100; i++) {
             sleep_ms(100);
             watchdog_update();
-            sd_inserted = sd_check();
-            if (sd_inserted) break;
+            sd_alive = sd_check();
+            if (sd_alive) break;
         }
     }
     // If a timeout occured the error state is entered.
-    if (!sd_inserted) {
+    if (!sd_alive) {
         watchdog_disable();
         printf("Error: SD Card Connectivity Timeout Occured.\r\nPlease insert SD Card and restart.\r\n");
         user_ui_set_state(LED_STATE_ERR_CRITICAL);
         for(;;) {
-            tight_loop_contents();
+            __wfi();
         }
     }
     user_ui_set_state(LED_STATE_BOOTING);
     watchdog_update();
-    printf("SD Card detected!\r\nChecking IMU...\r\n");
+
+    printf("SD Card alive!\r\nChecking IMU...\r\n");
     bool imu_connected = imu_init();     // Check IMU presence and initialize
     if (imu_connected) watchdog_update();
     else {
@@ -102,9 +104,10 @@ int main()
         printf("Error: IMU not detected!\r\nPlease check connections and restart.\r\n");
         user_ui_set_state(LED_STATE_ERR_CRITICAL);
         for (;;) {
-            tight_loop_contents();
+            __wfi();
         }
     }
+
     printf("IMU detected!\r\nStarting LCD...\r\n");
     display_init(); // Initialize PIO related stuff, it'll be a fast function.
     watchdog_update();
@@ -118,17 +121,21 @@ int main()
         printf("Error: Unable to read SD Card. Check if stars.bin is present & correct?\r\n");
         user_ui_set_state(LED_STATE_ERR_CRITICAL);
         for (;;) {
-            tight_loop_contents();
+            __wfi();
         }
     }
     printf("Data Read!\r\nUnmounting card & sorting data...\r\n");
     sd_deinit();    // Unmount the SD card
+
     watchdog_update();
     sd_buf_sort();  // Sorts data in 3 pass algorithm
+    
     watchdog_update();
     printf("SD Card unmounted & data sorted!\r\nInitializing GPS (This will take time)...\r\n");
+    
     bool gps_fixed = gps_init();     // Initialize GPS module and enable GNRMC. Sync loc/RTC or use default
     watchdog_disable();
+    
     if (gps_fixed) {
         printf("GPS Lock found! Starting rendering...\r\nEnjoy!!\r\n");
         user_ui_set_state(LED_STATE_RUN);
@@ -148,7 +155,7 @@ int main()
     }
 
     // Should never reach here.
-    for(;;) tight_loop_contents();
+    for(;;) __wfi();
 
     return 0;
 }
