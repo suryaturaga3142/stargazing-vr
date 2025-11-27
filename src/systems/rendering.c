@@ -45,7 +45,7 @@ bool run_main_render(void) {
 
     g_is_rendering = true;
     // run everything
-    sleep_ms(50); // Simulate the heavy rendering load
+    sleep_ms(50); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
     g_is_rendering = false;
 
     return true;

@@ -154,8 +154,9 @@ int main()
         // Awake now bc interrupt fired. Do the events in order of priority.
         if (imu_check_and_read()) {
             monitor_checkin(SYS_MODULE_IMU);
-            printf("Data ready\r\n");
-            printf("%f\r\n", g_latest_imu_data.orientation.w);
+            //printf("Data ready\r\n");
+            //printf("%f\r\n", g_latest_imu_data.orientation.w);
+            printf("Game: %f %f %f %f\r\n", g_latest_imu_data.orientation.x, g_latest_imu_data.orientation.y, g_latest_imu_data.orientation.z, g_latest_imu_data.orientation.w);
             run_main_render();
             // Calculate draw list
             // Trigger DMA
