@@ -7,8 +7,10 @@
 src/third_party/watchdog.c
 include/third_party/watchdog.h
 
-data/sources/hipparcos.fit
-data/bin/stars.bin
+data/sources/*.fit
+data/bin/*.bin
+data/bin/*.csv
+data/bin/*.xlsx
 pcb-stargazing/production/backups/
 
 # KiCad auto-generated files
