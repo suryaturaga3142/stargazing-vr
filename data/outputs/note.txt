@@ -1,0 +1,4 @@
+This directory is for all the outputs generated. bin files, csv files, etc.
+DO NOT track any of this with git. Keep this under your .gitignore. These can be generated
+through the workflow stationed in data/scripts. Follow the instructions there given you have
+the right *.fit file for catalog generation and verification.

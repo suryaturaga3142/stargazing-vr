@@ -69,7 +69,7 @@ typedef struct {
  * @brief Header for the stars.bin file on the SD card.
  * @details Provides metadata to validate the file and understand its contents.
  */
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint32_t magic_number;    // Should be "STAR" (0x53544152) to make sure bin is right
     uint16_t version;         // File format version
     uint16_t header_size;     // Size of this header in bytes
@@ -81,7 +81,7 @@ typedef struct {
  * @details Uses scaled integers to minimize storage footprint. This is the
  * "on-disk" format that is unpacked at startup.
  */
-typedef struct {
+typedef struct __attribute((packed))__ {
     int32_t  ra_scaled;
     int32_t  dec_scaled;
     int16_t  pmra_scaled;

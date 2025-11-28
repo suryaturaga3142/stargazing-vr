@@ -1,26 +1,61 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+################################################################################
+# @file        game_rot.py
+# @brief       Allows visualization of IMU data coming in as serial data through a COM port.
+# @author      LED Chasers
+# @date        2025-11-27
+# @version     1.0
+################################################################################
+#
+# @details     This script serves as the mechanics verification tool that lets
+# the user ensure that the quaternion mechanics are coming out correctly. Data 
+# is provided in a fixed simple format and parsed by this script. The script runs
+# an executable pyqtgraph application, which is faster than tools like matplotlib
+# as it makes use of OpenGL.
+#
+# @note        This is an offline tool and is an optional method of debugging.
+#
+# @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
+#
+################################################################################
+#
+# DEPENDENCIES:
+# =============
+#   - Python 3.x
+#   - NumPy: Used for calculations
+#   - Data comes in the format:
+#   - "Game: w x y z"
+#
+# USAGE:
+# ======
+#   Run from the command line in the `stargazing/` directory:
+#   > python data/scripts/game_rot.py
+#
+################################################################################
+
+# --- Main script logic begins here ---
+
 import sys
 import serial
 import re
 import numpy as np
-# Import from PySide6 instead of PyQt5
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout
-from PySide6.QtCore import QThread, Signal, QTimer, Qt  # Changed pyqtSignal to Signal
+from PySide6.QtCore import QThread, Signal, QTimer, Qt
 import pyqtgraph.opengl as gl
 
-# --- CONFIGURATION ---
-SERIAL_PORT = "COM5" 
+SERIAL_PORT = "COM5" # Change this when needed
 SERIAL_BAUDRATE = 115200
-# ---------------------
 
 def normalize(v):
-    """Normalizes a numpy array."""
     norm = np.linalg.norm(v)
     if norm == 0:
         return v
     return v / norm
 
 def quat_multiply(q1, q2):
-    """Multiplies two quaternions in [w, x, y, z] order."""
+    # Quaternion multiplication
     w1, x1, y1, z1 = q1
     w2, x2, y2, z2 = q2
     w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
@@ -49,6 +84,7 @@ def apply_quaternion_rotation(v, q):
     q_conj = np.array([q_calc[0], -q_calc[1], -q_calc[2], -q_calc[3]])
     
     # The rotation formula: v' = q * v * q_conjugate
+    # To make it reverse rotation: v' = q_conjugate * v * q
     v_rotated_quat = quat_multiply(quat_multiply(q_conj, v_quat), q_calc)
     
     # Return just the vector part

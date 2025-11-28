@@ -21,6 +21,8 @@
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
+static const double SCALER_COORD = 1000000.0;
+static const double SCALER_MAG   = 1000.0;
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */

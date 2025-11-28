@@ -196,7 +196,6 @@ void load_real_data(const char* filename) {
     sd_buffer.resize(header.star_count);
     
     // Bulk Read
-    // Note: This relies on PackedStar_t being exactly 14 bytes packed
     f.read((char*)sd_buffer.data(), header.star_count * sizeof(PackedStar_t));
     
     std::cout << "Loaded successfully." << std::endl;
@@ -215,7 +214,7 @@ void generate_fake_data(int count) {
 }
 
 void export_csv() {
-    std::ofstream f("../bin/debug_stars.csv");
+    std::ofstream f("data/outputs/catalog_verification.csv");
     f << "RA_Idx,Dec_Idx,X,Y,Z,Mag" << std::endl;
     for (int r = 0; r < SKY_PATCH_RA_DIVISIONS; r++) {
         for (int d = 0; d < SKY_PATCH_DEC_DIVISIONS; d++) {
@@ -227,13 +226,13 @@ void export_csv() {
             }
         }
     }
-    std::cout << "Data exported to debug_stars.csv" << std::endl;
+    std::cout << "Data exported to catalog_verification.csv" << std::endl;
 }
 
 int main() {
     // Try to load real file, otherwise fake it
     sd_buffer.clear();
-    load_real_data("../bin/stars.bin"); 
+    load_real_data("data/outputs/stars.bin"); 
     
     if (sd_buffer.empty()) {
         generate_fake_data(5000);

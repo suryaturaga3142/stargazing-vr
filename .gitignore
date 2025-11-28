@@ -8,9 +8,9 @@ src/third_party/watchdog.c
 include/third_party/watchdog.h
 
 data/sources/*.fit
-data/bin/*.bin
-data/bin/*.csv
-data/bin/*.xlsx
+data/outputs/*.bin
+data/outputs/*.csv
+data/outputs/*.xlsx
 pcb-stargazing/production/backups/
 
 # KiCad auto-generated files

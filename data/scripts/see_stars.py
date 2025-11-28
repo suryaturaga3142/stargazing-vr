@@ -1,3 +1,41 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+################################################################################
+# @file        see_stars.py
+# @brief       A script to visualize sorted and processed star data in a CSV.
+# @author      LED Chasers
+# @date        2025-11-28
+# @version     1.0
+################################################################################
+#
+# @details     This script serves as the verification for the project sorting algorithm.
+#              It uses an existing CSV file and plots them in a 3D space using pyqtgraph,
+#              which is better than matplotlib because of usage of OpenGL.
+#
+# @note        This is an offline tool and is a mandatory step in the project's
+#              data pipeline. It must be run on a PC with an existing 'catalog_verification.csv'
+#              that was produced by an existing C++ sorting algorithm in order to test it.
+#
+# @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
+#
+################################################################################
+#
+# DEPENDENCIES:
+# =============
+#   - Python 3.x
+#   - NumPy: Astropy dependency, used for data filtering. (`pip install numpy`)
+#   - Pandas: Calculations ('pip install pandas')
+#
+# USAGE:
+# ======
+#   Run from the command line in the `stargazing_vr/` directory:
+#   > python data/scripts/see_stars.py
+#
+################################################################################
+
+# --- Main script logic begins here ---
+
 import sys
 import os
 import pandas as pd
@@ -127,7 +165,7 @@ class StarVisualizer(QMainWindow):
         # --- PATH LOGIC ---
         script_dir = os.path.dirname(os.path.abspath(__file__))
         data_dir = os.path.dirname(script_dir)
-        csv_path = os.path.join(data_dir, 'bin', 'debug_stars.csv')
+        csv_path = os.path.join(data_dir, 'outputs', 'catalog_verification.csv')
 
         if not os.path.exists(csv_path):
             print(f"Error: Could not find {csv_path}")
