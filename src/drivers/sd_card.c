@@ -48,9 +48,9 @@ FATFS fs_storage; // Global file system object
  */
 bool sd_check(void) {
     if (gpio_get(PIN_SD_DET)) {
-        return true;
+        return false;
     }
-    return false;
+    return true;
 }
 
 /**
@@ -121,7 +121,8 @@ bool sd_load_data(void)
         if (fno.fattrib & AM_DIR)
             continue;
 
-        if (!strstr(fno.fname, ".bin"))
+        char *ext = strrchr(fno.fname, '.');
+        if (!ext || strcasecmp(ext, ".bin") != 0)
             continue;
 
         FIL fil;
@@ -188,6 +189,15 @@ bool sd_load_data(void)
         if (br == 0)
             break; // EOF
 
+
+        // if (count < 3) {   // checks if stars are stored correctly
+        //     printf("Star %lu:\n", (unsigned long)count);
+        //     printf("  RA  = %ld\n", star.ra_scaled);
+        //     printf("  DEC = %ld\n", star.dec_scaled);
+        //     printf("  PMRA  = %d\n", star.pmra_scaled);
+        //     printf("  PMDEC = %d\n", star.pmdec_scaled);
+        //     printf("  MAG   = %d\n", star.mag_scaled);
+        // }
         /* Process star */
         // unpack_star(&star);
         count++;
@@ -243,4 +253,173 @@ bool sd_buf_sort(void) {
     // Unpack the bulk read buffer and sort it with 3 pass algorithm.
     // Surya's job. nothing to actually do with the SD card here.
     return true;
+}
+
+
+/**
+ * @brief prints any error with FatFs
+ * 
+ * @return
+ */
+void print_error(FRESULT fr, const char *msg)
+{
+    const char *errs[] = {
+            [FR_OK] = "Success",
+            [FR_DISK_ERR] = "Hard error in low-level disk I/O layer",
+            [FR_INT_ERR] = "Assertion failed",
+            [FR_NOT_READY] = "Physical drive cannot work",
+            [FR_NO_FILE] = "File not found",
+            [FR_NO_PATH] = "Path not found",
+            [FR_INVALID_NAME] = "Path name format invalid",
+            [FR_DENIED] = "Permision denied",
+            [FR_EXIST] = "Prohibited access",
+            [FR_INVALID_OBJECT] = "File or directory object invalid",
+            [FR_WRITE_PROTECTED] = "Physical drive is write-protected",
+            [FR_INVALID_DRIVE] = "Logical drive number is invalid",
+            [FR_NOT_ENABLED] = "Volume has no work area",
+            [FR_NO_FILESYSTEM] = "Not a valid FAT volume",
+            [FR_MKFS_ABORTED] = "f_mkfs aborted",
+            [FR_TIMEOUT] = "Unable to obtain grant for object",
+            [FR_LOCKED] = "File locked",
+            [FR_NOT_ENOUGH_CORE] = "File name is too large",
+            [FR_TOO_MANY_OPEN_FILES] = "Too many open files",
+            [FR_INVALID_PARAMETER] = "Invalid parameter",
+    };
+    if (fr < 0 || fr >= sizeof errs / sizeof errs[0])
+        printf("%s: Invalid error\n", msg);
+    else
+        printf("%s: %s\n", msg, errs[fr]);
+}
+
+/**
+ * @brief other stuff from the template that could fix random errors
+ * 
+ * @return
+ */
+
+ void sdcard_io_high_speed() 
+{
+    spi_set_baudrate(spi0, 12000000);
+    // fill in.
+}
+
+void init_sdcard_io() 
+{
+    sd_init();
+    disable_sdcard();
+    // fill in.
+}
+const char *month_name[] = {
+    [1] = "Jan",
+    [2] = "Feb",
+    [3] = "Mar",
+    [4] = "Apr",
+    [5] = "May",
+    [6] = "Jun",
+    [7] = "Jul",
+    [8] = "Aug",
+    [9] = "Sep",
+    [10] = "Oct",
+    [11] = "Nov",
+    [12] = "Dec",
+};
+typedef union {
+    struct {
+        unsigned int bisecond:5; // seconds divided by 2
+        unsigned int minute:6;
+        unsigned int hour:5;
+        unsigned int day:5;
+        unsigned int month:4;
+        unsigned int year:7;
+    };
+} fattime_t;
+
+// Current time in the FAT file system format.
+static fattime_t fattime;
+
+void set_fattime(int year, int month, int day, int hour, int minute, int second)
+{
+    fattime_t newtime;
+    newtime.year = year - 1980;
+    newtime.month = month;
+    newtime.day = day;
+    newtime.hour = hour;
+    newtime.minute = minute;
+    newtime.bisecond = second/2;
+    int len = sizeof newtime;
+    memcpy(&fattime, &newtime, len);
+}
+
+void advance_fattime(void)
+{
+    fattime_t newtime = fattime;
+    newtime.bisecond += 1;
+    if (newtime.bisecond == 30) {
+        newtime.bisecond = 0;
+        newtime.minute += 1;
+    }
+    if (newtime.minute == 60) {
+        newtime.minute = 0;
+        newtime.hour += 1;
+    }
+    if (newtime.hour == 24) {
+        newtime.hour = 0;
+        newtime.day += 1;
+    }
+    if (newtime.month == 2) {
+        if (newtime.day >= 29) {
+            int year = newtime.year + 1980;
+            if ((year % 1000) == 0) { // we have a leap day in 2000
+                if (newtime.day > 29) {
+                    newtime.day -= 28;
+                    newtime.month = 3;
+                }
+            } else if ((year % 100) == 0) { // no leap day in 2100
+                if (newtime.day > 28)
+                newtime.day -= 27;
+                newtime.month = 3;
+            } else if ((year % 4) == 0) { // leap day for other mod 4 years
+                if (newtime.day > 29) {
+                    newtime.day -= 28;
+                    newtime.month = 3;
+                }
+            }
+        }
+    } else if (newtime.month == 9 || newtime.month == 4 || newtime.month == 6 || newtime.month == 10) {
+        if (newtime.day == 31) {
+            newtime.day -= 30;
+            newtime.month += 1;
+        }
+    } else {
+        if (newtime.day == 0) { // cannot advance to 32
+            newtime.day = 1;
+            newtime.month += 1;
+        }
+    }
+    if (newtime.month == 13) {
+        newtime.month = 1;
+        newtime.year += 1;
+    }
+
+    fattime = newtime;
+}
+
+uint32_t get_fattime(void)
+{
+    union FattimeUnion {
+        fattime_t time;
+        uint32_t value;
+    };
+
+    union FattimeUnion u;
+    u.time = fattime;
+    return u.value;
+}
+
+int to_int(char *start, char *end, int base)
+{
+    int n = 0;
+    for( ; start != end; start++)
+        n = n * base + (*start - '0');
+    return n;
 }

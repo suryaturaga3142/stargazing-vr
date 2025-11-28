@@ -87,7 +87,7 @@ int main()
     watchdog_update();
 
     printf("SD Card alive!\r\nChecking IMU...\r\n");
-    bool imu_connected = imu_init();     // Check IMU presence and initialize
+    bool imu_connected = imu_init();     // Check IMU presence and initialize, set to true for sd testing, set back to imu_init() otherwise 
     if (imu_connected) watchdog_update();
     else {
         watchdog_disable();
