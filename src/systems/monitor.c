@@ -71,5 +71,5 @@ void monitor_update(void) {
         checkin_flags = 0;
     }
     // If flags != ALL_SYSTEMS_GO, we do NOTHING.
-    // Eventually, the hardware watchdog will time out and reset the RP2350.
+    // Eventually, the hardware watchdog will time out and reset the system.
 }

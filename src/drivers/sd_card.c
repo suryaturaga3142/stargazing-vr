@@ -28,6 +28,8 @@
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
+static const double SCALER_COORD = 1000000.0;
+static const double SCALER_MAG   = 1000.0;
 // ...
 FATFS fs_storage; // Global file system object
 #define STAR_MAGIC 0x53544152  // "STAR" = 0x53 54 41 52
