@@ -23,7 +23,7 @@
 #include "diskio.h"
 #include <stdio.h>
 #include <string.h>
-#include "sdcard.h"
+#include "sd_card.h"
 
 // ...
 
