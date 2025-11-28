@@ -115,7 +115,7 @@ int main()
         }
     }
     printf("Data Read!\r\nUnmounting card & sorting data...\r\n");
-    sd_deinit();    // Unmount the SD card
+    disable_sdcard();    // Unmount the SD card
 
     watchdog_update();
     sd_buf_sort();  // Sorts data in 3 pass algorithm

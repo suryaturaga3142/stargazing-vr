@@ -4,7 +4,8 @@
         "star_movement.h": "c",
         "math.h": "c",
         "watchdog.h": "c",
-        "utils.h": "c"
+        "utils.h": "c",
+        "ff.h": "c"
     },
     "cortex-debug.variableUseNaturalFormat": false,
     "makefile.configureOnOpen": true
