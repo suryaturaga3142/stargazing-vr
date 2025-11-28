@@ -2,11 +2,69 @@ import sys
 import os
 import pandas as pd
 import numpy as np
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget
-from PySide6.QtGui import QPalette, QColor
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (QApplication, QMainWindow, QLabel, QVBoxLayout, 
+                               QWidget, QComboBox, QHBoxLayout, QLineEdit)
+from PySide6.QtCore import Qt, Signal, QEvent
+from PySide6.QtGui import QPalette, QColor, QStandardItemModel, QStandardItem
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
+
+# --- Constants for Binning ---
+SKY_PATCH_RA_DIVISIONS = 24
+SKY_PATCH_DEC_DIVISIONS = 12
+
+class CheckableComboBox(QComboBox):
+    # Signal to notify parent when selection changes
+    selectionUpdated = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setEditable(True)
+        self.lineEdit().setReadOnly(True)
+        
+        # Use a StandardItemModel to support checkable items
+        self.setModel(QStandardItemModel(self))
+        self.view().pressed.connect(self.handleItemPressed)
+        
+        # Update display text initially
+        self.updateText()
+
+    def handleItemPressed(self, index):
+        item = self.model().itemFromIndex(index)
+        
+        # Toggle Check State
+        if item.checkState() == Qt.Checked:
+            item.setCheckState(Qt.Unchecked)
+        else:
+            item.setCheckState(Qt.Checked)
+            
+        self.updateText()
+        self.selectionUpdated.emit()
+
+    def addItem(self, text, data=None):
+        item = QStandardItem(text)
+        item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable)
+        item.setData(data)
+        item.setCheckState(Qt.Unchecked) # Default Unchecked
+        self.model().appendRow(item)
+        self.updateText()
+
+    def getCheckedData(self):
+        res = []
+        for i in range(self.model().rowCount()):
+            item = self.model().item(i)
+            if item.checkState() == Qt.Checked:
+                res.append(item.data())
+        return res
+
+    def updateText(self):
+        checked = self.getCheckedData()
+        if not checked:
+            self.lineEdit().setText("None Selected")
+        elif len(checked) == self.model().rowCount():
+            self.lineEdit().setText("All Selected")
+        else:
+            self.lineEdit().setText(f"{len(checked)} Bins Selected")
 
 class StarVisualizer(QMainWindow):
     def __init__(self):
@@ -17,92 +75,116 @@ class StarVisualizer(QMainWindow):
         # Main layout container
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        layout = QVBoxLayout(central_widget)
+        main_layout = QVBoxLayout(central_widget)
         
         # 1. Setup OpenGL View
         self.view = gl.GLViewWidget()
         self.view.opts['distance'] = 2.5  # Initial camera distance
         self.view.opts['fov'] = 60        # Field of view
-        layout.addWidget(self.view)
+        main_layout.addWidget(self.view, stretch=1) # Give view mostly all space
 
-        # Instructions Label
-        # info_label = QLabel("Left Click: Rotate | Right Click: Pan | Scroll: Zoom")
-        # info_label.setAlignment(Qt.AlignCenter)
-        # info_label.setStyleSheet("color: gray; font-size: 12px; padding: 5px;")
-        # layout.addWidget(info_label)
+        # 2. Add Controls Area (Bottom)
+        controls_layout = QHBoxLayout()
+        controls_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.addLayout(controls_layout)
 
-        # 2. Add Reference Grid (Optional, helps visual orientation)
-        # g = gl.GLGridItem()
-        # g.scale(0.1, 0.1, 0.1)
-        # g.setDepthValue(10) 
-        # self.view.addItem(g)
+        # RA Filter
+        self.ra_combo = CheckableComboBox()
+        for i in range(SKY_PATCH_RA_DIVISIONS):
+            self.ra_combo.addItem(f"RA Bin {i} ({i}h)", i)
+        self.ra_combo.selectionUpdated.connect(self.update_plot)
+        
+        controls_layout.addWidget(QLabel("Filter RA:"))
+        controls_layout.addWidget(self.ra_combo, stretch=1)
+
+        # Dec Filter
+        self.dec_combo = CheckableComboBox()
+        for i in range(SKY_PATCH_DEC_DIVISIONS):
+            self.dec_combo.addItem(f"Dec Bin {i}", i)
+        self.dec_combo.selectionUpdated.connect(self.update_plot)
+        
+        controls_layout.addWidget(QLabel("Filter Dec:"))
+        controls_layout.addWidget(self.dec_combo, stretch=1)
 
         # 3. Add Axes (Red=X, Green=Y, Blue=Z)
         axis = gl.GLAxisItem()
         axis.setSize(1.5, 1.5, 1.5)
         self.view.addItem(axis)
 
-        # 4. Load and Plot Data
+        # Placeholder for Scatter Item
+        self.scatter_item = None
+
+        # Data Storage
+        self.df = None
+        self.full_pos = None
+        self.full_sizes = None
+        self.full_colors = None
+
+        # 4. Load Data
         self.load_data()
 
     def load_data(self):
+        # --- PATH LOGIC ---
         script_dir = os.path.dirname(os.path.abspath(__file__))
         data_dir = os.path.dirname(script_dir)
         csv_path = os.path.join(data_dir, 'bin', 'debug_stars.csv')
 
         if not os.path.exists(csv_path):
             print(f"Error: Could not find {csv_path}")
-            print("Expected path structure: {common}/data/scripts/this_script.py")
-            print("                         {common}/data/bin/debug_stars.csv")
             return
 
         print(f"Loading {csv_path}...")
-        df = pd.read_csv(csv_path)
+        self.df = pd.read_csv(csv_path)
         
-        # --- Prepare Coordinates ---
-        # PyQtGraph expects a (N, 3) numpy array of floats
-        pos = np.vstack([df['X'], df['Y'], df['Z']]).transpose()
+        # --- Prepare Full Arrays ---
+        # Positions
+        self.full_pos = np.vstack([self.df['X'], self.df['Y'], self.df['Z']]).transpose()
 
-        # --- Prepare Metadata (Magnitude) ---
-        mags = df['Mag'].to_numpy()
+        # Metadata (Magnitude)
+        mags = self.df['Mag'].to_numpy()
         
-        # --- Calculate Sizes ---
-        # Brighter stars (lower mag) should be larger.
-        # Formula: Size = Base + (MaxMag - Mag) * Scale
-        # We clip sizes to keep them visible but not overwhelming
+        # Sizes
         sizes = (6.5 - mags) * 5 
-        sizes = np.clip(sizes, 2, 20) 
+        self.full_sizes = np.clip(sizes, 2, 20) 
 
-        # --- Calculate Colors ---
-        # Map magnitude to a colormap (Viridis: Yellow=Bright, Purple=Dim)
-        # Normalize mags to 0.0 - 1.0 range
+        # Colors (Viridis)
         min_mag = mags.min()
         max_mag = mags.max()
-        
-        # Normalize: 0.0 (dimmest) to 1.0 (brightest)
-        # We invert it because viridis yellow (bright) is at 1.0
         norm_mags = 1.0 - (mags - min_mag) / (max_mag - min_mag)
-
-        # Get colormap from pyqtgraph
         cm = pg.colormap.get('viridis')
-        # Map normalized values to RGBA colors (N, 4)
-        colors = cm.map(norm_mags, mode='float')
+        self.full_colors = cm.map(norm_mags, mode='float')
 
-        # --- Create Scatter Plot Item ---
-        # pxMode=True: Points stay the same pixel size regardless of zoom (good for stars)
-        # pxMode=False: Points scale with the world (good for physical spheres)
-        sp = gl.GLScatterPlotItem(
-            pos=pos, 
-            size=sizes, 
-            color=colors, 
-            pxMode=True
-        )
+        # --- Init Scatter Plot (Empty initially) ---
+        self.scatter_item = gl.GLScatterPlotItem(pos=np.zeros((0,3)), size=np.zeros(0), color=np.zeros((0,4)), pxMode=True)
+        self.scatter_item.setGLOptions('translucent')
+        self.view.addItem(self.scatter_item)
         
-        # Optimize transparency rendering
-        sp.setGLOptions('translucent')
+        # Initial Plot Update
+        self.update_plot()
 
-        self.view.addItem(sp)
-        print(f"Successfully plotted {len(df)} stars.")
+    def update_plot(self):
+        if self.df is None:
+            return
+
+        # Get checked bins
+        checked_ra = self.ra_combo.getCheckedData()
+        checked_dec = self.dec_combo.getCheckedData()
+
+        # Logic: If either RA list or Dec list is empty, show NOTHING.
+        # This matches "checking a box will only show stars of that ra and dec set"
+        if not checked_ra or not checked_dec:
+            self.scatter_item.setData(pos=np.zeros((0,3)), size=np.zeros(0), color=np.zeros((0,4)))
+            return
+
+        # Filter
+        mask = self.df['RA_Idx'].isin(checked_ra) & self.df['Dec_Idx'].isin(checked_dec)
+        
+        visible_pos = self.full_pos[mask]
+        visible_sizes = self.full_sizes[mask]
+        visible_colors = self.full_colors[mask]
+
+        self.scatter_item.setData(pos=visible_pos, size=visible_sizes, color=visible_colors)
+        # print(f"Showing {len(visible_pos)} stars in selected bins.")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
@@ -110,8 +192,10 @@ if __name__ == '__main__':
     # Dark theme for space vibes
     app.setStyle('Fusion')
     palette = app.palette()
+    
     palette.setColor(QPalette.ColorRole.Window, Qt.black)
     palette.setColor(QPalette.ColorRole.WindowText, Qt.white)
+    
     app.setPalette(palette)
 
     window = StarVisualizer()
