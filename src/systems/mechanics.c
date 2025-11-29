@@ -18,18 +18,17 @@
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
+// Default quaternion for J2000 West Lafayette (find this)
+static const Quaternion_t default_fix = {
+    .w = 0.0f,
+    .x = 0.0f,
+    .y = 0.0f,
+    .z = 0.0f
+};
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
-// A default GPS fix to use when no valid data is available. Upon intialization, find the default quaternion.
-static GPSData_t default_fix = {
-    .time = {2000, 1, 1, 0, 0, 0},
-    .latitude = 0.0f,
-    .longitude = 0.0f,
-    .is_valid = false
-};
-static Quaternion_t q_default_fix;
-
+// Find based on GPSData_t g_latest_gps_data. Updated in main loop when GPS data read.
 static Quaternion_t q_actual_fix;
 
 // ...

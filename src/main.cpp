@@ -155,9 +155,7 @@ int main()
             monitor_checkin(SYS_MODULE_IMU);
             // printf("Game: %f %f %f %f\r\n", g_latest_imu_data.orientation.x, g_latest_imu_data.orientation.y, g_latest_imu_data.orientation.z, g_latest_imu_data.orientation.w);
             run_main_render();
-            // Calculate draw list
             monitor_checkin(SYS_MODULE_DISPLAY);
-            // Trigger DMA
         }
 
         // READ GPS IN THE SAME METHOD AS IMU
