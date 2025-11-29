@@ -114,16 +114,16 @@ int main()
             __wfi();
         }
     }
-    printf("Data Read!\r\nUnmounting card & sorting data...\r\n");
-    disable_sdcard();    // Unmount the SD card
+    printf("Data Read!\r\nDisabling card & sorting data...\r\n");
+    disable_sdcard();
 
     watchdog_update();
     sd_buf_sort();  // Sorts data in 3 pass algorithm
     
     watchdog_update();
-    printf("SD Card unmounted & data sorted!\r\nInitializing GPS (This will take time)...\r\n");
+    printf("SD Card disabled & data sorted!\r\nInitializing GPS (This will take time)...\r\n");
     
-    bool gps_fixed = gps_init();     // Initialize GPS module and enable GNRMC. Sync loc/RTC or use default
+    bool gps_fixed = gps_init();
     watchdog_disable();
     
     if (gps_fixed) {
@@ -137,10 +137,10 @@ int main()
     
     // PHASE 4: Handover process
     // Reconfigure watchdog for main loop checking and setup monitoring supervisor
-    irq_set_priority(IO_IRQ_BANK0, 0x10);   // IMU INT and PB
-    irq_set_priority(TIMER0_IRQ_1, 0x20);   // GPS data
-    irq_set_priority(TIMER0_IRQ_0, 0x30);   // Monitor Checkin
-    irq_set_priority(PWM_IRQ_WRAP_0, 0x40); // RGB LED State
+    irq_set_priority(IO_IRQ_BANK0  , 0x10);   // IMU INT and PB
+    irq_set_priority(TIMER0_IRQ_1  , 0x20);   // GPS data
+    irq_set_priority(PWM_IRQ_WRAP_0, 0x30);   // RGB LED State
+    irq_set_priority(TIMER0_IRQ_0  , 0x40);   // Monitor Checkin
     monitor_init();
     watchdog_enable(WATCHDOG_TIMEOUT_MS, true);
 
@@ -172,7 +172,7 @@ int main()
             imu_recenter_yaw();
         }
         if (g_use_actual_gps) {
-            // Overwrite the used location quaternion with either the new GPS quaternion or the in build one.
+            // Overwrite the used location quaternion with either the new GPS quaternion or the in built one.
             // Note; might be better to use the toggle request to avoid excess branching
         }
 
