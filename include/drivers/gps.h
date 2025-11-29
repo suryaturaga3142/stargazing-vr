@@ -26,6 +26,7 @@ extern volatile GPSData_t g_latest_gps_data;      // Updated by the main loop fr
 extern volatile bool g_gps_correction_needed;     // Set by RTC alarm, handled by main.
 
 bool gps_init(void);
+bool gps_check_and_read(void);
 
 #ifdef __cplusplus
 }

@@ -23,6 +23,7 @@
 #include "pico/time.h"
 
 #include "imu.h"
+#include "gps.h"
 #include "user_ui.h"
 #include "rendering.h"
 
@@ -181,5 +182,16 @@ void irq_timer_monitor_callback(void) {
     timer0_hw->intr &= TIMER_INTR_ALARM_0_BITS;
     monitor_update();
     timer0_hw->alarm[0] = timer_hw->timerawl + (WATCHDOG_SUPERVISOR_INTERVAL_MS * 1000);
+    return;
+}
+
+/**
+ * @brief IRQ for repeating timer to request a GPS update periodically
+ * 
+ */
+void irq_timer_gps_callback(void) {
+    timer0_hw->intr &= TIMER_INTR_ALARM_1_BITS;
+    g_gps_correction_needed = true;
+    timer0_hw->alarm[1] = timer_hw->timerawl + (GPS_CORRECTION_INTERVAL_MIN * 60 * 1000);
     return;
 }

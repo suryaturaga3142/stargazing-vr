@@ -27,6 +27,7 @@ extern "C" {
 void irq_gpio_handler(uint gpio, uint32_t events);
 void irq_on_pwm_wrap(void);
 void irq_timer_monitor_callback(void);
+void irq_timer_gps_callback(void);
 
 #ifdef __cplusplus
 }

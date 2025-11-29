@@ -138,8 +138,9 @@ int main()
     // PHASE 4: Handover process
     // Reconfigure watchdog for main loop checking and setup monitoring supervisor
     irq_set_priority(IO_IRQ_BANK0, 0x10);   // IMU INT and PB
-    irq_set_priority(PWM_IRQ_WRAP_0, 0x20); // RGB LED State
+    irq_set_priority(TIMER0_IRQ_1, 0x20);   // GPS data
     irq_set_priority(TIMER0_IRQ_0, 0x30);   // Monitor Checkin
+    irq_set_priority(PWM_IRQ_WRAP_0, 0x40); // RGB LED State
     monitor_init();
     watchdog_enable(WATCHDOG_TIMEOUT_MS, true);
 
@@ -152,7 +153,7 @@ int main()
         // Awake now bc interrupt fired. Do the events in order of priority.
         if (imu_check_and_read()) {
             monitor_checkin(SYS_MODULE_IMU);
-            printf("Game: %f %f %f %f\r\n", g_latest_imu_data.orientation.x, g_latest_imu_data.orientation.y, g_latest_imu_data.orientation.z, g_latest_imu_data.orientation.w);
+            // printf("Game: %f %f %f %f\r\n", g_latest_imu_data.orientation.x, g_latest_imu_data.orientation.y, g_latest_imu_data.orientation.z, g_latest_imu_data.orientation.w);
             run_main_render();
             // Calculate draw list
             monitor_checkin(SYS_MODULE_DISPLAY);
@@ -160,23 +161,21 @@ int main()
         }
 
         // READ GPS IN THE SAME METHOD AS IMU
-        /*
         if (gps_check_and_read()) {
-            ...
-            monitor_checkin(SYS_MODULE_GPS);
+            // Update the location quaternion
+            // Update the RTC
         }
-        */
+        monitor_checkin(SYS_MODULE_GPS);
 
         if (g_drift_correct_request) {
             user_ui_set_state(LED_STATE_DRIFT_CONFIRM);
             imu_recenter_yaw();
         }
         if (g_use_actual_gps) {
-            // Figure out what goes here. Overwrite the quaternion basically
+            // Overwrite the used location quaternion with either the new GPS quaternion or the in build one.
             // Note; might be better to use the toggle request to avoid excess branching
         }
 
-        //monitor_checkin(SYS_MODULE_GPS);
         monitor_checkin(SYS_MODULE_MAIN);
     }
 

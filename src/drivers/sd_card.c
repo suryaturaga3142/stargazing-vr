@@ -26,6 +26,8 @@ static const double SCALER_MAG   = 1000.0;
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
+static StarFileHeader_t sd_header;
+static PackedStar_t sd_raw_buffer[STAR_CATALOG_SIZE_MAX];
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */

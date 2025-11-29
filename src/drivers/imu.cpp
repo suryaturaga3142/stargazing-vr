@@ -48,8 +48,6 @@ volatile IMUData_t g_latest_imu_data = {0};
  * @return true if initialization was successful
  */
 bool imu_init(void) {
-    // Initialize the IMU module in I2C, configure game rotation vectors with interrupts at 200Hz.
-    sleep_ms(3000);
     
     gpio_init(PIN_IMU_INT);
     gpio_init(PIN_IMU_RST);
@@ -130,8 +128,12 @@ bool imu_check_and_read(void) {
     return false;
 }
 
+/**
+ * @brief A small function to recenter the z axis of the IMU, directing north.
+ * 
+ * @return true if the recentering was successful.
+ */
 bool imu_recenter_yaw(void) {
-    
     if (imu.tareNow(true, SH2_TARE_BASIS_GAMING_ROTATION_VECTOR)) return true;
     else return false;
 }
