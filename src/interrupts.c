@@ -63,7 +63,7 @@ void irq_gpio_handler(uint gpio, uint32_t events)
         g_drift_correct_request = true;
     } else if (gpio == PIN_BTN_LOCATION_TOGGLE) {
         gpio_acknowledge_irq(PIN_BTN_LOCATION_TOGGLE, events);
-        g_use_actual_gps = !g_use_actual_gps;
+        g_location_toggle_request = true;
     }
     return;
 }

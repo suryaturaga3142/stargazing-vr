@@ -170,10 +170,12 @@ int main()
         if (g_drift_correct_request) {
             user_ui_set_state(LED_STATE_DRIFT_CONFIRM);
             imu_recenter_yaw();
+            monitor_checkin(SYS_MODULE_IMU);
+            g_drift_correct_request = false;
         }
-        if (g_use_actual_gps) {
-            // Overwrite the used location quaternion with either the new GPS quaternion or the in built one.
-            // Note; might be better to use the toggle request to avoid excess branching
+        if (g_location_toggle_request) {
+            g_use_gps_location = !g_use_gps_location;
+            g_location_toggle_request = false;
         }
 
         monitor_checkin(SYS_MODULE_MAIN);

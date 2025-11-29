@@ -27,5 +27,16 @@ extern volatile JulianDate_t g_current_time_jd;   // The high-precision master s
 
 extern volatile bool g_use_gps_location;          // Toggles between GPS and J2000 reference.
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+bool mechanics_init(void);
+
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif /* MECHANICS_H */

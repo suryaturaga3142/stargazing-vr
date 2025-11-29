@@ -21,6 +21,17 @@
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
+// A default GPS fix to use when no valid data is available. Upon intialization, find the default quaternion.
+static GPSData_t default_fix = {
+    .time = {2000, 1, 1, 0, 0, 0},
+    .latitude = 0.0f,
+    .longitude = 0.0f,
+    .is_valid = false
+};
+static Quaternion_t q_default_fix;
+
+static Quaternion_t q_actual_fix;
+
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */
@@ -39,3 +50,13 @@ volatile bool g_use_gps_location = true; // Default to using GPS location on sta
 
 /* ----------------------------- Public Functions --------------------------- */
 
+
+/**
+ * @brief A fast initialization of the default quaternions used in mechanics
+ * 
+ * @return true if initialization was successful.
+ */
+bool mechanics_init(void) {
+    // Calculate the default fix quaternion from default_fix
+    return true;
+}

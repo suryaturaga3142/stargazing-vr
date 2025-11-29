@@ -24,7 +24,7 @@ extern "C" {
 extern StateDetails_t current_state;
 
 extern volatile bool g_drift_correct_request;     // Set by button ISR, handled by main.
-extern volatile bool g_use_actual_gps;            // Set by button ISR, handled by main.
+extern volatile bool g_location_toggle_request;   // Set by button ISR, handled by main.
 
 bool user_ui_init(void);
 bool user_ui_set_state(LEDState_e state);

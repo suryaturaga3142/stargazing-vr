@@ -42,8 +42,8 @@ StateDetails_t current_state = {
 
 /* ----------------------------- Public Variables --------------------------- */
 
-volatile bool g_drift_correct_request = false;
-volatile bool g_use_actual_gps =        true;
+volatile bool g_drift_correct_request   = false;
+volatile bool g_location_toggle_request = true;
 
 /* ----------------------------- Public Functions --------------------------- */
 
