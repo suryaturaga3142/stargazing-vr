@@ -87,7 +87,7 @@ int main()
     watchdog_update();
 
     printf("SD Card alive!\r\nChecking IMU...\r\n");
-    bool imu_connected = imu_init();     // Check IMU presence and initialize
+    bool imu_connected = imu_init();     // Check IMU presence and initialize, set to true for sd testing, set back to imu_init() otherwise 
     if (imu_connected) watchdog_update();
     else {
         watchdog_disable();
@@ -115,7 +115,7 @@ int main()
         }
     }
     printf("Data Read!\r\nUnmounting card & sorting data...\r\n");
-    sd_deinit();    // Unmount the SD card
+    disable_sdcard();    // Unmount the SD card
 
     watchdog_update();
     sd_buf_sort();  // Sorts data in 3 pass algorithm
