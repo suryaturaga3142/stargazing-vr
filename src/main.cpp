@@ -157,13 +157,20 @@ int main()
             monitor_checkin(SYS_MODULE_DISPLAY);
         }
 
-        // READ GPS IN THE SAME METHOD AS IMU
         if (gps_check_and_read()) {
             if (g_latest_gps_data.is_valid) {
-                // 
+                Qfix_last.loc = mech_location_to_q(g_latest_gps_data.latitude, g_latest_gps_data.longitude);
+                Qfix_last.time = mech_time_to_q(mech_utc_to_sidereal(g_latest_gps_data.time));
+                Qfix_last.total = mech_product_q(Qfix_last.loc, Qfix_last.time);
             }
         }
         monitor_checkin(SYS_MODULE_GPS);
+
+        if (g_use_gps_location) {
+            if (g_latest_gps_data.is_valid) user_ui_set_state(LED_STATE_RUN);
+            else                            user_ui_set_state(LED_STATE_RUN_NO_FIX);
+        }
+        else user_ui_set_state(LED_STATE_RUN_J2000);
 
         if (g_drift_correct_request) {
             user_ui_set_state(LED_STATE_DRIFT_CONFIRM); // It will get overwritten pretty fast

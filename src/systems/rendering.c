@@ -28,23 +28,23 @@
 
 /* ---------------------------- Private Constants --------------------------- */
 // Precalculated quaternions for location at PWL in J2000
-static const Quaternion_t q_location_pwl = {0.7071f, 0.0f, 0.7071f, 0.0f};
-static const Quaternion_t q_time_j2000 = {1.0f, 0.0f, 0.0f, 0.0f};
-static const Quaternion_t q_fix_pwl_j2000 = {0.7071f, 0.0f, 0.7071f, 0.0f};
+static const Qfix_t Qfix_default = {
+    .loc =   {0.7071f, 0.0f, 0.7071f, 0.0f},
+    .time =  {1.0f, 0.0f, 0.0f, 0.0f},
+    .total = {0.7071f, 0.0f, 0.7071f, 0.0f}
+};
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
 static volatile bool g_is_rendering = false;
 // Started at precalculated in case GPS is not available
-static Quaternion_t q_location_last = q_location_pwl;
-static Quaternion_t q_time_last = q_time_j2000;
-static Quaternion_t q_fix_last = q_fix_pwl_j2000;
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */
 // ...
 
 /* ----------------------------- Public Variables --------------------------- */
+Qfix_t Qfix_last = Qfix_default;
 
 /* ----------------------------- Public Functions --------------------------- */
 
@@ -62,27 +62,10 @@ bool run_main_render(void) {
     Quaternion_t q_imu = g_latest_imu_data.orientation;
     Quaternion_t q_fix_calc; // The one to use in calculation
     
-    if (g_use_gps_location) {
-        if (g_latest_gps_data.is_valid) {
-            user_ui_set_state(LED_STATE_RUN);
-            // MOVE THIS TO MAIN. Can avoid all precalculations by making it global
-            // call mechanics functions to find q_location from gps data
-            // q_location_last = mech_location_to_q();
-            // q_time_last = mech_time_to_q();
-            // q_fix_last = mech_product_q(q_location_last, q_time_last);
-        }
-        else {
-            user_ui_set_state(LED_STATE_RUN_NO_FIX);
-            // default to last known good location / PWL so do nothing
-        }
-        q_fix_calc = q_fix_last;
-    }
-    else {
-        user_ui_set_state(LED_STATE_RUN_J2000);
-        q_fix_calc = q_fix_pwl_j2000;
-    }
+    if (g_use_gps_location) q_fix_calc = Qfix_last.total;
+    else                    q_fix_calc = Qfix_default.total;
 
-    // Quaternion_t q_final = mech_product_q(mech_conjugate_q(q_imu), q_fix_calc);
+    Quaternion_t q_final = mech_product_q(mech_conjugate_q(q_imu), q_fix_calc);
 
     // Phase 2: Spatial culling
     // perspective_vector = q_final_conjugate * (0, 0, 1) * q_final

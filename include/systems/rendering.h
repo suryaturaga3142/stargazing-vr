@@ -17,6 +17,8 @@
 #include "config.h"
 #include "structs.h"
 
+extern Qfix_t Qfix_last;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -35,6 +35,14 @@ typedef struct {
     float x, y, z;
 } Vector3f_t;
 
+/**
+ * @brief A group of Quaternions to hold the complete fix data.
+ * @details total = loc * time
+ */
+typedef struct {
+    Quaternion_t loc, time, total;
+} Qfix_t;
+
 /* -------------------------- Timekeeping Data Types ------------------------ */
 
 /**

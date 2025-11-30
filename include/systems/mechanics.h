@@ -29,10 +29,11 @@ extern volatile bool g_use_gps_location;          // Toggles between GPS and J20
 extern "C" {
 #endif
 
+UTCTime_t mech_utc_to_sidereal(UTCTime_t current_time);
+Quaternion_t mech_location_to_q(float latitude, float longitude);
+Quaternion_t mech_time_to_q(UTCTime_t time);
 Quaternion_t mech_conjugate_q(Quaternion_t q);
 Quaternion_t mech_product_q(Quaternion_t q1, Quaternion_t q2);
-Quaternion_t mech_location_to_q(void);
-Quaternion_t mech_time_to_q(void);
 
 #ifdef __cplusplus
 }
