@@ -18,22 +18,18 @@
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
-// Default quaternion for J2000 West Lafayette (find this)
-static const Quaternion_t default_fix = {
-    .w = 0.0f,
-    .x = 0.0f,
-    .y = 0.0f,
-    .z = 0.0f
-};
+#define JD_J2000          2451545.0
+#define SECONDS_PER_DAY   86400.0
+#define TWO_PI            (M_PI * 2.0)
+
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
-// Find based on GPSData_t g_latest_gps_data. Updated in main loop when GPS data read.
-static Quaternion_t q_actual_fix;
 
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */
+
 // ...
 
 /* ----------------------------- Public Variables -------------------------- */
@@ -49,13 +45,3 @@ volatile bool g_use_gps_location = true; // Default to using GPS location on sta
 
 /* ----------------------------- Public Functions --------------------------- */
 
-
-/**
- * @brief A fast initialization of the default quaternions used in mechanics
- * 
- * @return true if initialization was successful.
- */
-bool mechanics_init(void) {
-    // Calculate the default fix quaternion from default_fix
-    return true;
-}

@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "pico/stdlib.h"
+//#include "pico/util/datetime.h"
 #include "hardware/gpio.h"
 #include "hardware/dma.h"
 #include "hardware/irq.h"
@@ -26,6 +27,7 @@
 #include "hardware/i2c.h"
 #include "hardware/sync.h"
 #include "hardware/watchdog.h"
+//#include "hardware/rtc.h"
 
 #include "config.h"
 #include "structs.h"
@@ -160,8 +162,13 @@ int main()
 
         // READ GPS IN THE SAME METHOD AS IMU
         if (gps_check_and_read()) {
-            // Update the location quaternion
-            // Update the RTC
+            if (g_latest_gps_data.is_valid) {
+                user_ui_set_state(LED_STATE_RUN);
+                // Update the RTC
+            }
+            else {
+                user_ui_set_state(LED_STATE_RUN_NO_FIX);
+            }
         }
         monitor_checkin(SYS_MODULE_GPS);
 
@@ -173,6 +180,11 @@ int main()
         }
         if (g_location_toggle_request) {
             g_use_gps_location = !g_use_gps_location;
+            if (g_use_gps_location) {
+                if (g_latest_gps_data.is_valid) user_ui_set_state(LED_STATE_RUN);
+                else user_ui_set_state(LED_STATE_RUN_NO_FIX);
+            }
+            else user_ui_set_state(LED_STATE_RUN_J2000);
             g_location_toggle_request = false;
         }
 

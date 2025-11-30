@@ -77,7 +77,7 @@ bool gps_check_and_read(void) {
 
     g_gps_correction_needed = false;
     // Read NMEA sentences from UART and parse GNRMC for location and date/time.
-    // Update g_latest_gps_data accordingly.
+    // Update g_latest_gps_data accordingly. return true only if successful.
 
     return true;
 }
