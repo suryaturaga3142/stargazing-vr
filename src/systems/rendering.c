@@ -21,6 +21,8 @@
 #include "mechanics.h"
 #include "imu.h"
 #include "gps.h"
+#include "user_ui.h"
+#include "display.h"
 #include "pico/stdlib.h"
 // ...
 
@@ -31,7 +33,7 @@ static const Quaternion_t q_location_pwl_j2000 = {0.7071f, 0.0f, 0.7071f, 0.0f};
 
 /* ----------------------------- Private Variables -------------------------- */
 static volatile bool g_is_rendering = false;
-// Start at precalculated in case GPS is not available
+// Started at precalculated in case GPS is not available
 static Quaternion_t q_location = q_location_pwl_j2000;
 // ...
 
@@ -58,11 +60,18 @@ bool run_main_render(void) {
     
     if (g_use_gps_location) {
         if (g_latest_gps_data.is_valid) {
+            user_ui_set_state(LED_STATE_RUN);
             // call mechanics functions to find q_location from gps data
         }
-        // else it defaults to last known good location / PWL so do nothing
+        else {
+            user_ui_set_state(LED_STATE_RUN_NO_FIX);
+            // default to last known good location / PWL so do nothing
+        }
     }
-    else q_location = q_location_pwl_j2000;
+    else {
+        user_ui_set_state(LED_STATE_RUN_J2000);
+        q_location = q_location_pwl_j2000;
+    }
 
     // call a mechanics function to get q_time from RTC clock
 

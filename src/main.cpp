@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <string.h>
 #include "pico/stdlib.h"
-//#include "pico/util/datetime.h"
 #include "hardware/gpio.h"
 #include "hardware/dma.h"
 #include "hardware/irq.h"
@@ -27,10 +26,9 @@
 #include "hardware/i2c.h"
 #include "hardware/sync.h"
 #include "hardware/watchdog.h"
-//#include "hardware/rtc.h"
 
-#include "config.h"
 #include "structs.h"
+#include "config.h"
 #include "interrupts.h"
 
 #include "display.h"
@@ -43,6 +41,8 @@
 #include "rendering.h"
 #include "user_ui.h"
 
+#include "pico/util/datetime.h"
+#include "hardware/rtc.h"
 
 int main()
 {
@@ -151,8 +151,8 @@ int main()
 
         // Sleep until an interrupt fires
         __wfi();
-
         // Awake now bc interrupt fired. Do the events in order of priority.
+        
         if (imu_check_and_read()) {
             monitor_checkin(SYS_MODULE_IMU);
             // printf("Game: %f %f %f %f\r\n", g_latest_imu_data.orientation.x, g_latest_imu_data.orientation.y, g_latest_imu_data.orientation.z, g_latest_imu_data.orientation.w);
@@ -163,28 +163,45 @@ int main()
         // READ GPS IN THE SAME METHOD AS IMU
         if (gps_check_and_read()) {
             if (g_latest_gps_data.is_valid) {
-                user_ui_set_state(LED_STATE_RUN);
-                // Update the RTC
-            }
-            else {
-                user_ui_set_state(LED_STATE_RUN_NO_FIX);
+                // Just rewrite q_actual_loc and q_time
+                // Sync up RTC
+                /*
+                datetime_t rtc_now;
+                bool rtc_running = rtc_get_datetime(&rtc_now);
+
+                if (!rtc_running || 
+                    rtc_now.min != g_latest_gps_data.time.minute || 
+                    (int)rtc_now.sec - (int)g_latest_gps_data.time.second >  10 ||
+                    (int)rtc_now.sec - (int)g_latest_gps_data.time.second < -10) {
+
+                    datetime_t new_dt = {
+                        .year  = g_latest_gps_data.time.year,
+                        .month = g_latest_gps_data.time.month,
+                        .day   = g_latest_gps_data.time.day,
+                        .dotw  = 0, // Hardcoded to 0 (Sunday) as requested
+                        .hour  = g_latest_gps_data.time.hour,
+                        .min   = g_latest_gps_data.time.minute,
+                        .sec   = g_latest_gps_data.time.second
+                    };
+
+                    if (rtc_set_datetime(&new_dt)) {
+                        printf("[RTC] Synced to GPS.\n");
+                        //mech_sync_time(g_latest_gps_data); 
+                    }
+                }
+                */
             }
         }
         monitor_checkin(SYS_MODULE_GPS);
 
         if (g_drift_correct_request) {
-            user_ui_set_state(LED_STATE_DRIFT_CONFIRM);
+            user_ui_set_state(LED_STATE_DRIFT_CONFIRM); // It will get overwritten pretty fast
             imu_recenter_yaw();
             monitor_checkin(SYS_MODULE_IMU);
             g_drift_correct_request = false;
         }
         if (g_location_toggle_request) {
             g_use_gps_location = !g_use_gps_location;
-            if (g_use_gps_location) {
-                if (g_latest_gps_data.is_valid) user_ui_set_state(LED_STATE_RUN);
-                else user_ui_set_state(LED_STATE_RUN_NO_FIX);
-            }
-            else user_ui_set_state(LED_STATE_RUN_J2000);
             g_location_toggle_request = false;
         }
 

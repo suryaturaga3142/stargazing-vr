@@ -67,7 +67,7 @@ bool imu_init(void) {
     if (!imu.begin(IMU_I2C_ADDR, i2c_port)) {
         printf("IMU not detected!\n");
         watchdog_update();
-        // Scan bus to debug connection issues (does NOT auto-scan)
+        // Scan complete I2C bus to debug connection issues
         scan_i2c_bus(); 
         printf("/r/n[IMU] Critical Failure: Connection Timeout.\n");
         return false;
