@@ -29,6 +29,7 @@
 /* ---------------------------- Private Constants --------------------------- */
 // Precalculated quaternion for location at PWL in J2000
 static const Quaternion_t q_location_pwl_j2000 = {0.7071f, 0.0f, 0.7071f, 0.0f};
+static const Quaternion_t q_time_pwl_j2000 = {1.0f, 0.0f, 0.0f, 0.0f};
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
