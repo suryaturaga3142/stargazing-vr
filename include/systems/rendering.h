@@ -17,6 +17,12 @@
 #include "config.h"
 #include "structs.h"
 
+// --- Star Catalog Data Structures ---
+// These large arrays hold the pre-processed star data.
+extern Star_t all_stars[STAR_CATALOG_SIZE_MAX];
+extern SkyPatch_t sky_database[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
+
+
 extern Qfix_t Qfix_last;
 
 #ifdef __cplusplus

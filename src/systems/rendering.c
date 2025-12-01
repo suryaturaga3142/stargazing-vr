@@ -45,6 +45,12 @@ static volatile bool g_is_rendering = false;
 // ...
 
 /* ----------------------------- Public Variables --------------------------- */
+
+// --- Star Catalog Data Structures ---
+// These large arrays hold the pre-processed star data.
+Star_t all_stars[STAR_CATALOG_SIZE_MAX];
+SkyPatch_t sky_database[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
+
 Qfix_t Qfix_last = Qfix_default;
 
 /* ----------------------------- Public Functions --------------------------- */

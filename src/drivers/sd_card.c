@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "sd_card.h"
+#include "rendering.h"
 
 // ...
 
@@ -36,6 +37,9 @@ FATFS fs_storage; // Global file system object
 /* ----------------------------- Private Variables -------------------------- */
 static StarFileHeader_t sd_header;
 static PackedStar_t sd_raw_buffer[STAR_CATALOG_SIZE_MAX];
+// Use to store processed stuff: This is extern! Don't redefine
+//Star_t all_stars[STAR_CATALOG_SIZE_MAX];
+//SkyPatch_t sky_database[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */
@@ -49,7 +53,7 @@ static PackedStar_t sd_raw_buffer[STAR_CATALOG_SIZE_MAX];
  * @return true if the SD card was detected
  */
 bool sd_check(void) {
-    if (gpio_get(PIN_SD_DET)) {
+    if (!gpio_get(PIN_SD_DET)) {
         return false;
     }
     return true;
@@ -72,6 +76,7 @@ bool sd_init(void) {
     gpio_set_function(PIN_SD_TX, GPIO_FUNC_SPI);
     gpio_set_function(PIN_SD_SCK, GPIO_FUNC_SPI);
 
+    
     gpio_set_dir(PIN_SD_CSN, GPIO_OUT);
     gpio_put(PIN_SD_CSN, 1); // Deselect
 
