@@ -32,7 +32,7 @@
 /* ---------------------------- Private Constants --------------------------- */
 // #define LCD_SPI_TEST
 // #define GPS_DUMB_TEST
-// #define GPS_RAW_TEST
+#define GPS_RAW_TEST
 // #define IMU_TEST
 // #define SD_TEST
 // ...
@@ -56,7 +56,6 @@
 #define BUFFER_SIZE 512
 char my_buffer[BUFFER_SIZE];
 
-#define SD_TEST
 
 // Forward declaration for our config function
 void setup_sd_card_config();

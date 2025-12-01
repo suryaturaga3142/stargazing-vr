@@ -435,8 +435,8 @@ void disable_unwanted_nmea_msgs(void) {
 
 void gps_init(void) {
     // --- Pin setup ---
-    #define TEST_PIN_GPS_TX 36
-    #define TEST_PIN_GPS_RX 37
+    #define TEST_PIN_GPS_TX 40
+    #define TEST_PIN_GPS_RX 41
 
     gpio_set_function(TEST_PIN_GPS_TX, GPIO_FUNC_UART);
     gpio_set_function(TEST_PIN_GPS_RX, GPIO_FUNC_UART);

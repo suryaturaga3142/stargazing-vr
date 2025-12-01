@@ -6,3 +6,6 @@
 
 data/sources/hipparcos.fit
 data/bin/stars.bin
+
+data/
+pcb-stargazing/
