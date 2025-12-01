@@ -70,6 +70,7 @@ bool gps_init(void) {
                 if (strncmp(tag, "GNRMC,", 6)) {
                     char sentence[76];
                     uart_read_blocking(UART_PORT, sentence, 76);
+                    sentence[76] = '\0';
                     // Go about parsing it
                 }
             }
