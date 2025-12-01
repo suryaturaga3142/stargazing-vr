@@ -183,7 +183,7 @@ bool user_ui_set_state(LEDState_e state)
 
         case LED_STATE_DRIFT_CONFIRM:
             // "Single Flash" simulated by Fast Blink.
-            current_state.color   = LED_COLOR_CYAN;
+            current_state.color   = LED_COLOR_ORANGE;
             current_state.pattern = LED_BLINK;
             current_state.speed   = LED_SPEED_FAST;
             break;

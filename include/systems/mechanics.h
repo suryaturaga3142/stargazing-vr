@@ -32,6 +32,7 @@ extern "C" {
 SideReal_t   mech_utc_to_sidereal(UTCTime_t current_time);
 Quaternion_t mech_location_to_q(float latitude, float longitude);
 Quaternion_t mech_time_to_q(SideReal_t time);
+Quaternion_t mech_normalize_q(Quaternion_t q);
 Quaternion_t mech_conjugate_q(Quaternion_t q);
 Quaternion_t mech_product_q(Quaternion_t q1, Quaternion_t q2);
 Vector3f_t   mech_rotate_v(Quaternion_t q, Vector3f_t v);

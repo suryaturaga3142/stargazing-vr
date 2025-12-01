@@ -24,14 +24,15 @@
 #include "user_ui.h"
 #include "display.h"
 #include "pico/stdlib.h"
+//#include <stdio.h>
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
 // Precalculated quaternions for location at PWL in J2000
 static const Qfix_t Qfix_default = {
-    .loc =   {0.7071f, 0.0f, 0.7071f, 0.0f},
-    .time =  {1.0f, 0.0f, 0.0f, 0.0f},
-    .total = {0.7071f, 0.0f, 0.7071f, 0.0f}
+    .loc =   {0.65922f, 0.28787f, 0.30386f, -0.62776f},
+    .time =  {1.0f    , 0.0f    , 0.0f    ,  0.0f    },
+    .total = {0.65922f, 0.28787f, 0.30386f, -0.62776f}
 };
 // ...
 
@@ -65,7 +66,10 @@ bool run_main_render(void) {
     if (g_use_gps_location) q_fix_calc = Qfix_last.total;
     else                    q_fix_calc = Qfix_default.total;
 
-    Quaternion_t q_final = mech_product_q(mech_conjugate_q(q_imu), q_fix_calc);
+    // If the displayed data is going the wrong way, change this to use q_imu instead of the conjugate
+    Quaternion_t q_final = mech_normalize_q(mech_product_q(mech_conjugate_q(q_imu), q_fix_calc));
+
+    // printf("Q final: %f %f %f %f\r\n", q_final.w, q_final.x, q_final.y, q_final.z);
 
     // Phase 2: Spatial culling
     // perspective_vector = q_final_conjugate * (0, 0, 1) * q_final

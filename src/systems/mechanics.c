@@ -194,6 +194,26 @@ Quaternion_t mech_time_to_q(SideReal_t time) {
 }
 
 /**
+ * @brief Normalizes a quaternion to unit length
+ * 
+ * @param q Generic quaternion
+ * @return q_norm Normalized quaternion
+ */
+Quaternion_t mech_normalize_q(Quaternion_t q) {
+    float q_mag = sqrtf(powf(q.w, 2.0f) + 
+                         powf(q.x, 2.0f) +
+                         powf(q.y, 2.0f) +
+                         powf(q.z, 2.0f));
+    Quaternion_t q_norm = {
+        .w = q.w / q_mag,
+        .x = q.x / q_mag,
+        .y = q.y / q_mag,
+        .z = q.z / q_mag
+    };
+    return q_norm;
+}
+
+/**
  * @brief Finds conjugate of the quaternion
  * 
  * @param q Generic quaternion

@@ -103,7 +103,7 @@ int main()
 
     // PHASE 3: Heavy Lifting (PET THE WATCHDOG MANY TIMES!)
     printf("Initialized LCD!\r\nMounting & Bulk Reading SD Card...\r\n");
-    bool data_loaded = sd_load_data(); // Mount and bulk read the SD card data
+    bool data_loaded = true;//sd_load_data(); // Mount and bulk read the SD card data
     if (data_loaded) watchdog_update();
     else {
         watchdog_disable();
@@ -159,9 +159,11 @@ int main()
 
         if (gps_check_and_read()) {
             if (g_latest_gps_data.is_valid) {
-                Qfix_last.loc = mech_location_to_q(g_latest_gps_data.latitude, g_latest_gps_data.longitude);
-                Qfix_last.time = mech_time_to_q(mech_utc_to_sidereal(g_latest_gps_data.time));
-                Qfix_last.total = mech_product_q(Qfix_last.loc, Qfix_last.time);
+                Qfix_t Qfix_latest;
+                Qfix_latest.loc   = mech_location_to_q(g_latest_gps_data.latitude, g_latest_gps_data.longitude);
+                Qfix_latest.time  = mech_time_to_q(mech_utc_to_sidereal(g_latest_gps_data.time));
+                Qfix_latest.total = mech_product_q(Qfix_last.loc, Qfix_last.time);
+                Qfix_last = Qfix_latest; // Assigning like this in one go makes it resilient to interrupt fragmenting
             }
         }
         monitor_checkin(SYS_MODULE_GPS);
@@ -173,7 +175,7 @@ int main()
         else user_ui_set_state(LED_STATE_RUN_J2000);
 
         if (g_drift_correct_request) {
-            user_ui_set_state(LED_STATE_DRIFT_CONFIRM); // It will get overwritten pretty fast
+            user_ui_set_state(LED_STATE_DRIFT_CONFIRM); // It will get overwritten fast so it's just a blink
             imu_recenter_yaw();
             monitor_checkin(SYS_MODULE_IMU);
             g_drift_correct_request = false;
