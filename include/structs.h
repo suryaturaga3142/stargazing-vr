@@ -61,14 +61,22 @@ typedef struct {
 } UTCTime_t;
 
 /**
- * @brief A high-precision Julian Date for all astronomical calculations.
- * @details A Julian Date is a continuous count of days since a standard epoch.
- * This linear format is ideal for all standard celestial mechanics
- * algorithms (e.g., for sidereal time). Struct makes this safer.
+ * @brief Julian Date for all astronomical calculations.
+ * @details A continuous count of days since a standard epoch.
+ * Linear format better for sidereal time calc. Struct makes this safer.
  */
 typedef struct {
     double jd; // Use a 'double' for maximum precision in calculations.
 } JulianDate_t;
+
+/**
+ * @brief Sidereal time in radians for quaternion calculations
+ * @details High precision in radians to allow easier calcs. This is relative to 
+ * stars so accounts for revolution.
+ */
+typedef struct {
+    double st;
+} SideReal_t;
 
 /**
  * @brief A manual definition of the exact RTC format argument passed

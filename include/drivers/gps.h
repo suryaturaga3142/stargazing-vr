@@ -21,7 +21,7 @@
 extern "C" {
 #endif
     
-extern volatile GPSData_t g_latest_gps_data;      // Updated by the main loop from GPS data.
+extern GPSData_t g_latest_gps_data;      // Updated by the main loop from GPS data.
 
 extern volatile bool g_gps_correction_needed;     // Set by interrupt, handled by gps_check_and_read.
 
