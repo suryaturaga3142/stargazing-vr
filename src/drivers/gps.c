@@ -81,10 +81,10 @@ bool gps_check_and_read(void) {
     g_gps_correction_needed = false;
     // Read NMEA sentences from UART and parse GNRMC for location and date/time.
     // Update g_latest_gps_data accordingly. return true only if successful.
-    /*char buf[100];
-    uart_read_blocking(UART_PORT, buf, 100);
+    char buf[200];
+    uart_read_blocking(UART_PORT, buf, 200);
     monitor_checkin(SYS_MODULE_GPS);
     printf("%s\r\n", buf);
-    */
+    
     return true;
 }
