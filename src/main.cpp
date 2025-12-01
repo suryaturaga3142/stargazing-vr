@@ -51,6 +51,7 @@ int main()
     // Alerts if rebooted
     if (watchdog_caused_reboot()) {
         printf("Watchdog caused a reboot!\r\n");
+        g_use_gps_location = false; // Switch off in case GPS reading caused the timeout
         user_ui_set_state(LED_STATE_REBOOTED);
         sleep_ms(2000);
         user_ui_set_state(LED_STATE_BOOTING);
@@ -125,7 +126,7 @@ int main()
     bool gps_fixed = gps_init();
     watchdog_disable();
     
-    if (gps_fixed) {
+    if (gps_fixed && g_use_gps_location) {
         printf("GPS Lock found! Starting rendering...\r\nEnjoy!!\r\n");
         user_ui_set_state(LED_STATE_RUN);
     }
@@ -157,7 +158,9 @@ int main()
             monitor_checkin(SYS_MODULE_DISPLAY);
         }
 
+        // Will need to call without if statement
         if (gps_check_and_read()) {
+            // Might need to move this entire block into DMA completion handler
             if (g_latest_gps_data.is_valid) {
                 Qfix_t Qfix_latest;
                 Qfix_latest.loc   = mech_location_to_q(g_latest_gps_data.latitude, g_latest_gps_data.longitude);

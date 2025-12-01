@@ -18,8 +18,6 @@
 #include "structs.h"
 #include "config.h"
 
-extern volatile bool g_use_gps_location;          // Toggles between GPS and J2000 reference.
-
 #ifdef __cplusplus
 extern "C" {
 #endif

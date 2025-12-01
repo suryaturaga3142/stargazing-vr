@@ -16,12 +16,14 @@
 /* ----------------------------- Private Includes --------------------------- */
 #include "gps.h"
 #include "interrupts.h"
+#include "user_ui.h"
 #include "monitor.h"
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
 #include "hardware/gpio.h"
 #include "hardware/watchdog.h"
 #include <stdio.h>
+#include <string.h>
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
@@ -56,8 +58,23 @@ bool gps_init(void) {
     uart_set_format(UART_PORT, 8, 1, UART_PARITY_NONE);
     uart_set_fifo_enabled(UART_PORT, true);
 
-    // Send UBX commands to configure the GPS module to output GNRMC sentences.
-    // OPTIONAL
+    if (g_use_gps_location) {
+        // For 30 seconds try a valid read. 
+        // Write to g_latest_gps_data if it works, else return false.
+        absolute_time_t deadline = make_timeout_time_ms(GPS_INIT_TIMEOUT_MS);
+
+        while(!time_reached(deadline)) {
+            if (uart_is_readable(UART_PORT) && (uart_getc(UART_PORT) == '$')) {
+                char tag[6];
+                uart_read_blocking(UART_PORT, tag, 6);
+                if (strncmp(tag, "GNRMC,", 6)) {
+                    char sentence[76];
+                    uart_read_blocking(UART_PORT, sentence, 76);
+                    // Go about parsing it
+                }
+            }
+        }
+    }
 
     // Setup a timer with interrupt to poll GPS data once a minute
     timer0_hw->inte |= TIMER_INTE_ALARM_1_BITS;
@@ -80,6 +97,8 @@ bool gps_check_and_read(void) {
     }
 
     g_gps_correction_needed = false;
+
+    
     // Read NMEA sentences from UART and parse GNRMC for location and date/time.
     // Update g_latest_gps_data accordingly. return true only if successful.
     /*char buf[200];

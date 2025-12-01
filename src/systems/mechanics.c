@@ -74,8 +74,6 @@ static JulianDate_t mech_utc_to_julian(UTCTime_t time) {
 Star_t all_stars[STAR_CATALOG_SIZE_MAX];
 SkyPatch_t sky_database[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
 
-volatile bool g_use_gps_location = true; // Default to using GPS location on startup
-
 /* ----------------------------- Public Functions --------------------------- */
 
 /**
