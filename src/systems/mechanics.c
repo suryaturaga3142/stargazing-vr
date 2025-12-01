@@ -128,6 +128,7 @@ SideReal_t mech_utc_to_sidereal(UTCTime_t current_time) {
  * @return q_loc rotation quaternion for this location
  */
 Quaternion_t mech_location_to_q(float latitude, float longitude) {
+
     Quaternion_t q_loc;
     
     // --- 1. Rotation Q_pitch (Latitude Tilt) ---
