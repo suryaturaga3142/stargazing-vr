@@ -9,3 +9,5 @@ data/bin/stars.bin
 
 data/
 pcb-stargazing/
+src/third_party/watchdog.c
+include/third_party/watchdog.h
