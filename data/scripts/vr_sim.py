@@ -7,7 +7,6 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import QColor, QPalette
 import pyqtgraph as pg
-import pyqtgraph.opengl as gl
 
 # --- Configuration ---
 SCALE_XY = 32000.0
@@ -42,17 +41,17 @@ class VRSimulator(QMainWindow):
         
         layout.addLayout(control_layout)
 
-        # 2. Visualization Area (2D Plot)
+        # 2. Visualization Area
         self.plot_widget = pg.PlotWidget()
         self.plot_widget.setAspectLocked(True)
-        # Center at 0,0 with range -1 to 1 (plus margin)
         self.plot_widget.setXRange(-1.1, 1.1) 
         self.plot_widget.setYRange(-1.1, 1.1)
         self.plot_widget.hideAxis('bottom')
         self.plot_widget.hideAxis('left')
         self.plot_widget.setBackground('k')
         
-        # Draw the Screen Boundary Box (-1 to 1)
+        # --- VISUAL AIDS ---
+        # 1. Screen Boundary (Green Dashed)
         screen_box = pg.PlotCurveItem(
             x=[-1, 1, 1, -1, -1], 
             y=[-1, -1, 1, 1, -1], 
@@ -60,7 +59,20 @@ class VRSimulator(QMainWindow):
         )
         self.plot_widget.addItem(screen_box)
 
-        # Scatter Item (pxMode=True makes dots stay same pixel size)
+        # 2. Center Crosshair (Red)
+        self.plot_widget.addItem(pg.InfiniteLine(angle=0, pen=pg.mkPen('r', width=1, style=Qt.DotLine)))
+        self.plot_widget.addItem(pg.InfiniteLine(angle=90, pen=pg.mkPen('r', width=1, style=Qt.DotLine)))
+
+        # 3. "Up" Indicator (Triangle at Top)
+        up_arrow = pg.PlotCurveItem(
+            x=[-0.1, 0, 0.1], 
+            y=[0.9, 1.0, 0.9], 
+            pen=pg.mkPen('y', width=2),
+            fillLevel=0, brush=pg.mkBrush('y')
+        )
+        self.plot_widget.addItem(up_arrow)
+
+        # Scatter Item
         self.scatter = pg.ScatterPlotItem(pxMode=True)
         self.plot_widget.addItem(self.scatter)
         
@@ -69,7 +81,7 @@ class VRSimulator(QMainWindow):
         # 3. Serial Handling
         self.serial_port = None
         self.timer = QTimer()
-        self.timer.timeout.connect(self.read_serial_and_plot) # Single function
+        self.timer.timeout.connect(self.read_serial_and_plot)
 
     def refresh_ports(self):
         self.port_combo.clear()
@@ -86,8 +98,8 @@ class VRSimulator(QMainWindow):
         else:
             port = self.port_combo.currentText()
             try:
-                self.serial_port = serial.Serial(port, BAUD_RATE, timeout=0.01) # Low timeout for non-blocking
-                self.timer.start(30) # 30ms (~33 FPS)
+                self.serial_port = serial.Serial(port, BAUD_RATE, timeout=0.01)
+                self.timer.start(30) 
                 self.connect_btn.setText("Disconnect")
                 print(f"Connected to {port}")
             except Exception as e:
@@ -98,30 +110,25 @@ class VRSimulator(QMainWindow):
             return
 
         try:
-            # 1. Read EVERYTHING currently in the buffer
-            # This ensures we clear the pipe and get the latest frame
             if self.serial_port.in_waiting > 0:
                 raw_data = self.serial_port.read(self.serial_port.in_waiting)
                 text_data = raw_data.decode('utf-8', errors='ignore')
                 lines = text_data.split('\n')
 
-                # 2. Parse Valid Lines into a New List
                 new_pos = []
                 new_sizes = []
                 new_brushes = []
-                
                 found_stars = False
 
                 for line in lines:
                     line = line.strip()
                     if line.startswith('$') and len(line) >= 11:
-                        # Parsing logic
                         try:
+                            # Parse Hex
                             hex_x = line[1:5]
                             hex_y = line[5:9]
                             hex_m = line[9:11]
 
-                            # 16-bit Signed Hex Conversion
                             x_int = int(hex_x, 16)
                             if x_int > 32767: x_int -= 65536
                             
@@ -134,23 +141,15 @@ class VRSimulator(QMainWindow):
                             y = y_int / SCALE_XY
                             mag = mag_int / SCALE_MAG
 
-                            # Add to lists
                             new_pos.append([x, y])
-                            
-                            # Size: Brighter (lower mag) = Bigger
                             size = max(2, (6.0 - mag) * 4) 
                             new_sizes.append(size)
-                            
                             new_brushes.append(pg.mkBrush(255, 255, 255, 200))
-                            
                             found_stars = True
 
                         except ValueError:
-                            continue # Skip garbled lines
+                            continue
 
-                # 3. Update Plot (ERASE OLD, DRAW NEW)
-                # Only update if we actually received star data to avoid flickering
-                # on empty partial reads (unless you want to clear on silence).
                 if found_stars:
                     self.scatter.setData(
                         pos=new_pos, 
@@ -158,7 +157,6 @@ class VRSimulator(QMainWindow):
                         brush=new_brushes,
                         pen=pg.mkPen(None)
                     )
-                    # This implicitly erases the old points because we are setting NEW data
 
         except Exception as e:
             print(f"Serial Error: {e}")
@@ -166,8 +164,6 @@ class VRSimulator(QMainWindow):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
-    
-    # Dark Theme
     palette = app.palette()
     palette.setColor(QPalette.ColorRole.Window, QColor(20, 20, 20))
     palette.setColor(QPalette.ColorRole.WindowText, Qt.white)

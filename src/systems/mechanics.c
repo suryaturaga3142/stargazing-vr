@@ -68,11 +68,7 @@ static JulianDate_t mech_utc_to_julian(UTCTime_t time) {
 // ...
 
 /* ----------------------------- Public Variables -------------------------- */
-
-// --- Star Catalog Data Structure Definitions ---
-// The actual memory for our star catalog and spatial culling grid is allocated here.
-Star_t all_stars[STAR_CATALOG_SIZE_MAX];
-SkyPatch_t sky_database[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
+// ...
 
 /* ----------------------------- Public Functions --------------------------- */
 

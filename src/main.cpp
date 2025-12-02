@@ -104,7 +104,7 @@ int main()
 
     // PHASE 3: Heavy Lifting (PET THE WATCHDOG MANY TIMES!)
     printf("Initialized LCD!\r\nMounting & Bulk Reading SD Card...\r\n");
-    bool data_loaded = true;//sd_load_data(); // Mount and bulk read the SD card data
+    bool data_loaded = sd_load_data(); // Mount and bulk read the SD card data
     if (data_loaded) watchdog_update();
     else {
         watchdog_disable();
@@ -120,6 +120,10 @@ int main()
     watchdog_update();
     sd_buf_sort();  // Sorts data in 3 pass algorithm
 
+    /*for (int i = 0; i < 50; i++) {
+        if (all_stars[i].mag != 0.0f) printf("Final Star %d: Mag %f x: %f y: %f z: %f\r\n", i, all_stars[i].mag, all_stars[i].x, all_stars[i].y, all_stars[i].z);
+    }*/
+
     /* TEST VALUES */
     Star_t st = { .x = 0.0f, .y = 0.0f, .z = 1.0f, .mag = -1.5f };
     all_stars[sky_database[0][0].start_index] = st;
@@ -133,7 +137,7 @@ int main()
     all_stars[sky_database[0][0].start_index + 4] = st;
     st = { .x = -1.0f, .y = 0.0f, .z = 0.0f, .mag = 1.5f };
     all_stars[sky_database[0][0].start_index + 5] = st;
-
+    
     watchdog_update();
     printf("SD Card disabled & data sorted!\r\nInitializing GPS (This will take time)...\r\n");
     

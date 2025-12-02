@@ -85,6 +85,9 @@ bool run_main_render(void) {
     // perspective_vector = q_final_conjugate * (0, 0, 1) * q_final
     // determine which sky patches are in view based on perspective_vector
 
+    Vector3f_t perspective_vector = mech_rotate_v(mech_conjugate_q(q_final), (Vector3f_t) {0.0f, 0.0f, 1.0f});
+
+
     // f = Focal Length related to FOV (e.g., 1.0 / tan(fov/2))
     float f = 1.0f / tanf(50.0f * M_PI / 180.0f); // 100 deg FOV
 
@@ -92,6 +95,7 @@ bool run_main_render(void) {
         Star_t star = all_stars[sky_database[0][0].start_index + i];
         Vector3f_t pt = mech_rotate_v(q_final, mech_star_to_vec(star));
 
+        //printf("Star Vector Originl %d: x=%f y=%f z=%f\r\n", i, star.x, star.y, star.z);
         //printf("Star Vector Rotated %d: x=%f y=%f z=%f\r\n", i, pt.x, pt.y, pt.z);
 
         if (pt.z <= 0.0f) continue;
