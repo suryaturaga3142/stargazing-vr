@@ -259,6 +259,44 @@ void enable_sdcard()
 bool sd_buf_sort(void) {
     // Unpack the bulk read buffer and sort it with 3 pass algorithm.
     // Surya's job. nothing to actually do with the SD card here.
+
+    for (int i = 0; i < sd_header.star_count; i++) {
+        PackedStar_t star = sd_raw_buffer[i];
+        int ra = get_ra_bin(star.ra_scaled);
+        int dec = get_dec_bin(star.dec_scaled);
+        sky_database[ra][dec].star_count++;
+    }
+
+    uint32_t cur_idx = 0;
+    for (int ra = 0; ra < SKY_PATCH_RA_DIVISIONS; ra++) {
+        for (int dec = 0; dec < SKY_PATCH_DEC_DIVISIONS; dec++) {
+            sky_database[ra][dec].start_index = cur_idx;
+            cur_idx += sky_database[ra][dec].star_count;
+        }
+    }
+    
+    if (cur_idx > STAR_CATALOG_SIZE_MAX) {
+        return false;
+    }
+
+    // Temporary copy of start indices to track insertion
+    uint32_t temp_indices[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
+    for (int ra = 0; ra < SKY_PATCH_RA_DIVISIONS; ra++) {
+        for (int dec = 0; dec < SKY_PATCH_DEC_DIVISIONS; dec++) {
+            temp_indices[ra][dec] = sky_database[ra][dec].start_index;
+        }
+    }
+
+    for (int i = 0; i < sd_header.star_count; i++) {
+        PackedStar_t star = sd_raw_buffer[i];
+        int ra = get_ra_bin(star.ra_scaled);
+        int dec = get_dec_bin(star.dec_scaled);
+        
+        uint32_t target_idx = temp_indices[ra][dec];
+        convert_star(star, all_stars[target_idx]);
+        temp_indices[ra][dec]++;
+    }
+
     return true;
 }
 

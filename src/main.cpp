@@ -119,7 +119,21 @@ int main()
 
     watchdog_update();
     sd_buf_sort();  // Sorts data in 3 pass algorithm
-    
+
+    /* TEST VALUES */
+    Star_t st = { .x = 0.0f, .y = 0.0f, .z = 1.0f, .mag = -1.5f };
+    all_stars[sky_database[0][0].start_index] = st;
+    st = { .x = 0.0f, .y = 0.0f, .z = -1.0f, .mag = 0.0f };
+    all_stars[sky_database[0][0].start_index + 1] = st;
+    st = { .x = 0.0f, .y = 1.0f, .z = 0.0f, .mag = 1.0f };
+    all_stars[sky_database[0][0].start_index + 2] = st;
+    st = { .x = 0.0f, .y = -1.0f, .z = 0.0f, .mag = -1.5f };
+    all_stars[sky_database[0][0].start_index + 3] = st;
+    st = { .x = 1.0f, .y = 0.0f, .z = 0.0f, .mag = 0.0f };
+    all_stars[sky_database[0][0].start_index + 4] = st;
+    st = { .x = -1.0f, .y = 0.0f, .z = 0.0f, .mag = 1.5f };
+    all_stars[sky_database[0][0].start_index + 5] = st;
+
     watchdog_update();
     printf("SD Card disabled & data sorted!\r\nInitializing GPS (This will take time)...\r\n");
     
@@ -164,16 +178,16 @@ int main()
             monitor_checkin(SYS_MODULE_DISPLAY);
         }
 
-        // Whenever this is called, the system CAN lag for at most 500ms. A small freeze will be noticed whenever the background GPS update task is carried out.
+        // Whenever this is called, the system CAN lag for at most GPS_TIMEOUT_MS. A small freeze will be noticed whenever the background GPS update task is carried out.
         // This is because GPS update and rendering is done in main, and only one can occur at any given point! No, we did not use both cores lol.
         // This lag is the cost of running precalculations to avoid massive rendering times.
         if (gps_check_and_read() && g_latest_gps_data.is_valid) {
 
-            printf("Data: %d \r\nLat: %f \r\nLon: %f \r\nDate: %d/%d/%d \r\nTime: %d:%d:%d \r\n", 
+            /*printf("Data: %d \r\nLat: %f \r\nLon: %f \r\nDate: %d/%d/%d \r\nTime: %d:%d:%d \r\n", 
                 g_latest_gps_data.is_valid, g_latest_gps_data.latitude, g_latest_gps_data.longitude, 
                 g_latest_gps_data.time.day, g_latest_gps_data.time.month, g_latest_gps_data.time.year,
                 g_latest_gps_data.time.hour, g_latest_gps_data.time.minute, g_latest_gps_data.time.second);
-
+            */
             Qfix_t Qfix_latest;
             Qfix_latest.loc   = mech_location_to_q(g_latest_gps_data.latitude, g_latest_gps_data.longitude);
             Qfix_latest.time  = mech_time_to_q(mech_utc_to_sidereal(g_latest_gps_data.time));

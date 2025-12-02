@@ -22,7 +22,7 @@
 #include "hardware/uart.h"
 #include "hardware/gpio.h"
 #include "hardware/watchdog.h"
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 // ...
@@ -267,6 +267,8 @@ bool gps_check_and_read(void) {
 
             if (strcmp(tag, "GNRMC") == 0) {
 
+                //printf("Tag found\r\n");
+
                 char sentence[100];
                 strcpy(sentence, "$GNRMC");
                 int idx = 6; 
@@ -283,6 +285,8 @@ bool gps_check_and_read(void) {
                     }
                     else return false;
                 }
+
+                //printf("Sentence: %s\r\n", sentence);
 
                 return gps_parse_rmc(sentence);
             }

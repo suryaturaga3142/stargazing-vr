@@ -192,6 +192,17 @@ Quaternion_t mech_time_to_q(SideReal_t time) {
 }
 
 /**
+ * @brief Extracts the vector of a processed star
+ * 
+ * @param star Processed star
+ * @return v Cartesian vector of star location.
+ */
+Vector3f_t mech_star_to_vec(Star_t star) {
+    Vector3f_t v = { .x = star.x, .y = star.y, .z = star.z };
+    return v;
+}
+
+/**
  * @brief Normalizes a quaternion to unit length
  * 
  * @param q Generic quaternion
@@ -234,7 +245,7 @@ Quaternion_t mech_conjugate_q(Quaternion_t q) {
  * 
  * @param q1 First quaternion
  * @param q2 Second quaternion
- * @return q_prod Product result (watch of for order)
+ * @return q_prod Product result (watch out for order)
  */
 Quaternion_t mech_product_q(Quaternion_t q1, Quaternion_t q2) {
     Quaternion_t q_prod = {

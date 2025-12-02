@@ -24,10 +24,14 @@
 #include "user_ui.h"
 #include "display.h"
 #include "pico/stdlib.h"
-//#include <stdio.h>
+#include <stdio.h>
+#include <math.h>
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 // Precalculated quaternions for location at PWL in J2000
 static const Qfix_t Qfix_default = {
     .loc =   {0.65922f, 0.28787f, 0.30386f, -0.62776f},
@@ -73,13 +77,41 @@ bool run_main_render(void) {
     else                    q_fix_calc = Qfix_default.total;
 
     // If the displayed data is going the wrong way, change this to use q_imu instead of the conjugate
-    Quaternion_t q_final = mech_normalize_q(mech_product_q(mech_conjugate_q(q_imu), q_fix_calc));
+    Quaternion_t q_final = mech_normalize_q(mech_product_q(q_imu, q_fix_calc));
 
-    // printf("Q final: %f %f %f %f\r\n", q_final.w, q_final.x, q_final.y, q_final.z);
+    //printf("Q final: w=%f x=%f y=%f z=%f\r\n", q_final.w, q_final.x, q_final.y, q_final.z);
 
     // Phase 2: Spatial culling
     // perspective_vector = q_final_conjugate * (0, 0, 1) * q_final
     // determine which sky patches are in view based on perspective_vector
+
+    // f = Focal Length related to FOV (e.g., 1.0 / tan(fov/2))
+    float f = 1.0f / tanf(50.0f * M_PI / 180.0f); // 100 deg FOV
+
+    for (int i = 0; i < 6; i++) {
+        Star_t star = all_stars[sky_database[0][0].start_index + i];
+        Vector3f_t pt = mech_rotate_v(q_final, mech_star_to_vec(star));
+
+        //printf("Star Vector Rotated %d: x=%f y=%f z=%f\r\n", i, pt.x, pt.y, pt.z);
+
+        if (pt.z <= 0.0f) continue;
+
+        float x_proj = (pt.x / pt.z) * f;
+        float y_proj = (pt.y / pt.z) * f;
+
+        if (x_proj >= -1.0f && x_proj <= 1.0f && y_proj >= -1.0f && y_proj <= 1.0f) {
+            // Scale and cast
+            int16_t x_int = (int16_t)(x_proj * 32000.0f);
+            int16_t y_int = (int16_t)(y_proj * 32000.0f);
+            uint8_t m_int = (uint8_t)(star.mag * 10.0f);
+
+            // Print as Hex: $XXXXYYYMMM
+            // %04X for 16-bit, %02X for 8-bit
+            printf("$%04X%04X%02X\n", (uint16_t)x_int, (uint16_t)y_int, m_int);
+        }
+
+    }
+    //printf("\r\n");
 
     // Phase 3: Star projection and draw list formation
     // for each star in visible sky patches, rotate by q_final to orient to (0, 0, 1)
@@ -92,7 +124,7 @@ bool run_main_render(void) {
     // Phase 4: Send to display
     // trigger DMA to send to display through display.c functions to use PIO
 
-    sleep_ms(50); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
+    sleep_ms(100); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
     g_is_rendering = false;
 
     return true;
