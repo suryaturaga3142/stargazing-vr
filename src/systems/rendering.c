@@ -86,44 +86,46 @@ bool run_main_render(void) {
     // perspective_vector = q_final_conjugate * (0, 0, 1) * q_final
     // determine which sky patches are in view based on perspective_vector
 
-    Vector3f_t perspective_vector = mech_rotate_v(mech_conjugate_q(q_final), (Vector3f_t) {0.0f, 0.0f, 1.0f});
+    Vector3f_t perspective_vector = mech_rotate_v(mech_conjugate_q(q_final), (Vector3f_t) {0.0f, 1.0f, 1.0f});
 
 
     // f = Focal Length related to FOV (e.g., 1.0 / tan(fov/2))
     float f = -1.0f / tanf(50.0f * M_PI / 180.0f); // 100 deg FOV
-    int ra_choice = 0;
-    int dec_choice = 0;
-    int rr = 0;
+    int ra_choice = 6;//mech_v_to_ra_bin(perspective_vector);
+    int dec_choice = 0;//mech_v_to_dec_bin(perspective_vector);
 
-    for (int ra = ra_choice - 1; ra < ra_choice + 2; ra++) {
-        for (int dec = dec_choice - 1; dec < dec_choice + 2; dec++) {
-            break;
+    for (int ra_i = ra_choice - 1; ra_i < ra_choice + 2; ra_i++) {
+        for (int dec_i = dec_choice - 1; dec_i < dec_choice + 2; dec_i++) {
+
+            int ra = (ra_i % SKY_PATCH_RA_DIVISIONS + SKY_PATCH_RA_DIVISIONS) % SKY_PATCH_RA_DIVISIONS;
+            int dec =(dec_i% SKY_PATCH_DEC_DIVISIONS+ SKY_PATCH_DEC_DIVISIONS)% SKY_PATCH_DEC_DIVISIONS;
+
+            for (int idx = 0; idx < sky_database[ra][dec].star_count; idx++) {
+                Star_t star = all_stars[sky_database[ra][dec].start_index + idx];
+                Vector3f_t pt = mech_rotate_v(q_final, mech_star_to_vec(star));
+
+                //printf("Star Vector Originl %d: x=%f y=%f z=%f\r\n", i, star.x, star.y, star.z);
+                //printf("Star Vector Rotated %d: x=%f y=%f z=%f\r\n", i, pt.x, pt.y, pt.z);
+
+                if (pt.y <= 0.0f) continue;
+
+                float x_proj = (pt.x / pt.y) * f;
+                float z_proj = (pt.z / pt.y) * f;
+
+                if (x_proj >= -1.0f && x_proj <= 1.0f && z_proj >= -1.0f && z_proj <= 1.0f) {
+                    // Scale and cast
+                    int16_t x_int = (int16_t)(x_proj * 32000.0f);
+                    int16_t z_int = (int16_t)(z_proj * 32000.0f);
+                    uint8_t m_int = (uint8_t)(star.mag * 10.0f);
+
+                    // Print as Hex: $XXXXYYYMMM
+                    // %04X for 16-bit, %02X for 8-bit
+                    printf("$%04X%04X%02X\n", (uint16_t)x_int, (uint16_t)z_int, m_int);
+                }
+            }
         }
     }
 
-        for (int i = 0; i < sky_database[0][rr].star_count; i++) {
-            Star_t star = all_stars[sky_database[0][rr].start_index + i];
-            Vector3f_t pt = mech_rotate_v(q_final, mech_star_to_vec(star));
-
-            //printf("Star Vector Originl %d: x=%f y=%f z=%f\r\n", i, star.x, star.y, star.z);
-            //printf("Star Vector Rotated %d: x=%f y=%f z=%f\r\n", i, pt.x, pt.y, pt.z);
-
-            if (pt.y <= 0.0f) continue;
-
-            float x_proj = (pt.x / pt.y) * f;
-            float z_proj = (pt.z / pt.y) * f;
-
-            if (x_proj >= -1.0f && x_proj <= 1.0f && z_proj >= -1.0f && z_proj <= 1.0f) {
-                // Scale and cast
-                int16_t x_int = (int16_t)(x_proj * 32000.0f);
-                int16_t z_int = (int16_t)(z_proj * 32000.0f);
-                uint8_t m_int = (uint8_t)(star.mag * 10.0f);
-
-                // Print as Hex: $XXXXYYYMMM
-                // %04X for 16-bit, %02X for 8-bit
-                printf("$%04X%04X%02X\n", (uint16_t)x_int, (uint16_t)z_int, m_int);
-            }
-        }
 
     //printf("\r\n");
 

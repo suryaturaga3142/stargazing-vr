@@ -138,8 +138,8 @@ class VRSimulator(QMainWindow):
                             
                             mag_int = int(hex_m, 16)
 
-                            x = x_int / SCALE_XY
-                            y = y_int / SCALE_XY
+                            x = x_int / SCALE_XY * 3
+                            y = y_int / SCALE_XY * 3
                             mag = mag_int / SCALE_MAG
 
                             new_pos.append([x, y])

@@ -294,3 +294,30 @@ Vector3f_t mech_rotate_v(Quaternion_t q, Vector3f_t v) {
 
     return v_p;
 }
+
+int mech_v_to_ra_bin(Vector3f_t v) {
+    float angle_rad = atan2f(v.y, v.x);
+
+    if (angle_rad < 0.0f) {
+        angle_rad += (2.0f * M_PI);
+    }
+
+    int bin = (int)((angle_rad / (2.0f * M_PI)) * 24.0f);
+    if (bin >= 24) bin = 0;
+
+    return bin;
+}
+
+int mech_v_to_dec_bin(Vector3f_t v) {
+    float z = v.z;
+    if (z > 1.0f) z = 1.0f;
+    if (z < -1.0f) z = -1.0f;
+
+    float angle_rad = asinf(z);
+    float shifted_rad = angle_rad + (M_PI / 2.0f);
+
+    int bin = (int)((shifted_rad / M_PI) * 12.0f);
+    if (bin >= 12) bin = 11;
+
+    return bin;
+}
