@@ -71,6 +71,7 @@ bool run_main_render(void) {
     // Phase 1: Setup quaternions
     
     Quaternion_t q_imu = g_latest_imu_data.orientation;
+    q_imu.y = -q_imu.y;
     Quaternion_t q_fix_calc; // The one to use in calculation
     
     if (g_use_gps_location) q_fix_calc = Qfix_last.total;
@@ -89,32 +90,41 @@ bool run_main_render(void) {
 
 
     // f = Focal Length related to FOV (e.g., 1.0 / tan(fov/2))
-    float f = 1.0f / tanf(50.0f * M_PI / 180.0f); // 100 deg FOV
+    float f = -1.0f / tanf(50.0f * M_PI / 180.0f); // 100 deg FOV
+    int ra_choice = 0;
+    int dec_choice = 0;
+    int rr = 0;
 
-    for (int i = 0; i < 6; i++) {
-        Star_t star = all_stars[sky_database[0][0].start_index + i];
-        Vector3f_t pt = mech_rotate_v(q_final, mech_star_to_vec(star));
+    for (int ra = ra_choice - 1; ra < ra_choice + 2; ra++) {
+        for (int dec = dec_choice - 1; dec < dec_choice + 2; dec++) {
+            break;
+        }
+    }
 
-        //printf("Star Vector Originl %d: x=%f y=%f z=%f\r\n", i, star.x, star.y, star.z);
-        //printf("Star Vector Rotated %d: x=%f y=%f z=%f\r\n", i, pt.x, pt.y, pt.z);
+        for (int i = 0; i < sky_database[0][rr].star_count; i++) {
+            Star_t star = all_stars[sky_database[0][rr].start_index + i];
+            Vector3f_t pt = mech_rotate_v(q_final, mech_star_to_vec(star));
 
-        if (pt.z <= 0.0f) continue;
+            //printf("Star Vector Originl %d: x=%f y=%f z=%f\r\n", i, star.x, star.y, star.z);
+            //printf("Star Vector Rotated %d: x=%f y=%f z=%f\r\n", i, pt.x, pt.y, pt.z);
 
-        float x_proj = (pt.x / pt.z) * f;
-        float y_proj = (pt.y / pt.z) * f;
+            if (pt.y <= 0.0f) continue;
 
-        if (x_proj >= -1.0f && x_proj <= 1.0f && y_proj >= -1.0f && y_proj <= 1.0f) {
-            // Scale and cast
-            int16_t x_int = (int16_t)(x_proj * 32000.0f);
-            int16_t y_int = (int16_t)(y_proj * 32000.0f);
-            uint8_t m_int = (uint8_t)(star.mag * 10.0f);
+            float x_proj = (pt.x / pt.y) * f;
+            float z_proj = (pt.z / pt.y) * f;
 
-            // Print as Hex: $XXXXYYYMMM
-            // %04X for 16-bit, %02X for 8-bit
-            printf("$%04X%04X%02X\n", (uint16_t)x_int, (uint16_t)y_int, m_int);
+            if (x_proj >= -1.0f && x_proj <= 1.0f && z_proj >= -1.0f && z_proj <= 1.0f) {
+                // Scale and cast
+                int16_t x_int = (int16_t)(x_proj * 32000.0f);
+                int16_t z_int = (int16_t)(z_proj * 32000.0f);
+                uint8_t m_int = (uint8_t)(star.mag * 10.0f);
+
+                // Print as Hex: $XXXXYYYMMM
+                // %04X for 16-bit, %02X for 8-bit
+                printf("$%04X%04X%02X\n", (uint16_t)x_int, (uint16_t)z_int, m_int);
+            }
         }
 
-    }
     //printf("\r\n");
 
     // Phase 3: Star projection and draw list formation
@@ -128,7 +138,7 @@ bool run_main_render(void) {
     // Phase 4: Send to display
     // trigger DMA to send to display through display.c functions to use PIO
 
-    sleep_ms(100); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
+    sleep_ms(50); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
     g_is_rendering = false;
 
     return true;

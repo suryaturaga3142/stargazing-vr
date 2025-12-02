@@ -58,7 +58,7 @@ class VRSimulator(QMainWindow):
             pen=pg.mkPen('g', width=2, style=Qt.DashLine)
         )
         self.plot_widget.addItem(screen_box)
-
+        '''
         # 2. Center Crosshair (Red)
         self.plot_widget.addItem(pg.InfiniteLine(angle=0, pen=pg.mkPen('r', width=1, style=Qt.DotLine)))
         self.plot_widget.addItem(pg.InfiniteLine(angle=90, pen=pg.mkPen('r', width=1, style=Qt.DotLine)))
@@ -71,6 +71,7 @@ class VRSimulator(QMainWindow):
             fillLevel=0, brush=pg.mkBrush('y')
         )
         self.plot_widget.addItem(up_arrow)
+        '''
 
         # Scatter Item
         self.scatter = pg.ScatterPlotItem(pxMode=True)

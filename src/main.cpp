@@ -125,7 +125,7 @@ int main()
     }*/
 
     /* TEST VALUES */
-    Star_t st = { .x = 0.0f, .y = 0.0f, .z = 1.0f, .mag = -1.5f };
+    /*Star_t st = { .x = 0.0f, .y = 0.0f, .z = 1.0f, .mag = -1.5f };
     all_stars[sky_database[0][0].start_index] = st;
     st = { .x = 0.0f, .y = 0.0f, .z = -1.0f, .mag = 0.0f };
     all_stars[sky_database[0][0].start_index + 1] = st;
@@ -137,7 +137,7 @@ int main()
     all_stars[sky_database[0][0].start_index + 4] = st;
     st = { .x = -1.0f, .y = 0.0f, .z = 0.0f, .mag = 1.5f };
     all_stars[sky_database[0][0].start_index + 5] = st;
-    
+    */
     watchdog_update();
     printf("SD Card disabled & data sorted!\r\nInitializing GPS (This will take time)...\r\n");
     
