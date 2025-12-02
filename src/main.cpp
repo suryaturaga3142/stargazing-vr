@@ -126,12 +126,16 @@ int main()
     bool gps_fixed = gps_init();
     watchdog_disable();
     
-    if (gps_fixed && g_use_gps_location) {
+    if (gps_fixed && g_use_gps_location && g_latest_gps_data.is_valid) {
         printf("GPS Lock found! Starting rendering...\r\nEnjoy!!\r\n");
+        printf("Data: %d \r\nLat: %f \r\nLon: %f \r\nDate: %d/%d/%d \r\nTime: %d:%d:%d \r\n", 
+            g_latest_gps_data.is_valid, g_latest_gps_data.latitude, g_latest_gps_data.longitude, 
+            g_latest_gps_data.time.day, g_latest_gps_data.time.month, g_latest_gps_data.time.year,
+            g_latest_gps_data.time.hour, g_latest_gps_data.time.minute, g_latest_gps_data.time.second);
         user_ui_set_state(LED_STATE_RUN);
     }
     else {
-        printf("No GPS Lock found. Starting with no location fix.\r\nEnjoy!!\r\n");
+        printf("No GPS Lock found / avoiding due to reboot. Starting with no location fix.\r\nEnjoy!!\r\n");
         user_ui_set_state(LED_STATE_RUN_NO_FIX);
     }
     
@@ -151,23 +155,30 @@ int main()
         __wfi();
         // Awake now bc interrupt fired. Do the events in order of priority.
         
+        // If the read flag is turned on, the IMU is automatically read using the SHTP protocol and updated in the background.
         if (imu_check_and_read()) {
             monitor_checkin(SYS_MODULE_IMU);
-            // printf("Game: %f %f %f %f\r\n", g_latest_imu_data.orientation.x, g_latest_imu_data.orientation.y, g_latest_imu_data.orientation.z, g_latest_imu_data.orientation.w);
+            // printf("Game: %f %f %f %f\r\n", 
+            //        g_latest_imu_data.orientation.x, g_latest_imu_data.orientation.y, g_latest_imu_data.orientation.z, g_latest_imu_data.orientation.w);
             run_main_render();
             monitor_checkin(SYS_MODULE_DISPLAY);
         }
 
-        // Will need to call without if statement
-        if (gps_check_and_read()) {
-            // Might need to move this entire block into DMA completion handler
-            if (g_latest_gps_data.is_valid) {
-                Qfix_t Qfix_latest;
-                Qfix_latest.loc   = mech_location_to_q(g_latest_gps_data.latitude, g_latest_gps_data.longitude);
-                Qfix_latest.time  = mech_time_to_q(mech_utc_to_sidereal(g_latest_gps_data.time));
-                Qfix_latest.total = mech_product_q(Qfix_last.loc, Qfix_last.time);
-                Qfix_last = Qfix_latest; // Assigning like this in one go makes it resilient to interrupt fragmenting
-            }
+        // Whenever this is called, the system CAN lag for at most 500ms. A small freeze will be noticed whenever the background GPS update task is carried out.
+        // This is because GPS update and rendering is done in main, and only one can occur at any given point! No, we did not use both cores lol.
+        // This lag is the cost of running precalculations to avoid massive rendering times.
+        if (gps_check_and_read() && g_latest_gps_data.is_valid) {
+
+            printf("Data: %d \r\nLat: %f \r\nLon: %f \r\nDate: %d/%d/%d \r\nTime: %d:%d:%d \r\n", 
+                g_latest_gps_data.is_valid, g_latest_gps_data.latitude, g_latest_gps_data.longitude, 
+                g_latest_gps_data.time.day, g_latest_gps_data.time.month, g_latest_gps_data.time.year,
+                g_latest_gps_data.time.hour, g_latest_gps_data.time.minute, g_latest_gps_data.time.second);
+
+            Qfix_t Qfix_latest;
+            Qfix_latest.loc   = mech_location_to_q(g_latest_gps_data.latitude, g_latest_gps_data.longitude);
+            Qfix_latest.time  = mech_time_to_q(mech_utc_to_sidereal(g_latest_gps_data.time));
+            Qfix_latest.total = mech_product_q(Qfix_last.loc, Qfix_last.time);
+            Qfix_last = Qfix_latest;
         }
         monitor_checkin(SYS_MODULE_GPS);
 
