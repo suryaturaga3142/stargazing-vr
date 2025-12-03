@@ -84,8 +84,6 @@ bool run_main_render(void) {
     //printf("Q final: w=%f x=%f y=%f z=%f\r\n", q_final.w, q_final.x, q_final.y, q_final.z);
 
     // Phase 2: Spatial culling
-    // perspective_vector = q_final_conjugate * (0, 1, 0) * q_final
-    // determine which sky patches are in view based on perspective_vector
 
     Vector3f_t perspective_vector = mech_rotate_v(mech_conjugate_q(q_final), (Vector3f_t) {0.0f, 1.0f, 0.0f});
 
@@ -132,9 +130,12 @@ bool run_main_render(void) {
 
                 if (x_proj >= -1.0f && x_proj <= 1.0f && z_proj >= -1.0f && z_proj <= 1.0f) {
                     // Scale and cast
-                    int16_t x_int = (int16_t)(x_proj * 32000.0f);
-                    int16_t z_int = (int16_t)(z_proj * 32000.0f);
-                    uint8_t m_int = (uint8_t)(star.mag * 10.0f);
+                    int16_t x_int = (int16_t)(x_proj * 32000.0f); // Horizontal coordinate relative to center
+                    int16_t z_int = (int16_t)(z_proj * 32000.0f); // Vertical coordinate relative to center
+                    uint8_t m_int = (uint8_t)(star.mag * 10.0f);  // Magnitude of star (a lower number is brighter)
+
+                    // Add these coordinates to a list
+                    // Implement for Ryan: Use double  buffering to store. Erase the previous list and store in the new one.
 
                     // Print as Hex: $XXXXYYYMMM
                     // %04X for 16-bit, %02X for 8-bit
@@ -145,8 +146,7 @@ bool run_main_render(void) {
     }
 
     // Phase 3: Send to display
-    // Add to draw list in loop
-    // trigger DMA to send to display through display.c functions to use PIO
+    // Erase the previous set of stars and render the new ones
 
     sleep_ms(10); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
     g_is_rendering = false;
