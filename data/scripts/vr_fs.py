@@ -132,8 +132,8 @@ class VRSimulator(QMainWindow):
             mag_int = int(hex_m, 16)
 
             # Standard Normalize (-1.0 to 1.0)
-            x = x_int / SCALE_XY * 3
-            y = y_int / SCALE_XY * 3
+            x = x_int / SCALE_XY * 5
+            y = y_int / SCALE_XY * 5
             mag = mag_int / SCALE_MAG
 
             # Prepare visual properties

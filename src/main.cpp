@@ -185,7 +185,7 @@ int main()
         // Whenever this is called, the system CAN lag for at most GPS_TIMEOUT_MS. A small freeze will be noticed whenever the background GPS update task is carried out.
         // This is because GPS update and rendering is done in main, and only one can occur at any given point! No, we did not use both cores lol.
         // This lag is the cost of running precalculations to avoid massive rendering times.
-        if (gps_check_and_read() && g_latest_gps_data.is_valid) {
+        if (g_use_gps_location && gps_check_and_read() && g_latest_gps_data.is_valid) {
 
             /*printf("Data: %d \r\nLat: %f \r\nLon: %f \r\nDate: %d/%d/%d \r\nTime: %d:%d:%d \r\n", 
                 g_latest_gps_data.is_valid, g_latest_gps_data.latitude, g_latest_gps_data.longitude, 

@@ -100,8 +100,20 @@ bool run_main_render(void) {
     for (int dec_i = dec_choice - 1; dec_i < dec_choice + 2; dec_i++) {
 
         if (dec_i < 0 || dec_i >= SKY_PATCH_DEC_DIVISIONS) continue;
+        int ra_l = ra_choice - 1;
+        int ra_h = ra_choice + 2;
 
-        for (int ra_i = ra_choice - 1; ra_i < ra_choice + 2; ra_i++) {
+        // Special cases for poles to include all RA patches
+        if (dec_i == 0 || dec_i == SKY_PATCH_DEC_DIVISIONS - 1) {
+            ra_l = 0;
+            ra_h = SKY_PATCH_RA_DIVISIONS;
+        }
+        else if (dec_i == 1 || dec_i == SKY_PATCH_DEC_DIVISIONS - 2) {
+            ra_l = ra_choice - 2;
+            ra_h = ra_choice + 3;
+        }
+
+        for (int ra_i = ra_l; ra_i < ra_h; ra_i++) {
 
             int ra = (ra_i % SKY_PATCH_RA_DIVISIONS + SKY_PATCH_RA_DIVISIONS) % SKY_PATCH_RA_DIVISIONS;
             int dec = dec_i;
@@ -146,7 +158,7 @@ bool run_main_render(void) {
     // Phase 4: Send to display
     // trigger DMA to send to display through display.c functions to use PIO
 
-    watchdog_update();
+    //watchdog_update();
 
     sleep_ms(50); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
     g_is_rendering = false;
