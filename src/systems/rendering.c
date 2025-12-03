@@ -24,6 +24,7 @@
 #include "user_ui.h"
 #include "display.h"
 #include "pico/stdlib.h"
+#include "hardware/watchdog.h"
 #include <stdio.h>
 #include <math.h>
 // ...
@@ -83,22 +84,27 @@ bool run_main_render(void) {
     //printf("Q final: w=%f x=%f y=%f z=%f\r\n", q_final.w, q_final.x, q_final.y, q_final.z);
 
     // Phase 2: Spatial culling
-    // perspective_vector = q_final_conjugate * (0, 0, 1) * q_final
+    // perspective_vector = q_final_conjugate * (0, 1, 0) * q_final
     // determine which sky patches are in view based on perspective_vector
 
-    Vector3f_t perspective_vector = mech_rotate_v(mech_conjugate_q(q_final), (Vector3f_t) {0.0f, 1.0f, 1.0f});
+    Vector3f_t perspective_vector = mech_rotate_v(mech_conjugate_q(q_final), (Vector3f_t) {0.0f, 1.0f, 0.0f});
 
 
     // f = Focal Length related to FOV (e.g., 1.0 / tan(fov/2))
     float f = -1.0f / tanf(50.0f * M_PI / 180.0f); // 100 deg FOV
-    int ra_choice = 6;//mech_v_to_ra_bin(perspective_vector);
-    int dec_choice = 0;//mech_v_to_dec_bin(perspective_vector);
+    int ra_choice = mech_v_to_ra_bin(perspective_vector);
+    int dec_choice = mech_v_to_dec_bin(perspective_vector);
 
-    for (int ra_i = ra_choice - 1; ra_i < ra_choice + 2; ra_i++) {
-        for (int dec_i = dec_choice - 1; dec_i < dec_choice + 2; dec_i++) {
+    printf("xx\r\n");
+
+    for (int dec_i = dec_choice - 1; dec_i < dec_choice + 2; dec_i++) {
+
+        if (dec_i < 0 || dec_i >= SKY_PATCH_DEC_DIVISIONS) continue;
+
+        for (int ra_i = ra_choice - 1; ra_i < ra_choice + 2; ra_i++) {
 
             int ra = (ra_i % SKY_PATCH_RA_DIVISIONS + SKY_PATCH_RA_DIVISIONS) % SKY_PATCH_RA_DIVISIONS;
-            int dec =(dec_i% SKY_PATCH_DEC_DIVISIONS+ SKY_PATCH_DEC_DIVISIONS)% SKY_PATCH_DEC_DIVISIONS;
+            int dec = dec_i;
 
             for (int idx = 0; idx < sky_database[ra][dec].star_count; idx++) {
                 Star_t star = all_stars[sky_database[ra][dec].start_index + idx];
@@ -139,6 +145,8 @@ bool run_main_render(void) {
 
     // Phase 4: Send to display
     // trigger DMA to send to display through display.c functions to use PIO
+
+    watchdog_update();
 
     sleep_ms(50); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
     g_is_rendering = false;
