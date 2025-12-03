@@ -187,7 +187,8 @@ int main()
         // This lag is the cost of running precalculations to avoid massive rendering times.
         if (g_use_gps_location && gps_check_and_read() && g_latest_gps_data.is_valid) {
 
-            /*printf("Data: %d \r\nLat: %f \r\nLon: %f \r\nDate: %d/%d/%d \r\nTime: %d:%d:%d \r\n", 
+            /*
+            printf("Data: %d \r\nLat: %f \r\nLon: %f \r\nDate: %d/%d/%d \r\nTime: %d:%d:%d \r\n", 
                 g_latest_gps_data.is_valid, g_latest_gps_data.latitude, g_latest_gps_data.longitude, 
                 g_latest_gps_data.time.day, g_latest_gps_data.time.month, g_latest_gps_data.time.year,
                 g_latest_gps_data.time.hour, g_latest_gps_data.time.minute, g_latest_gps_data.time.second);

@@ -95,7 +95,7 @@ bool run_main_render(void) {
     int ra_choice = mech_v_to_ra_bin(perspective_vector);
     int dec_choice = mech_v_to_dec_bin(perspective_vector);
 
-    printf("xx\r\n");
+    //printf("xx\r\n");
 
     for (int dec_i = dec_choice - 1; dec_i < dec_choice + 2; dec_i++) {
 
@@ -138,29 +138,17 @@ bool run_main_render(void) {
 
                     // Print as Hex: $XXXXYYYMMM
                     // %04X for 16-bit, %02X for 8-bit
-                    printf("$%04X%04X%02X\n", (uint16_t)x_int, (uint16_t)z_int, m_int);
+                    //printf("$%04X%04X%02X\n", (uint16_t)x_int, (uint16_t)z_int, m_int);
                 }
             }
         }
     }
 
-
-    //printf("\r\n");
-
-    // Phase 3: Star projection and draw list formation
-    // for each star in visible sky patches, rotate by q_final to orient to (0, 0, 1)
-    // project onto 2D screen space-
-    // x_proj = x_rotated * z_to_screen (z_rotated = 1)
-    // y_proj = y_rotated * z_to_screen (z_rotated = 1)
-    // Similar calculation for brightness based on star magnitude
-    // add to draw list if within screen bounds
-
-    // Phase 4: Send to display
+    // Phase 3: Send to display
+    // Add to draw list in loop
     // trigger DMA to send to display through display.c functions to use PIO
 
-    //watchdog_update();
-
-    sleep_ms(50); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
+    sleep_ms(10); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
     g_is_rendering = false;
 
     return true;

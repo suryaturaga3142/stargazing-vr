@@ -22,7 +22,7 @@
 #include "hardware/uart.h"
 #include "hardware/gpio.h"
 #include "hardware/watchdog.h"
-//#include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 // ...
@@ -202,7 +202,9 @@ bool gps_init(void) {
 
     // Attempt a single parse
     if (g_use_gps_location) {
-        // Write to g_latest_gps_data if it works, else return false.
+
+        user_ui_set_state(LED_STATE_GPS_SEARCHING);
+        
         absolute_time_t deadline = make_timeout_time_ms(GPS_INIT_TIMEOUT_MS);
 
         while(!time_reached(deadline)) {
@@ -253,7 +255,9 @@ bool gps_check_and_read(void) {
         return false;
     }
 
-    g_gps_correction_needed = false; // This is  ok bc we can skip updates every now and then
+    g_gps_correction_needed = false; // This is ok bc we can skip updates every now and then
+
+    user_ui_set_state(LED_STATE_GPS_SEARCHING);
 
     absolute_time_t deadline = make_timeout_time_ms(GPS_TIMEOUT_MS);
 

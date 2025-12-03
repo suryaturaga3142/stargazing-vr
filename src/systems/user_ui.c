@@ -132,7 +132,7 @@ bool user_ui_set_state(LEDState_e state)
 
         case LED_STATE_GPS_SEARCHING:
             current_state.color   = LED_COLOR_YELLOW;
-            current_state.pattern = LED_PULSE;
+            current_state.pattern = LED_SOLID;
             current_state.speed   = LED_SPEED_MEDIUM;
             break;
 
