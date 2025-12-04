@@ -122,6 +122,7 @@ typedef struct __attribute((packed))__ {
  * @brief Render-ready structure for a single star in RAM.
  * @details Stores the pre-calculated Cartesian coordinates on a unit sphere,
  * optimized for the real-time rendering loop. Single element in processed buffer.
+ * x, y, and z are cartesian coordinates. mag is standard range b/w -1.5 - 6.5 and lower is brighter.
  */
 typedef struct {
     float x, y, z;

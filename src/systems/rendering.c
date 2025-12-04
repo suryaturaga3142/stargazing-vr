@@ -24,10 +24,15 @@
 #include "user_ui.h"
 #include "display.h"
 #include "pico/stdlib.h"
-//#include <stdio.h>
+#include "hardware/watchdog.h"
+#include <stdio.h>
+#include <math.h>
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 // Precalculated quaternions for location at PWL in J2000
 static const Qfix_t Qfix_default = {
     .loc =   {0.65922f, 0.28787f, 0.30386f, -0.62776f},
@@ -67,32 +72,83 @@ bool run_main_render(void) {
     // Phase 1: Setup quaternions
     
     Quaternion_t q_imu = g_latest_imu_data.orientation;
+    q_imu.y = -q_imu.y;
     Quaternion_t q_fix_calc; // The one to use in calculation
     
     if (g_use_gps_location) q_fix_calc = Qfix_last.total;
     else                    q_fix_calc = Qfix_default.total;
 
     // If the displayed data is going the wrong way, change this to use q_imu instead of the conjugate
-    Quaternion_t q_final = mech_normalize_q(mech_product_q(mech_conjugate_q(q_imu), q_fix_calc));
+    Quaternion_t q_final = mech_normalize_q(mech_product_q(q_imu, q_fix_calc));
 
-    // printf("Q final: %f %f %f %f\r\n", q_final.w, q_final.x, q_final.y, q_final.z);
+    //printf("Q final: w=%f x=%f y=%f z=%f\r\n", q_final.w, q_final.x, q_final.y, q_final.z);
 
     // Phase 2: Spatial culling
-    // perspective_vector = q_final_conjugate * (0, 0, 1) * q_final
-    // determine which sky patches are in view based on perspective_vector
 
-    // Phase 3: Star projection and draw list formation
-    // for each star in visible sky patches, rotate by q_final to orient to (0, 0, 1)
-    // project onto 2D screen space-
-    // x_proj = x_rotated * z_to_screen (z_rotated = 1)
-    // y_proj = y_rotated * z_to_screen (z_rotated = 1)
-    // Similar calculation for brightness based on star magnitude
-    // add to draw list if within screen bounds
+    Vector3f_t perspective_vector = mech_rotate_v(mech_conjugate_q(q_final), (Vector3f_t) {0.0f, 1.0f, 0.0f});
 
-    // Phase 4: Send to display
-    // trigger DMA to send to display through display.c functions to use PIO
 
-    sleep_ms(50); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
+    // f = Focal Length related to FOV (e.g., 1.0 / tan(fov/2))
+    float f = -1.0f / tanf(50.0f * M_PI / 180.0f); // 100 deg FOV
+    int ra_choice = mech_v_to_ra_bin(perspective_vector);
+    int dec_choice = mech_v_to_dec_bin(perspective_vector);
+
+    //printf("xx\r\n");
+
+    for (int dec_i = dec_choice - 1; dec_i < dec_choice + 2; dec_i++) {
+
+        if (dec_i < 0 || dec_i >= SKY_PATCH_DEC_DIVISIONS) continue;
+        int ra_l = ra_choice - 1;
+        int ra_h = ra_choice + 2;
+
+        // Special cases for poles to include all RA patches
+        if (dec_i == 0 || dec_i == SKY_PATCH_DEC_DIVISIONS - 1) {
+            ra_l = 0;
+            ra_h = SKY_PATCH_RA_DIVISIONS;
+        }
+        else if (dec_i == 1 || dec_i == SKY_PATCH_DEC_DIVISIONS - 2) {
+            ra_l = ra_choice - 2;
+            ra_h = ra_choice + 3;
+        }
+
+        for (int ra_i = ra_l; ra_i < ra_h; ra_i++) {
+
+            int ra = (ra_i % SKY_PATCH_RA_DIVISIONS + SKY_PATCH_RA_DIVISIONS) % SKY_PATCH_RA_DIVISIONS;
+            int dec = dec_i;
+
+            for (int idx = 0; idx < sky_database[ra][dec].star_count; idx++) {
+                Star_t star = all_stars[sky_database[ra][dec].start_index + idx];
+                Vector3f_t pt = mech_rotate_v(q_final, mech_star_to_vec(star));
+
+                //printf("Star Vector Originl %d: x=%f y=%f z=%f\r\n", i, star.x, star.y, star.z);
+                //printf("Star Vector Rotated %d: x=%f y=%f z=%f\r\n", i, pt.x, pt.y, pt.z);
+
+                if (pt.y <= 0.0f) continue;
+
+                float x_proj = (pt.x / pt.y) * f;
+                float z_proj = (pt.z / pt.y) * f;
+
+                if (x_proj >= -1.0f && x_proj <= 1.0f && z_proj >= -1.0f && z_proj <= 1.0f) {
+                    // Scale and cast
+                    int16_t x_int = (int16_t)(x_proj * 32000.0f); // Horizontal coordinate relative to center
+                    int16_t z_int = (int16_t)(z_proj * 32000.0f); // Vertical coordinate relative to center
+                    uint8_t m_int = (uint8_t)(star.mag * 10.0f);  // Magnitude of star (a lower number is brighter)
+
+                    // Add these coordinates to a list
+                    // Implement for Ryan: Use double  buffering to store. Erase the previous list and store in the new one.
+
+                    // Print as Hex: $XXXXYYYMMM
+                    // %04X for 16-bit, %02X for 8-bit
+                    //printf("$%04X%04X%02X\n", (uint16_t)x_int, (uint16_t)z_int, m_int);
+                }
+            }
+        }
+    }
+
+    // Phase 3: Send to display
+    // Erase the previous set of stars and render the new ones
+
+    sleep_ms(10); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
     g_is_rendering = false;
 
     return true;

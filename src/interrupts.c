@@ -162,9 +162,9 @@ void irq_on_pwm_wrap(void) {
     }
 
     // Apply the scaler to the raw PWM values
-    uint16_t final_r = (uint16_t)(LED_VAL_R(target_hex) * scalar);
-    uint16_t final_g = (uint16_t)(LED_VAL_G(target_hex) * scalar);
-    uint16_t final_b = (uint16_t)(LED_VAL_B(target_hex) * scalar);
+    uint16_t final_r = (uint16_t)(LED_VAL_R(target_hex) * scalar * 0.5f);
+    uint16_t final_g = (uint16_t)(LED_VAL_G(target_hex) * scalar * 0.5f);
+    uint16_t final_b = (uint16_t)(LED_VAL_B(target_hex) * scalar * 0.5f);
 
     // 6. Write to Hardware (Note the inversion)
     pwm_set_gpio_level(PIN_LED_R, LED_PWM_TOP - final_r);

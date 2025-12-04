@@ -23,12 +23,16 @@
 #include "diskio.h"
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "sd_card.h"
 #include "rendering.h"
 
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 static const double SCALER_COORD = 1000000.0;
 static const double SCALER_MAG   = 1000.0;
 // ...
@@ -37,12 +41,48 @@ FATFS fs_storage; // Global file system object
 /* ----------------------------- Private Variables -------------------------- */
 static StarFileHeader_t sd_header;
 static PackedStar_t sd_raw_buffer[STAR_CATALOG_SIZE_MAX];
-// Use to store processed stuff: This is extern! Don't redefine
-//Star_t all_stars[STAR_CATALOG_SIZE_MAX];
-//SkyPatch_t sky_database[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */
+
+static int get_ra_bin(int32_t ra_scaled) {
+    double ra_deg = (double)ra_scaled / SCALER_COORD;
+    while (ra_deg < 0) ra_deg += 360.0;
+    while (ra_deg >= 360.0) ra_deg -= 360.0;
+    return (int)(ra_deg / 15.0);
+}
+
+static int get_dec_bin(int32_t dec_scaled) {
+    double dec_deg = (double)dec_scaled / SCALER_COORD;
+    if (dec_deg < -90.0) dec_deg = -90.0;
+    if (dec_deg > 90.0) dec_deg = 90.0;
+    
+    // Bin 0 is South Pole (-90), Bin 11 is North Pole (+90)
+    // Range is 180 degrees total. 12 bins = 15 deg per bin.
+    double shifted = dec_deg + 90.0;
+    int bin = (int)(shifted / 15.0);
+    if (bin >= SKY_PATCH_DEC_DIVISIONS) bin = SKY_PATCH_DEC_DIVISIONS - 1;
+    return bin;
+}
+
+static void convert_star(PackedStar_t *src, Star_t *dst) {
+    // Note: We ignore Proper Motion (pmra/pmdec) for static plotting
+    // Ideally you propagate these based on current year (e.g. 2025.0)
+    
+    double ra_rad = ((double)src->ra_scaled / SCALER_COORD) * (M_PI / 180.0);
+    double dec_rad = ((double)src->dec_scaled / SCALER_COORD) * (M_PI / 180.0);
+    
+    // Convert to Unit Vector (Z-Up)
+    // X = cos(dec) * cos(ra)
+    // Y = cos(dec) * sin(ra)
+    // Z = sin(dec)
+    
+    dst->x = (float)(cos(dec_rad) * cos(ra_rad));
+    dst->y = (float)(cos(dec_rad) * sin(ra_rad));
+    dst->z = (float)(sin(dec_rad));
+    dst->mag = (float)src->mag_scaled / SCALER_MAG;
+}
+
 // ...
 
 /* ----------------------------- Public Functions --------------------------- */
@@ -53,6 +93,8 @@ static PackedStar_t sd_raw_buffer[STAR_CATALOG_SIZE_MAX];
  * @return true if the SD card was detected
  */
 bool sd_check(void) {
+    return true; // Our DET pin is broken but the below logic is sound.
+
     if (!gpio_get(PIN_SD_DET)) {
         return false;
     }
@@ -137,19 +179,18 @@ bool sd_load_data(void)
         if (fr != FR_OK)
             continue;
 
-        StarFileHeader_t header;
         UINT br;
-        fr = f_read(&fil, &header, sizeof(header), &br);
+        fr = f_read(&fil, &sd_header, sizeof(sd_header), &br);
         f_close(&fil);
 
-        if (fr != FR_OK || br != sizeof(header))
+        if (fr != FR_OK || br != sizeof(sd_header))
             continue;
 
         /* Validate header */
-        if (header.magic_number != STAR_MAGIC)
+        if (sd_header.magic_number != STAR_MAGIC)
             continue;
 
-        if (header.header_size < sizeof(StarFileHeader_t))
+        if (sd_header.header_size < sizeof(StarFileHeader_t))
             continue;
 
         /* Found a valid STAR file */
@@ -180,39 +221,23 @@ bool sd_load_data(void)
     f_lseek(&fil, sizeof(StarFileHeader_t));
 
     /* 4. Read star records */
-    PackedStar_t star;
+    
     UINT br;
-    uint32_t count = 0;
 
-    while (1) {
-        fr = f_read(&fil, &star, sizeof(PackedStar_t), &br);
+    fr = f_read(&fil, &sd_raw_buffer, sizeof(PackedStar_t) * sd_header.star_count, &br);
 
-        if (fr != FR_OK) {
-            print_error(fr, found_file);
-            f_close(&fil);
-            f_mount(NULL, "", 1);
-            return false;
-        }
-        if (br == 0)
-            break; // EOF
-
-
-        // if (count < 3) {   // checks if stars are stored correctly
-        //     printf("Star %lu:\n", (unsigned long)count);
-        //     printf("  RA  = %ld\n", star.ra_scaled);
-        //     printf("  DEC = %ld\n", star.dec_scaled);
-        //     printf("  PMRA  = %d\n", star.pmra_scaled);
-        //     printf("  PMDEC = %d\n", star.pmdec_scaled);
-        //     printf("  MAG   = %d\n", star.mag_scaled);
-        // }
-        /* Process star */
-        // unpack_star(&star);
-        count++;
+    if (fr != FR_OK) {
+        print_error(fr, found_file);
+        f_close(&fil);
+        f_mount(NULL, "", 1);
+        return false;
     }
 
     f_close(&fil);
+    //printf("Loaded %d stars\r\n", sd_header.star_count);
+    //printf("Header: Size: %d Mag Num: %d Count: %d Vers %d\r\n ", sd_header.header_size, sd_header.magic_number, sd_header.star_count, sd_header.version);
+    //for (int i = 0; i < 50; i++) printf("Packed Star %d: Ra %d Dec %d Mag %d\r\n", i, sd_raw_buffer[i].ra_scaled, sd_raw_buffer[i].dec_scaled, sd_raw_buffer[i].mag_scaled);
 
-    printf("Loaded %u stars\n", count);
 
     /* Leave SD mounted — caller can unmount if desired */
     return true;
@@ -257,8 +282,43 @@ void enable_sdcard()
  * @return true if sorting was successful
  */
 bool sd_buf_sort(void) {
-    // Unpack the bulk read buffer and sort it with 3 pass algorithm.
-    // Surya's job. nothing to actually do with the SD card here.
+    for (int i = 0; i < sd_header.star_count; i++) {
+        PackedStar_t star = sd_raw_buffer[i];
+        int ra = get_ra_bin(star.ra_scaled);
+        int dec = get_dec_bin(star.dec_scaled);
+        sky_database[ra][dec].star_count++;
+    }
+
+    uint32_t cur_idx = 0;
+    for (int ra = 0; ra < SKY_PATCH_RA_DIVISIONS; ra++) {
+        for (int dec = 0; dec < SKY_PATCH_DEC_DIVISIONS; dec++) {
+            sky_database[ra][dec].start_index = cur_idx;
+            cur_idx += sky_database[ra][dec].star_count;
+        }
+    }
+    
+    if (cur_idx > STAR_CATALOG_SIZE_MAX) {
+        return false;
+    }
+
+    // Temporary copy of start indices to track insertion
+    uint32_t temp_indices[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
+    for (int ra = 0; ra < SKY_PATCH_RA_DIVISIONS; ra++) {
+        for (int dec = 0; dec < SKY_PATCH_DEC_DIVISIONS; dec++) {
+            temp_indices[ra][dec] = sky_database[ra][dec].start_index;
+        }
+    }
+
+    for (int i = 0; i < sd_header.star_count; i++) {
+        PackedStar_t star = sd_raw_buffer[i];
+        int ra = get_ra_bin(star.ra_scaled);
+        int dec = get_dec_bin(star.dec_scaled);
+        
+        uint32_t target_idx = temp_indices[ra][dec];
+        convert_star(&star, &(all_stars[target_idx]));
+        temp_indices[ra][dec]++;
+    }
+
     return true;
 }
 

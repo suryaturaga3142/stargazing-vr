@@ -68,13 +68,7 @@ static JulianDate_t mech_utc_to_julian(UTCTime_t time) {
 // ...
 
 /* ----------------------------- Public Variables -------------------------- */
-
-// --- Star Catalog Data Structure Definitions ---
-// The actual memory for our star catalog and spatial culling grid is allocated here.
-Star_t all_stars[STAR_CATALOG_SIZE_MAX];
-SkyPatch_t sky_database[SKY_PATCH_RA_DIVISIONS][SKY_PATCH_DEC_DIVISIONS];
-
-volatile bool g_use_gps_location = true; // Default to using GPS location on startup
+// ...
 
 /* ----------------------------- Public Functions --------------------------- */
 
@@ -194,6 +188,17 @@ Quaternion_t mech_time_to_q(SideReal_t time) {
 }
 
 /**
+ * @brief Extracts the vector of a processed star
+ * 
+ * @param star Processed star
+ * @return v Cartesian vector of star location.
+ */
+Vector3f_t mech_star_to_vec(Star_t star) {
+    Vector3f_t v = { .x = star.x, .y = star.y, .z = star.z };
+    return v;
+}
+
+/**
  * @brief Normalizes a quaternion to unit length
  * 
  * @param q Generic quaternion
@@ -236,7 +241,7 @@ Quaternion_t mech_conjugate_q(Quaternion_t q) {
  * 
  * @param q1 First quaternion
  * @param q2 Second quaternion
- * @return q_prod Product result (watch of for order)
+ * @return q_prod Product result (watch out for order)
  */
 Quaternion_t mech_product_q(Quaternion_t q1, Quaternion_t q2) {
     Quaternion_t q_prod = {
@@ -266,20 +271,14 @@ Quaternion_t mech_product_q(Quaternion_t q1, Quaternion_t q2) {
  */
 Vector3f_t mech_rotate_v(Quaternion_t q, Vector3f_t v) {
 
-    // 1. Create a pure quaternion V from the vector v (V = 0 + v.x*i + v.y*j + v.z*k)
-    // The scalar part (w) is zero for a pure vector quaternion.
     Quaternion_t q_v = {.w = 0.0f, .x = v.x, .y = v.y, .z = v.z};
 
-    // 2. Calculate the conjugate Q* (or Q_inv)
     Quaternion_t q_conj = mech_conjugate_q(q);
 
-    // 3. Calculate intermediate product P = V * Q*
     Quaternion_t q_p_intermediate = mech_product_q(q_v, q_conj);
 
-    // 4. Calculate final product V' = Q * P (i.e., Q * (V * Q*))
     Quaternion_t q_v_prime = mech_product_q(q, q_p_intermediate);
 
-    // 5. Extract the vector part (x, y, z)
     // The scalar part (w) of q_v_prime should be 0 (or near zero) after this operation.
     Vector3f_t v_p = {
         .x = q_v_prime.x,
@@ -288,4 +287,43 @@ Vector3f_t mech_rotate_v(Quaternion_t q, Vector3f_t v) {
     };
 
     return v_p;
+}
+
+/**
+ * @brief Gives the ra bin of a vector
+ * 
+ * @param v Generic perspective vector
+ * @return bin Right Acension bin
+ */
+int mech_v_to_ra_bin(Vector3f_t v) {
+    float angle_rad = atan2f(v.y, v.x);
+
+    if (angle_rad < 0.0f) {
+        angle_rad += (2.0f * M_PI);
+    }
+
+    int bin = (int)((angle_rad / (2.0f * M_PI)) * 24.0f);
+    if (bin >= 24) bin = 0;
+
+    return bin;
+}
+
+/**
+ * @brief Gives the dec bin of a vector
+ * 
+ * @param v Generic perspective vector
+ * @return bin Declination bin
+ */
+int mech_v_to_dec_bin(Vector3f_t v) {
+    float z = v.z;
+    if (z > 1.0f) z = 1.0f;
+    if (z < -1.0f) z = -1.0f;
+
+    float angle_rad = asinf(z);
+    float shifted_rad = angle_rad + (M_PI / 2.0f);
+
+    int bin = (int)((shifted_rad / M_PI) * 12.0f);
+    if (bin >= 12) bin = 11;
+
+    return bin;
 }
