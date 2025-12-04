@@ -1,75 +1,29 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; @file       lcd_parallel.pio
-; @brief      PIO assembly program to drive an ILI9486 display via a 16-bit 8080 parallel interface.
+; @brief      PIO assembly for 16-bit 8080 Parallel Interface (Manual SET/NOP)
 ; @author     LED Chasers
 ; @date       2025-11-12
-; @version    2.0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-; DETAILED DESCRIPTION:
-; =====================
-; This program implements a high-speed, 16-bit 8080 parallel bus master. It is
-; specifically timed to meet the requirements of the ILI9486 display controller.
-; The program is designed to be fed a continuous stream of 32-bit words from
-; the DMA controller, offloading all data transfer from the CPU.
-;
-;
-; HEADSET INTERACTION:
-; ====================
-; This file is the lowest-level hardware driver for the VR headset's dual LCDs.
-; It directly generates the electrical signals that send commands and pixel
-; data to the screens.
-;
-;
-; DEPENDENCIES:
-; =============
-;   - DEPENDS ON:
-;     - The DMA controller to continuously feed its TX FIFO.
-;     - The C code in `display.c` to correctly initialize the PIO state machine,
-;       configure the pin mappings, and set the clock speed.
-;
-;   - REQUIRED BY:
-;     - The `pioasm` build tool, which compiles this file into `lcd_parallel.pio.h`.
-;     - `display.c`, which includes the auto-generated header to load this program.
-;
-;
-; PIO PROGRAM STRUCTURE:
-; ======================
-;   - PINS:
-;     - `out` pins (16): Mapped to the D0-D15 data bus.
-;     - `set` pins (1): Mapped to the D/C control line.
-;     - `side_set` pins (1): Mapped to the /WR control line.
-;
-;   - DATA FORMAT:
-;     - Expects 32-bit words from the TX FIFO.
-;     - Bits 15-0 are the 16-bit data/command payload for the `out` instruction.
-;
-;   - TIMING:
-;     - The loop is timed to respect the ILI9486's minimum write cycle (~66ns).
-;
+; @version    3.0 (NOP-based timing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 .program lcd_parallel
-.side_set 1 opt
 
-; Purpose:
-; Output 16 bits of pixel data to the LCD on each write strobe (WR).
-
-; Notes: 
-; Manually request 32-bit words from TX FIFO.
-; out command maps LSB to data pins and D/C (0 for command, 1 for data)
-; Side-set controls WR (active low pulse).
-; For RGB 565 LCD configuration
+; PIN MAPPING: 
+;  OUT pins  = D0-D15 + D/C (17 pins total). [Mapped to GP2 - GP18]
+;  SET pin   = WR (1 pin).                   [Mapped to GP19]
 
 .wrap_target
-    set    pins, 0      ; Drive WR low
-    pull   block        ; Pull 32 bits from FIFO
-    out    pins, 32     ; Output bits to D0-D17
-    nop
-    nop
-    set    pins, 1      ; Drive WR high, should write to LCD at this point 
-    nop                
-    nop
-    nop
-    nop
+    pull   block        ; 1. Wait for 32-bit word from TX FIFO. WR is High (Idle).
+                        ;    Bits 0-15: Data, Bit 16: DC.
+                        
+    out    pins, 17     ; 2. Output 16-bit Data + DC bit to pins.
+                        ;    WR is STILL High here. This guarantees Data Setup Time (tdst).
+    
+    set    pins, 0      ; 3. Drive WR Low (Active Write Strobe).
+    nop                 ;    Hold WR Low (Ensures minimum Pulse Width Low).
+    nop                 ;    Hold WR Low.
+
+    set    pins, 1      ; 4. Drive WR High (Latch Data on rising edge).
+    nop                 ;    Hold WR High (Ensures minimum Pulse Width High).
+    nop                 ;    Hold WR High.
 .wrap
