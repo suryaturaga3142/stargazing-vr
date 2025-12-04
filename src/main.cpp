@@ -41,8 +41,54 @@
 #include "rendering.h"
 #include "user_ui.h"
 
+#include "lcd.h"
+
+// --- Pin Definitions (Matches your working code) ---
+#define PIN_SDI    11 // SPI1 TX
+#define PIN_CS     9
+#define PIN_SCK    10 // SPI1 SCK
+#define PIN_DC     12
+#define PIN_nRESET 13
+
+#define SCREEN_WIDTH  320
+#define SCREEN_HEIGHT 480
+
+// -----------------------------------
+
+//-- Choose Main Function
+#define MAIN_FUNCTION
+//#define DISPLAY_TEST
+
+// -----------------------
+
+void init_spi_lcd() {
+    gpio_set_function(PIN_CS, GPIO_FUNC_SIO);
+    gpio_set_function(PIN_DC, GPIO_FUNC_SIO);
+    gpio_set_function(PIN_nRESET, GPIO_FUNC_SIO);
+
+    gpio_set_dir(PIN_CS, GPIO_OUT);
+    gpio_set_dir(PIN_DC, GPIO_OUT);
+    gpio_set_dir(PIN_nRESET, GPIO_OUT);
+
+    gpio_put(PIN_CS, 1); // CS high
+    gpio_put(PIN_DC, 0); // DC low
+    gpio_put(PIN_nRESET, 1); // nRESET high
+
+    // --- CRITICAL FIX: Use SPI1 ---
+    // GPIO 10 and 11 are hardwired to SPI1 on the RP2040.
+    gpio_set_function(PIN_SCK, GPIO_FUNC_SPI);
+    gpio_set_function(PIN_SDI, GPIO_FUNC_SPI);
+    
+    // Initialize SPI1 (not SPI0)
+    int baudrate = spi_init(spi1, 100000000);
+    printf("%d\r\n", baudrate);
+    spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+}
+
+#ifdef MAIN_FUNCTION
 int main()
 {
+
     // PHASE 1: Power On Setup
     stdio_init_all();
     user_ui_init();
@@ -98,7 +144,11 @@ int main()
     }
 
     printf("IMU detected!\r\nStarting LCD...\r\n");
-    display_init(); // Initialize PIO related stuff, it'll be a fast function.
+    //Initialize the LCD
+    init_spi_lcd();
+    LCD_Setup();
+    LCD_Clear(0x0000); // Set to black
+    //------------------
     watchdog_update();
 
     // PHASE 3: Heavy Lifting (PET THE WATCHDOG MANY TIMES!)
@@ -193,3 +243,50 @@ int main()
 
     return 0;
 }
+
+#endif
+
+#ifdef DISPLAY_TEST
+
+int main() {
+    stdio_init_all();
+    
+    // 1. Init SPI Hardware
+    init_spi_lcd();
+    
+    // 2. Init LCD Driver (Sends commands via SPI1)
+    LCD_Setup();
+    
+    // 3. Clear Screen
+    LCD_Clear(0x0000); 
+
+    // 4. Loop Colors
+    for (;;) {
+        // Draw Black
+        LCD_DrawFillRectangle(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x0000);
+        sleep_ms(2000);
+        
+        // Draw Red
+        LCD_DrawFillRectangle(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0xF800);
+        sleep_ms(2000);
+        
+        // Draw Green
+        LCD_DrawFillRectangle(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x07E0);
+        sleep_ms(2000);
+        
+        // Draw Blue
+        LCD_DrawFillRectangle(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x001F);
+        sleep_ms(2000);
+        
+        // Draw White
+        LCD_DrawFillRectangle(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0xFFFF);
+        sleep_ms(2000);
+
+        //print baudrate
+        
+    }
+
+    return 0;
+}
+
+#endif
