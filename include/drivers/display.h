@@ -70,6 +70,8 @@ void erase_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count);
 
 void draw_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count);
 
+uint16_t brightness_scale(uint8_t magnitude);
+
 void Clear_The_star(void);
 /**
  * @brief Initializes the DMA channel for SPI-based display transfer.

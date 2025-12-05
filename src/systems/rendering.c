@@ -62,6 +62,23 @@ int selector = 1;
 /* ----------------------------- Private Functions -------------------------- */
 // ...
 
+// Configuration
+#define MAG_LIMIT      6.5f   // Dimmest visible star (Value -> 0)
+#define MAG_BRIGHTEST -1.5f   // Brightest reference star (Value -> MAX)
+#define SCALE_FACTOR   (1.0f / (MAG_LIMIT - MAG_BRIGHTEST))
+
+uint8_t mag_to_brightness_u8(float mag) {
+    // 1. Check bounds
+    if (mag >= MAG_LIMIT) return 0;       // Too dim
+    if (mag <= MAG_BRIGHTEST) return 255; // Too bright (clamp to max)
+
+    // 2. Linear Scaling
+    // Formula: (Limit - Mag) * Scale * 255
+    float val = (MAG_LIMIT - mag) * SCALE_FACTOR * 255.0f;
+
+    return (uint8_t)val;
+}
+
 /* ----------------------------- Public Variables --------------------------- */
 
 // --- Star Catalog Data Structures ---
@@ -210,7 +227,7 @@ bool run_main_render(void) {
                     // Scale and cast
                     int16_t x_int = (int16_t)(x_proj * 420.0f); // Horizontal coordinate relative to center
                     int16_t z_int = (int16_t)(z_proj * 630.0f); // Vertical coordinate relative to center
-                    uint8_t m_int = 255; //(uint8_t)(star.mag * 10.0f); // Magnitude of star (a lower number is brighter)
+                    uint8_t m_int =  mag_to_brightness_u8(star.mag); 
 
                     // Add these coordinates to a list
                     // Implement for Ryan: Use double  buffering to store. Erase the previous list and store in the new one.

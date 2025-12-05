@@ -242,6 +242,15 @@ void Clear_The_star(void)
     LCD_Clear(0x0000);
 }
 
+uint16_t brightness_scale(uint8_t magnitude)
+{
+    uint16_t red_scale = (uint16_t)roundf(magnitude * (31.0 / 255.0f));
+    uint16_t green_scale = (uint16_t)roundf(magnitude * (63.0f / 255.0f));
+    uint16_t blue_scale = (uint16_t)roundf(magnitude * (31.0f / 255.0f));
+
+    return (red_scale << 11) | (green_scale << 5) | blue_scale;
+}
+
 void erase_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count)
 {
     // Define half-width and half-height for conversion
@@ -315,7 +324,8 @@ void draw_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count)
         // LCD_DrawPoint(x_d - 1, y_d - 1, COLOR_WHITE); 
         // LCD_DrawPoint(x_d,     y_d - 1, COLOR_WHITE); 
         // LCD_DrawPoint(x_d + 1, y_d - 1, COLOR_WHITE);
-        LCD_DrawFillRectangle(x_d, y_d, x_d + 1, y_d + 1, COLOR_WHITE);
+        uint16_t brightness_color = brightness_scale(buffer[i].magnitude);
+        LCD_DrawFillRectangle(x_d, y_d, x_d + 1, y_d + 1, brightness_color);
         //sleep_ms(1);
     }
     //sleep_ms(100);
