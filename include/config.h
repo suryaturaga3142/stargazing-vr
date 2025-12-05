@@ -18,12 +18,12 @@
 // SYSTEM TIMING CONSTANTS
 //------------------------------------------------------------------------------
 
-#define TARGET_REFRESH_RATE_HZ          200
+#define TARGET_REFRESH_RATE_HZ          1
 #define TARGET_REFRESH_PERIOD_MS        (1000 / TARGET_REFRESH_RATE_HZ)
-#define GPS_CORRECTION_INTERVAL_MIN     1
+#define GPS_CORRECTION_INTERVAL_MIN     10
 #define GPS_INIT_TIMEOUT_MS             10000
 #define GPS_TIMEOUT_MS                  1000
-#define WATCHDOG_INIT_TIMEOUT_MS        5000
+#define WATCHDOG_INIT_TIMEOUT_MS        50000
 #define WATCHDOG_TIMEOUT_MS             2000
 #define WATCHDOG_SUPERVISOR_INTERVAL_MS 500
 #define SD_CARD_INIT_HZ                 400000
@@ -33,7 +33,7 @@
 // STAR CATALOG & CULLING CONSTANTS
 //------------------------------------------------------------------------------
 
-#define STAR_CATALOG_SIZE_MAX           15000
+#define STAR_CATALOG_SIZE_MAX           10000
 #define SKY_PATCH_RA_DIVISIONS          24
 #define SKY_PATCH_DEC_DIVISIONS         12
 
@@ -43,11 +43,11 @@
 
 // -- ILI9486 Displays (GPIO Bank 0-20) --
 // The 16-bit data bus is implemented with PIO.
-#define PIN_LCD_DC                      2  // Data/Command
-#define PIN_LCD_WR                      3  // Write Strobe
-#define PIN_LCD_RESET                   4
-#define PIN_LCD_D0                      5  // D0-D15 MUST be consecutive. Uses GPIO 5-20.
-#define PIN_LCD_BL                      27
+#define PIN_SDI    11 // SPI1 TX
+#define PIN_CS     9
+#define PIN_SCK    10 // SPI1 SCK
+#define LCD_DC_PIN 12
+#define PIN_nRESET 13
 
 // -- In Built Zone (GPIO 21-26) --
 // Connected to Proton board PBs and LEDs.

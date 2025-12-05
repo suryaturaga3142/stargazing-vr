@@ -319,11 +319,11 @@ void LCD_Clear(u16 Color)
 {
     lcddev.select(1);
     unsigned int i,m;
-    LCD_SetWindow(0,0,lcddev.width-1,lcddev.height-1);
+    LCD_SetWindow(0,0,320-1,480-1);
     LCD_WriteData16_Prepare();
-    for(i=0;i<lcddev.height;i++)
+    for(i=0;i<480;i++)
     {
-        for(m=0;m<lcddev.width;m++)
+        for(m=0;m<320;m++)
         {
             LCD_WriteData16(Color);
         }

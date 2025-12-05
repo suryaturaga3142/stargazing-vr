@@ -1,508 +1,322 @@
-/*******************************************************************************
- * @file        display.c
- * @brief       Implements the functionality for the LCD Display module.
- * @details     Complete set of functions needed to interact with the ILI9486 
- *              through the PIO.
- * 
- * @author      LED Chasers
- * @date        2025-10-14
- * 
- * @note        This module is designed to be driven by interrupts and is not
- *              intended to be called from a blocking main loop.
- * 
- * @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
- ******************************************************************************/
-
-/* ----------------------------- Private Includes --------------------------- */
 #include "display.h"
-#include "stdint.h"
+#include "hardware/spi.h" 
 #include "hardware/dma.h"
-#include "hardware/irq.h" 
+#include "hardware/gpio.h"
+#include "pico/stdlib.h"
+#include <stdio.h> 
+#include "config.h" // Assumed to define SPI_PORT (e.g., spi1) and LCD_DC_PIN
+#include "lcd.h"    // Assumed to define LCD_WIDTH/HEIGHT
 
-// ...
+// // --- DMA/SPI HARDWARE CONFIGURATION ---
 
-/* ---------------------------- Private Constants --------------------------- */
-// ...
-#define PIXEL_AMOUNT 1000
-#define AMOUNT_OF_STARS 1000
-#define PACKET_PER_STAR 20
-#define ERASE_DMA_CAP (PIXEL_AMOUNT * PACKET_PER_STAR)
-#define DRAW_DMA_CAP (PIXEL_AMOUNT * PACKET_PER_STAR)
-#define FINAL_DMA_CAP (ERASE_DMA_CAP + DRAW_DMA_CAP)
+// // NOTE: SPI_PORT must be defined in config.h 
+// #define DMA_SPI_TX_DREQ (SPI_PORT == spi0 ? DREQ_SPI0_TX : DREQ_SPI1_TX)
+// #define SPI_TX_ADDRESS ((volatile void*)&spi_get_hw(SPI_PORT)->dr)
 
-#define COLOR_WHITE 0xFFFFu
-#define COLOR_LIGHTGRAY 0xC618u
-#define COLOR_BLACK 0x0000u
+// // --- GLOBAL DMA BUFFER & STATE DEFINITION ---
 
-#define CMD_CASET 0x2A
-#define CMD_PASET 0x2B
-#define CMD_RAMWR 0x2C
+// // DEFINITION: This allocates the memory for the global DMA_list.
+// // Although the "giant packet" concept is gone, this array is still used by 
+// // display_dma_transfer/burst as a temporary pointer target.
+// uint32_t DMA_list[(MAX_DMA_SIZE + 3) / 4];
 
-/* ----------------------------- Private Variables -------------------------- */
-// ...
-static uint32_t erase_dma[ERASE_DMA_CAP]; //this array stores commands to erase the star data
-static uint32_t draw_dma[DRAW_DMA_CAP]; //this array stores command to draw new stars
-static uint32_t dma_transfer_list[FINAL_DMA_CAP]; //combines the erase array and draw array into one large array for dma
+// // Global variable tracking the total length of the packet in bytes.
+// size_t g_dma_packet_length = 0;
 
-static int erase_index = 0; //how many stars got erased
-static int draw_index = 0; //how many stars are being drawn
-static int dma_count = 0; //how many packets in dma
+// static int g_dma_chan; // DMA channel allocated at init
 
-static int old_star_data[AMOUNT_OF_STARS][2]; //stores old stars to compare to
 
-//These variables store DMA and PIO info so you know which hardware to talk to
-static uint dma_chan; 
-static PIO dma_pio;
-static uint dma_sm;
-//volatile means it can be changed by interrupt and tells you if dma is busy or can take new
-// data
-static volatile bool dma_complete = true;
+// // --- PRIVATE HELPER FUNCTIONS ---
 
-extern int star_matrix[AMOUNT_OF_STARS][2];
+// /**
+//  * @brief Appends a 16-bit color value as two separate bytes (High then Low) to the DMA buffer.
+//  * @param ptr Current pointer position in the DMA buffer (uint8_t*).
+//  * @param color The 16-bit RGB565 color value.
+//  * @return uint8_t* The updated pointer position after writing 2 bytes.
+//  */
+// static uint8_t* append_color_bytes(uint8_t *ptr, uint16_t color)
+// {
+//     // High Byte 
+//     *ptr++ = (uint8_t)(color >> 8);
+//     // Low Byte
+//     *ptr++ = (uint8_t)color;
+//     return ptr;
+// }
 
-/* ----------------------------- Private Functions -------------------------- */
-// ...
-/**
- * @brief Talks to the PIO and takes data and formats it for the PIO. This is 
- * ordered in MSB so PIO will grab 31:15 and throw away 14:0.
- * 
- * @param payload this is the 16 bits of data like what color to send and draw
- * @param dc this is the command bit tells PIO whether its sending command or data
- * @return full 32 bit data for the PIO
- */
-static inline uint32_t build_packet(uint16_t payload, uint8_t dc)
-{
-    // [15 unused bits] [D/C bit at 16] [Payload[15..0] at bits 15-0]
-    return ((uint32_t)payload & 0xFFFF) | (((uint32_t)(dc & 1u)) << 16);
-}
 
-/**
- * @brief Take 32-packet from build packet and add it to erase dma
- * 
- * @param packet the 32 bit data that needs to be send to erase_list
- * @param dc this is the command bit tells PIO whether its sending command or data
- * @return NA
- */
-static inline void append_erase_packet(uint32_t packet)
-{
-    if(erase_index < ERASE_DMA_CAP)
-    {
-        erase_dma[erase_index++] = packet;
-    }
-}
-/**
- * @brief Takes 32 bit packet from build packet and adds it to draw dma
- * 
- * @param packet the 32 bit data that needs to be sent to draw list
- * @return NA
- */
-static inline void append_draw_packet(uint32_t packet)
+// // --- CORE LOGIC FUNCTIONS ---
 
-{
-    if(draw_index < DRAW_DMA_CAP)
-    {
-        draw_dma[draw_index++] = packet;
-    }
-}
+// /**
+//  * @brief Sets the Data/Command (D/C) line state.
+//  * @param is_data If true (1), D/C is HIGH (Data Mode). If false (0), D/C is LOW (Command Mode).
+//  */
+// void display_set_dc(bool is_data) {
+//     gpio_put(LCD_DC_PIN, is_data);
+// }
 
-/**
- * @brief sends command packet to the erase list, for convience and readability
- * 
- * @param cmd This is the command like set address (dc = 0)
- * @return NA
- */
-static inline void append_cmd_to_erase(uint16_t cmd)
-{
-    append_erase_packet(build_packet(cmd, 0));
-}
+// /**
+//  * @brief Sends a small block of data using blocking SPI transfer.
+//  */
+// void display_spi_blocking(const uint8_t *source_ptr, size_t length) {
+//     spi_write_blocking(SPI_PORT, source_ptr, length);
+// }
 
-/**
- * @brief sends data to the erase list, for convience and readability
- * 
- * @param param the data packet being sent (dc = 1)
- * @return NA
- */
-static inline void append_param_to_erase(uint16_t param)
-{
-    append_erase_packet(build_packet(param, 1));
-}
+// /**
+//  * @brief Blocks until the current DMA transfer on the assigned channel is complete.
+//  * @details This is used to ensure the previous burst of pixel data is fully sent 
+//  * before the CPU issues the next command.
+//  */
+// void display_dma_wait_for_finish(void) {
+//     if (g_dma_chan >= 0) {
+//         // Block until the DMA channel is free/finished
+//         dma_channel_wait_for_finish_blocking(g_dma_chan);
+//     }
+// }
+// /**
+//  * @brief Initiates a SPI transfer using DMA, but without waiting for completion.
+//  */
+// void display_dma_burst(const uint8_t *source_ptr, size_t length) {
+//     if (length == 0 || g_dma_chan < 0) return;
 
-/**
- * @brief sends command packet to the draw list, for convience and readability
- * 
- * @param cmd This is the command like set address (dc = 0)
- * @return NA
- */
-static inline void append_cmd_to_draw(uint16_t cmd)
-{
-    append_draw_packet(build_packet(cmd, 0));
-}
-
-/**
- * @brief sends data to the draw list, for convience and readability
- * 
- * @param param the data packet being sent (dc = 1)
- * @return NA
- */
-static inline void append_param_to_draw(uint16_t param)
-{
-    append_draw_packet(build_packet(param, 1));
-}
-
-/**
- * @brief Only runs when DMA finishes sending all packets from dma_transfer_list
- * 
- * @param NA
- * @return NA
- */
-static void dma_complete_isr()
-{
-    // Clear the interrupt request flag
-    dma_irqn_acknowledge_channel(DMA_IRQ_0, dma_chan);
+//     // --- REMOVED: dma_channel_wait_for_finish_blocking() and dma_channel_abort() ---
     
-    // Signal that the transfer is complete
-    dma_complete = true;
-}
-
-/**
- * @brief Erases the stars on the screen, draws a black pixel over that area
- * 
- * @param x0 start column (left edge) of the 3x3 box
- * @param x1 end column (right edge) of the 3x3 box
- * @param y0 start row (top edge) of 3x3 box
- * @param y1 end row (bottom edge) of 3x3 box
- * @param pixels pointer ot array of pixel data
- * @param npixels total number of pixels which should be 9
- * @return Description of what this function returns.
- */
-static void append_window_and_pixels_erase(int x0, int x1, int y0, int y1, const uint16_t *pixels, int npixels)
-{
-    append_cmd_to_erase(CMD_CASET);
-    append_param_to_erase((x0 >> 8) & 0xFF);
-    append_param_to_erase(x0 & 0xFF);
-    append_param_to_erase((x1 >> 8) & 0xFF);
-    append_param_to_erase(x1 & 0xFF);
-
-    append_cmd_to_erase(CMD_PASET);
-    append_param_to_erase((y0 >> 8) & 0xFF);
-    append_param_to_erase(y0 & 0xFF);
-    append_param_to_erase((y1 >> 8) & 0xFF);
-    append_param_to_erase(y1 & 0xFF);
-
-    append_cmd_to_erase(CMD_RAMWR);
-
-    for (int i = 0; i < npixels; ++i)
-    {
-        append_param_to_erase(pixels[i]);
-    }
-}
-
-static void append_window_and_pixels_draw(int x0, int x1, int y0, int y1, const uint16_t *pixels, int npixels)
-{
-    append_cmd_to_draw(CMD_CASET);
-    // Send 4 parameters for CASET
-    append_param_to_draw((uint16_t)(x0 >> 8));   // Start Column MSB
-    append_param_to_draw((uint16_t)(x0 & 0xFF)); // Start Column LSB
-    append_param_to_draw((uint16_t)(x1 >> 8));   // End Column MSB
-    append_param_to_draw((uint16_t)(x1 & 0xFF)); // End Column LSB
-
-    append_cmd_to_draw(CMD_PASET);
-    // Send 4 parameters for PASET
-    append_param_to_draw((uint16_t)(y0 >> 8));   // Start Page MSB
-    append_param_to_draw((uint16_t)(y0 & 0xFF)); // Start Page LSB
-    append_param_to_draw((uint16_t)(y1 >> 8));   // End Page MSB
-    append_param_to_draw((uint16_t)(y1 & 0xFF)); // End Page LSB
-
-    append_cmd_to_draw(CMD_RAMWR);
-    for (int i = 0; i < npixels; ++i)
-    {
-        append_param_to_draw(pixels[i]);
-    }
-}
-
-/**
- * @brief Draws the star and puts it in the array
- * 
- * @param out_pixel the 9 pixels to draw to
- * @return NA
- */
-static void make_star_pixels(uint16_t out_pixels[9]) 
-{
-    out_pixels[0] = COLOR_LIGHTGRAY;
-    out_pixels[1] = COLOR_WHITE;
-    out_pixels[2] = COLOR_LIGHTGRAY;
-    out_pixels[3] = COLOR_WHITE;
-    out_pixels[4] = COLOR_WHITE;
-    out_pixels[5] = COLOR_WHITE;
-    out_pixels[6] = COLOR_LIGHTGRAY;
-    out_pixels[7] = COLOR_WHITE;
-    out_pixels[8] = COLOR_LIGHTGRAY;
-}
-
-/**
- * @brief Draws black to the star by sending it to array
- * 
- * @param out_pixels the 9 pixels to draw to
- * @return NA
- */
-static void make_erase_pixels(uint16_t out_pixels[9])
-{
-    for (int i = 0; i < 9; i++)
-    {
-        out_pixels[i] = COLOR_BLACK;
-    }
-}
- 
-/**
- * @brief checks for boundaries to make sure you never write outside of bounds of lcd
- * 
- * @param x what x coordinate is being written
- * @return return back good x value
- */
-static inline int clamp_x(int x) 
-{
-    if (x < 0) 
-    {
-        return 0; 
-    }
-    if (x > 319) 
-    {
-        return 319;
-    }
-    return x; 
-}
-
-/**
- * @brief checks for boundaries to make sure you never write outside of bounds of lcd
- * 
- * @param y what y coordinate is being written
- * @return return back good y value
- */
-static inline int clamp_y(int y) 
-{
-    if (y < 0) 
-    {
-        return 0; 
-    }
-    if (y > 479) 
-    {
-        return 479; 
-    }
-    return y; 
+//     // Set the source address and the transfer count
+//     dma_channel_set_read_addr(g_dma_chan, source_ptr, false);
+//     dma_channel_set_trans_count(g_dma_chan, length, false);
     
+//     // Start the transfer.
+//     dma_channel_start(g_dma_chan);
+// }
+
+
+// /**
+//  * @brief Resets the global DMA packet length counter to zero.
+//  */
+// void initialize_dma_packet(void) {
+//     g_dma_packet_length = 0;
+// }
+
+// /**
+//  * @brief Initializes the DMA channel for SPI-based display transfer.
+//  */
+// void display_dma_init(void) {
+//     // 1. Initialize the D/C pin
+//     gpio_init(LCD_DC_PIN);
+//     gpio_set_dir(LCD_DC_PIN, GPIO_OUT);
+    
+//     // 2. Claim a free DMA channel
+//     g_dma_chan = dma_claim_unused_channel(true);
+    
+//     if (g_dma_chan < 0) {
+//         printf("ERROR: Failed to claim unused DMA channel!\n");
+//         return;
+//     }
+
+//     // 3. Configure the channel for SPI TX
+//     dma_channel_config c = dma_channel_get_default_config(g_dma_chan);
+    
+//     channel_config_set_transfer_data_size(&c, DMA_SIZE_8); 
+//     channel_config_set_read_increment(&c, true);           
+//     channel_config_set_write_increment(&c, false);          
+//     channel_config_set_dreq(&c, DMA_SPI_TX_DREQ); 
+    
+//     dma_channel_configure(
+//         g_dma_chan,
+//         &c,
+//         SPI_TX_ADDRESS, 
+//         NULL,            
+//         0,               
+//         false            
+//     );
+    
+//     printf("DMA Channel %d initialized for SPI display.\n", g_dma_chan);
+// }
+
+// /**
+//  * @brief Converts a scalar brightness (0-255) to a 16-bit RGB565 grayscale color.
+//  */
+// uint16_t get_grayscale_color(uint16_t scalar) {
+//     uint8_t clamped_scalar = (uint8_t)(scalar > 255 ? 255 : scalar);
+    
+//     uint8_t red_blue_5bit = (uint8_t)((clamped_scalar * 31) / 255);
+//     uint8_t green_6bit = (uint8_t)((clamped_scalar * 63) / 255);
+
+//     uint16_t color = (uint16_t)(
+//         (red_blue_5bit << 11) |   
+//         (green_6bit << 5) |       
+//         red_blue_5bit             
+//     );
+
+//     return color;
+// }
+
+// /**
+//  * @brief Writes address parameters and pixel data for a single star into a temporary buffer.
+//  * @details The caller is responsible for executing the transfers and managing the D/C line.
+//  * @return size_t The number of bytes written for this star set (always 26 bytes).
+//  */
+// size_t buffer_star_data(uint32_t buffer[AMOUNT_OF_STARS], uint16_t magnitude[AMOUNT_OF_STARS], uint16_t color_mode, int index)
+// {
+//     // Local buffer to hold a single star's data (Address Parameters + Pixel Data)
+//     uint8_t static_buffer[BYTES_PER_STAR_PACKET];
+//     uint8_t *dma_ptr = static_buffer;
+    
+//     // Helper function to append 2 bytes of color data (used internally here)
+//     uint8_t* local_append_color_bytes(uint8_t *ptr, uint16_t color)
+//     {
+//         *ptr++ = (uint8_t)(color >> 8);
+//         *ptr++ = (uint8_t)color;
+//         return ptr;
+//     }
+
+//     // Extract coordinates (using buffer[index])
+//     int x_coord = (int16_t)(buffer[index] >> 16);
+//     int y_coord = (int16_t)buffer[index];
+//     int x_center = x_coord + (LCD_WIDTH / 2);
+//     int y_center = y_coord + (LCD_HEIGHT / 2);
+
+//     // Set 3x3 window bounds
+//     uint16_t x_start = (uint16_t)(x_center - 1);
+//     uint16_t x_end = (uint16_t)(x_center + 1);
+//     uint16_t y_start = (uint16_t)(y_center - 1);
+//     uint16_t y_end = (uint16_t)(y_center + 1);
+
+//     // --- 1. CASET Parameters (4 bytes) ---
+//     *dma_ptr++ = (uint8_t)(x_start >> 8); 
+//     *dma_ptr++ = (uint8_t)x_start;
+//     *dma_ptr++ = (uint8_t)(x_end >> 8); 
+//     *dma_ptr++ = (uint8_t)x_end;
+
+//     // --- 2. PASET Parameters (4 bytes) ---
+//     *dma_ptr++ = (uint8_t)(y_start >> 8); 
+//     *dma_ptr++ = (uint8_t)y_start;
+//     *dma_ptr++ = (uint8_t)(y_end >> 8);
+//     *dma_ptr++ = (uint8_t)y_end;
+    
+//     // --- 3. Pixel Color Generation and Append ---
+
+//     if (color_mode == COLOR_BLACK) 
+//     {
+//         // Erase Mode: Fill all 9 pixels (18 bytes) with black
+//         for (int i = 0; i < 9; i++) {
+//             dma_ptr = local_append_color_bytes(dma_ptr, COLOR_BLACK);
+//         }
+//     } 
+//     else 
+//     {
+//         // Draw Mode (Grayscale): Calculate gradient pattern
+//         uint16_t scalar_mag = magnitude[index];
+//         uint16_t center_color = get_grayscale_color(scalar_mag); 
+//         uint16_t cross_color = get_grayscale_color((scalar_mag > 40) ? (scalar_mag - 40) : 0);
+//         uint16_t corner_color = get_grayscale_color((scalar_mag > 80) ? (scalar_mag - 80) : 0);
+
+//         // Pattern: [C] [X] [C] / [X] [S] [X] / [C] [X] [C] (Row-Major Order)
+        
+//         // Row 1 (y_start)
+//         dma_ptr = local_append_color_bytes(dma_ptr, corner_color);  
+//         dma_ptr = local_append_color_bytes(dma_ptr, cross_color);   
+//         dma_ptr = local_append_color_bytes(dma_ptr, corner_color);  
+
+//         // Row 2 (y_center)
+//         dma_ptr = local_append_color_bytes(dma_ptr, cross_color);   
+//         dma_ptr = local_append_color_bytes(dma_ptr, center_color);  
+//         dma_ptr = local_append_color_bytes(dma_ptr, cross_color);   
+
+//         // Row 3 (y_end)
+//         dma_ptr = local_append_color_bytes(dma_ptr, corner_color);  
+//         dma_ptr = local_append_color_bytes(dma_ptr, cross_color);   
+//         dma_ptr = local_append_color_bytes(dma_ptr, corner_color);  
+//     }
+    
+//     // Return the number of bytes written (8 address bytes + 18 pixel data bytes = 26 bytes)
+//     return (size_t)(dma_ptr - static_buffer);
+// }
+
+// // NOTE: The previous erase_stars and draw_stars packet builders are now replaced 
+// // by the new burst logic in rendering.c calling buffer_star_data.
+
+//WITH SPI ONLY
+
+void Clear_The_star(void)
+{
+    LCD_Clear(0x0000);
 }
 
-/* ----------------------------- Public Functions --------------------------- */
-
-/**
- * @brief erase the star from the coordinates set based on the center of the star
- * 
- * @param x coordinate coming in from the matrix
- * @param y cooordinate coming in from the matrix
- * @return NA
- */
-void erase_the_star(int x, int y)
+void erase_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count)
 {
-    // compute 3x3 bounds (clamped)
-    int x0 = clamp_x(x - 1);
-    int x1 = clamp_x(x + 1);
-    int y0 = clamp_y(y - 1);
-    int y1 = clamp_y(y + 1);
+    // Define half-width and half-height for conversion
+    const int X_HALF = 160; 
+    const int Y_HALF = 240; 
 
-    // create 3x3 background pixel block
-    uint16_t pixels[9];
-    make_erase_pixels(pixels);
-
-    // append to erase_dma list
-    append_window_and_pixels_erase(x0, x1, y0, y1, pixels, 9);
-}
-
-/**
- * @brief draw the star from the coordinates set based on the center of the star
- * 
- * @param x coordinate coming in from the matrix
- * @param y cooordinate coming in from the matrix
- * @return NA
- */
-void draw_the_star(int x, int y)
-{
-    int x0 = clamp_x(x - 1);
-    int x1 = clamp_x(x + 1);
-    int y0 = clamp_y(y - 1);
-    int y1 = clamp_y(y + 1);
-
-    uint16_t pixels[9];
-    make_star_pixels(pixels);
-
-    append_window_and_pixels_draw(x0, x1, y0, y1, pixels, 9);
-}
-
-/**
- * @brief The logic behind everything, compares the star values, then 
- * checks if it needs to erase the star and if not then it draws the star 
- * and sets the old star values
- * 
- * @param matrix full of all the star coordinates.
- * @return NA
- */
-void place_new_stars(int matrix[AMOUNT_OF_STARS][2])
-{
-    // Reset buffers
-    erase_index = 0;
-    draw_index  = 0;
-    dma_count = 0;
-
-    for (int i = 0; i < AMOUNT_OF_STARS; ++i)
+    for (int i = 0; i< count; i++)
     {
-        int old_x = old_star_data[i][0];
-        int old_y = old_star_data[i][1];
-        int new_x = matrix[i][0];
-        int new_y = matrix[i][1];
+        // 1. Extract Center-Based Coordinates (xc, yc)
+        // x_c (center-based X): Bits 31 to 16
+        int x_c = buffer[i].x_proj; 
+        int y_c = buffer[i].z_proj; 
 
-        // If changed (note: -1,-1 indicates "no previous star" — skip erase)
-        if (old_x != new_x || old_y != new_y)
-        {
-            if (old_x >= 0 && old_y >= 0)
-            {
-                // queue an erase sequence for the old center
-                erase_the_star(old_x, old_y);
-            }
-            // queue a draw sequence for the new center
-            draw_the_star(new_x, new_y);
+        // 2. Convert to Display Coordinates (xd, yd)
+        int x_d = x_c + X_HALF; 
+        int y_d = Y_HALF - y_c; // Flips the Y-axis and shifts the origin to top-left
 
-            // update old position
-            old_star_data[i][0] = new_x;
-            old_star_data[i][1] = new_y;
-        }
+        // 3. Erase a 3x3 square of pixels around the new display coordinates (x_d, y_d)
+        // Note: Coordinates are typically cast or constrained to display limits (0 to 319/479)
+        
+        // Row y_d + 1
+        // LCD_DrawPoint(x_d - 1, y_d + 1, COLOR_BLACK); 
+        // LCD_DrawPoint(x_d,     y_d + 1, COLOR_BLACK); 
+        // LCD_DrawPoint(x_d + 1, y_d + 1, COLOR_BLACK);
+        
+        // // Row y_d 
+        // LCD_DrawPoint(x_d - 1, y_d,     COLOR_BLACK); 
+        // LCD_DrawPoint(x_d,     y_d,     COLOR_BLACK); 
+        // LCD_DrawPoint(x_d + 1, y_d,     COLOR_BLACK);
+        
+        // // Row y_d - 1
+        // LCD_DrawPoint(x_d - 1, y_d - 1, COLOR_BLACK); 
+        // LCD_DrawPoint(x_d,     y_d - 1, COLOR_BLACK); 
+        // LCD_DrawPoint(x_d + 1, y_d - 1, COLOR_BLACK);
+        LCD_DrawFillRectangle(x_d, y_d, x_d + 1, y_d + 1, COLOR_BLACK);
     }
+}
 
-    // Now concatenate erase_dma then draw_dma into dma_transfer_list
-    // Make sure we don't exceed final capacity
-    int e = erase_index;
-    int d = draw_index;
-    if ((e + d) > FINAL_DMA_CAP) {
-        // clamp (shouldn't happen if capacities sized correctly)
-        if (e > FINAL_DMA_CAP)
-        {
-            e = FINAL_DMA_CAP;
-        }
-        if (d > (FINAL_DMA_CAP - e))
-        {
-            d = FINAL_DMA_CAP - e;
-        }
-    }
+void draw_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count)
+{
+    // Define half-width and half-height for conversion
+    const int X_HALF = 160; 
+    const int Y_HALF = 240; 
+    
+    // Assuming COLOR_WHITE is defined globally (e.g., 0xFFFFFF in 262K mode)
 
-    // copy
-    for (int i = 0; i < e; ++i)
+    for (int i = 0; i < count; i++)
     {
-        dma_transfer_list[i] = erase_dma[i];
+        // 1. Extract Center-Based Coordinates (xc, yc)
+        // x_c (center-based X): Bits 31 to 16
+        int x_c = buffer[i].x_proj; 
+        int y_c = buffer[i].z_proj;
+
+        // 2. Convert to Display Coordinates (xd, yd)
+        int x_d = x_c + X_HALF; 
+        int y_d = Y_HALF - y_c; // Flips Y axis, shifts origin to top-left
+
+        // 3. Draw a 3x3 square of pixels (star) around the new display coordinates (x_d, y_d)
+        
+        // Row y_d + 1
+        // LCD_DrawPoint(x_d - 1, y_d + 1, COLOR_WHITE); 
+        // LCD_DrawPoint(x_d,     y_d + 1, COLOR_WHITE); 
+        // LCD_DrawPoint(x_d + 1, y_d + 1, COLOR_WHITE);
+        
+        // // Row y_d 
+        // LCD_DrawPoint(x_d - 1, y_d,     COLOR_WHITE); 
+        // LCD_DrawPoint(x_d,     y_d,     COLOR_WHITE); 
+        // LCD_DrawPoint(x_d + 1, y_d,     COLOR_WHITE);
+        
+        // // Row y_d - 1
+        // LCD_DrawPoint(x_d - 1, y_d - 1, COLOR_WHITE); 
+        // LCD_DrawPoint(x_d,     y_d - 1, COLOR_WHITE); 
+        // LCD_DrawPoint(x_d + 1, y_d - 1, COLOR_WHITE);
+        LCD_DrawFillRectangle(x_d, y_d, x_d + 1, y_d + 1, COLOR_WHITE);
+        //sleep_ms(1);
     }
-    for (int i = 0; i < d; ++i) 
-    {
-        dma_transfer_list[e + i] = draw_dma[i];
-    }
-
-    dma_count = e + d;
-
-    // dma_transfer_list[0..dma_count-1] is now the full ordered packet sequence for DMA.
-    // Caller must start DMA to send dma_transfer_list with count = dma_count.
+    //sleep_ms(100);
 }
-
-// Utility: getter for DMA pointer/count so caller can start DMA
-uint32_t *display_get_dma_ptr(void)
-{
-    return dma_transfer_list; 
-}
-int display_get_dma_count(void)
-{
-    return dma_count;
-}
-
-// Initialization helper: clear old_star_data to invalid markers
-void display_init_star_cache(void)
-{
-    for (int i = 0; i < AMOUNT_OF_STARS; ++i) {
-        old_star_data[i][0] = -1;
-        old_star_data[i][1] = -1;
-    }
-}
-
-void display_dma_init(PIO pio, uint sm) 
-{
-    dma_pio = pio;
-    dma_sm = sm;
-    
-    // 1. Claim a DMA channel
-    dma_chan = dma_claim_unused_channel(true); // `true` = required
-
-    // 2. Get the default DMA configuration
-    dma_channel_config c = dma_channel_get_default_config(dma_chan);
-
-    // 3. Configure the DMA
-    //    - Transfer 32-bit words (matches our PIO and build_packet)
-    channel_config_set_transfer_data_size(&c, DMA_SIZE_32);
-    //    - Read from memory, incrementing the read address
-    channel_config_set_read_increment(&c, true);
-    //    - Write to a fixed peripheral address (the PIO TX FIFO)
-    channel_config_set_write_increment(&c, false);
-    
-    //    - Pace the DMA transfers using the PIO's TX DREQ
-    //      (This is the magic that makes it wait for the PIO FIFO)
-    uint dreq = (pio == pio0) ? DREQ_PIO0_TX0 : DREQ_PIO1_TX0;
-    channel_config_set_dreq(&c, dreq + sm);
-
-    // 4. Apply this config to the channel
-    //    We set the write address *now* (it's permanent)
-    //    The read address and count are set just before transfer
-    dma_channel_configure(
-        dma_chan,
-        &c,
-        &pio->txf[sm], // Permanent Write address: PIO TX FIFO
-        NULL,           // Read address: Will be set later
-        0,              // Transfer count: Will be set later
-        false           // Don't trigger yet
-    );
-
-    // 5. Set up the DMA interrupt
-    //    - Tell the DMA to fire an interrupt on IRQ 0 when it's done
-    dma_irqn_set_channel_enabled(DMA_IRQ_0, dma_chan, true);
-    //    - Set our dma_complete_isr as the function to call
-    irq_set_exclusive_handler(DMA_IRQ_0, dma_complete_isr);
-    //    - Enable the interrupt in the processor
-    irq_set_enabled(DMA_IRQ_0, true);
-}
-
-bool display_dma_is_busy() 
-{
-    return !dma_complete;
-}
-
-void display_dma_start_transfer() 
-{
-    // Don't start a new transfer if the old one is still running
-    if (!dma_complete) {
-        return;
-    }
-    
-    // We are now busy
-    dma_complete = false;
-    
-    // 1. Set the source address
-    dma_channel_set_read_addr(
-        dma_chan,
-        display_get_dma_ptr(),  // Get the pointer to dma_transfer_list
-        false                   // Don't trigger yet
-    );
-
-    // 2. Set the transfer count and TRIGGER the DMA to start!
-    //    The DMA will now wait for the PIO DREQ and start feeding
-    //    words from the list into the PIO FIFO.
-    dma_channel_set_trans_count(
-        dma_chan,
-        display_get_dma_count(), // Get the number of packets //TEMP
-        true                     // TRIGGER!
-    );
-}
-//cfunc - this is for func header
-//csrc - is for file header
-//chdr - is for header file

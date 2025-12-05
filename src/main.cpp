@@ -146,9 +146,12 @@ int main()
 
     printf("IMU detected!\r\nStarting LCD...\r\n");
     //Initialize the LCD
+    // Set to black
     init_spi_lcd();
+
     LCD_Setup();
-    LCD_Clear(0x0000); // Set to black
+
+    LCD_Clear(0x0000);
     //------------------
     watchdog_update();
 
@@ -269,6 +272,7 @@ int main()
         }
 
         monitor_checkin(SYS_MODULE_MAIN);
+        sleep_ms(100);
     }
 
     // Should never reach here.
@@ -296,24 +300,25 @@ int main() {
     // 4. Loop Colors
     for (;;) {
         // Draw Black
-        LCD_DrawFillRectangle(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x0000);
+        LCD_DrawFillRectangle(0, 0, 320-1, 2-1, 0x0000);
         sleep_ms(2000);
         
         // Draw Red
-        LCD_DrawFillRectangle(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0xF800);
+        LCD_DrawFillRectangle(0, 0, 320-1, 2-1, 0xF800);
         sleep_ms(2000);
         
         // Draw Green
-        LCD_DrawFillRectangle(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x07E0);
+        LCD_DrawFillRectangle(0, 0, 320-1, 2-1, 0x07E0);
         sleep_ms(2000);
         
         // Draw Blue
-        LCD_DrawFillRectangle(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x001F);
+        LCD_DrawFillRectangle(0, 0, 320-1, 2-1, 0x001F);
         sleep_ms(2000);
         
         // Draw White
-        LCD_DrawFillRectangle(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0xFFFF);
+        LCD_DrawFillRectangle(0, 0, 320-1, 2-1, 0xFFFF);
         sleep_ms(2000);
+        
 
         //print baudrate
         

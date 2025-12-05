@@ -39,10 +39,23 @@ static const Qfix_t Qfix_default = {
     .time =  {1.0f    , 0.0f    , 0.0f    ,  0.0f    },
     .total = {0.65922f, 0.28787f, 0.30386f, -0.62776f}
 };
+#define AMOUNT_OF_STARS 9000
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
 static volatile bool g_is_rendering = false;
+// --- Global Star Data Definitions ---
+// DEFINITIONS for the externally linked buffers (used by main/test)
+// static uint32_t g_star_coords_current[AMOUNT_OF_STARS]; 
+// static uint32_t g_star_coords_previous[AMOUNT_OF_STARS]; 
+// static uint16_t g_star_magnitudes[AMOUNT_OF_STARS]; 
+
+// --- Local Control Variables ---
+static StarPosition_t buffer_one[AMOUNT_OF_STARS];
+static StarPosition_t buffer_two[AMOUNT_OF_STARS];
+
+int selector = 1;
+
 // Started at precalculated in case GPS is not available
 // ...
 
@@ -61,6 +74,68 @@ Qfix_t Qfix_last = Qfix_default;
 /* ----------------------------- Public Functions --------------------------- */
 
 /**
+ * @brief Builds the SPI transfer sequence for a single star and executes the bursts.
+ * @param buffer The coordinate buffer.
+ * @param magnitudes The magnitude buffer.
+ * @param index The star index to process.
+ * @param mode COLOR_BLACK (erase) or a different color (draw).
+ */
+// static void execute_star_transfer(uint32_t buffer[AMOUNT_OF_STARS], uint16_t magnitudes[AMOUNT_OF_STARS], int index, uint16_t mode)
+// {
+//     // *** FIX 2: Wait for the previous DMA burst to finish ***
+//     // This is crucial to ensure the SPI peripheral is free before sending the next command.
+//     display_dma_wait_for_finish(); 
+
+//     // The total data buffer for a single star (Address Parameters + Pixel Data)
+//     uint8_t static_star_packet[BYTES_PER_STAR_PACKET];
+    
+//     // 1. Fill a static buffer with the address and pixel data for this star.
+//     size_t data_length = buffer_star_data(buffer, magnitudes, mode, index);
+    
+//     if (data_length < 26) return; 
+
+//     const uint8_t *data_ptr = static_star_packet;
+    
+//     // *** CASET (Column Address Set) Burst ***
+    
+//     // 2a. Send 0x2A Command Byte (D/C = 0)
+//     display_set_dc(false); // Command Mode
+//     display_spi_blocking((const uint8_t[]){0x2A}, 1); 
+    
+//     // 2b. Send 4 bytes of X-address parameters (D/C = 1)
+//     display_set_dc(true); // Data Mode
+//     display_spi_blocking(data_ptr, 4); // SC[15:0], EC[15:0]
+//     data_ptr += 4;
+    
+//     // *** PASET (Page Address Set) Burst ***
+    
+//     // 3a. Send 0x2B Command Byte (D/C = 0)
+//     display_set_dc(false); // Command Mode
+//     display_spi_blocking((const uint8_t[]){0x2B}, 1);
+    
+//     // 3b. Send 4 bytes of Y-address parameters (D/C = 1)
+//     display_set_dc(true); // Data Mode
+//     display_spi_blocking(data_ptr, 4); // SP[15:0], EP[15:0]
+//     data_ptr += 4;
+    
+//     // *** RAMWR (Memory Write) Burst ***
+    
+//     // 4a. Send 0x2C Command Byte (D/C = 0)
+//     display_set_dc(false); // Command Mode
+//     display_spi_blocking((const uint8_t[]){0x2C}, 1);
+    
+//     // 4b. Send 18 bytes of Pixel Data (D/C = 1) using DMA
+//     display_set_dc(true); // Data Mode
+//     display_dma_burst(data_ptr, 18); // 9 pixels * 2 bytes/pixel
+    
+//     // NOTE: The function now returns immediately after starting the DMA, 
+//     // allowing the CPU to proceed to the next star's logic, while the 
+//     // DMA controller handles the 18-byte pixel transfer.
+// }
+
+
+
+/**
  * @brief The center of this program. Goes through the actual rendering process.
  * 
  * @return true if rendering of stars was successful.
@@ -69,6 +144,9 @@ bool run_main_render(void) {
     if (g_is_rendering) return false;
     g_is_rendering = true;
 
+    Clear_The_star();
+    // Local selector for the inner logic block (RENAMED)
+    int counter = 0;
     // Phase 1: Setup quaternions
     
     Quaternion_t q_imu = g_latest_imu_data.orientation;
@@ -89,7 +167,7 @@ bool run_main_render(void) {
 
 
     // f = Focal Length related to FOV (e.g., 1.0 / tan(fov/2))
-    float f = -1.0f / tanf(50.0f * M_PI / 180.0f); // 100 deg FOV
+    float f = -1.0f / tanf(40.0f * M_PI / 180.0f); // 100 deg FOV
     int ra_choice = mech_v_to_ra_bin(perspective_vector);
     int dec_choice = mech_v_to_dec_bin(perspective_vector);
 
@@ -130,13 +208,37 @@ bool run_main_render(void) {
 
                 if (x_proj >= -1.0f && x_proj <= 1.0f && z_proj >= -1.0f && z_proj <= 1.0f) {
                     // Scale and cast
-                    int16_t x_int = (int16_t)(x_proj * 32000.0f); // Horizontal coordinate relative to center
-                    int16_t z_int = (int16_t)(z_proj * 32000.0f); // Vertical coordinate relative to center
-                    uint8_t m_int = (uint8_t)(star.mag * 10.0f);  // Magnitude of star (a lower number is brighter)
+                    int16_t x_int = (int16_t)(x_proj * 420.0f); // Horizontal coordinate relative to center
+                    int16_t z_int = (int16_t)(z_proj * 630.0f); // Vertical coordinate relative to center
+                    uint8_t m_int = 255; //(uint8_t)(star.mag * 10.0f); // Magnitude of star (a lower number is brighter)
 
                     // Add these coordinates to a list
                     // Implement for Ryan: Use double  buffering to store. Erase the previous list and store in the new one.
+                    //These are the coordinate list of where to draw and erase the stars
+                    if(counter < AMOUNT_OF_STARS)
+                    {
+                        StarPosition_t *current_star;
+                        StarPosition_t *previous_star;
+                        if(selector)
+                        {
+                            current_star = &buffer_one[counter];
+                            previous_star = &buffer_two[counter];
+                            buffer_two[counter] = buffer_one[counter];
+                            //printf("%5d  %5d\r\n", x_int, z_int);
+                        }
+                        else
+                        {
+                            current_star = &buffer_two[counter];
+                            previous_star = &buffer_one[counter];
+                            buffer_one[counter] = buffer_two[counter];
+                            //magnitude[counter] = m_int;
+                        }
+                        current_star->x_proj = x_int;
+                        current_star->z_proj = z_int;
+                        current_star->magnitude = m_int;
 
+                        counter++;
+                    }
                     // Print as Hex: $XXXXYYYMMM
                     // %04X for 16-bit, %02X for 8-bit
                     //printf("$%04X%04X%02X\n", (uint16_t)x_int, (uint16_t)z_int, m_int);
@@ -144,11 +246,23 @@ bool run_main_render(void) {
             }
         }
     }
+    watchdog_update();
 
-    // Phase 3: Send to display
-    // Erase the previous set of stars and render the new ones
+    if(selector)
+    {
+        erase_stars(buffer_two, counter);
+        draw_stars(buffer_one, counter);
+    }
+    else
+    {
+        erase_stars(buffer_one, counter);
+        draw_stars(buffer_two, counter);
+    }
 
-    sleep_ms(10); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
+    selector = selector ^ 1;
+
+
+    //sleep_ms(10); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
     g_is_rendering = false;
 
     return true;
