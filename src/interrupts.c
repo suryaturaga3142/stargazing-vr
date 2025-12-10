@@ -87,8 +87,6 @@ void irq_on_pwm_wrap(void) {
     pwm_clear_irq(pwm_gpio_to_slice_num(PIN_LED_B));
 
     // 2. Detect Configuration Change
-    // We must check if Color, Pattern, OR Speed changed to reset the counter.
-    // We copy the volatile global to a local var for safe reading.
     StateDetails_t local_target = current_state; 
 
     bool config_changed = (local_target.state != led_cache.state) ||
@@ -116,7 +114,6 @@ void irq_on_pwm_wrap(void) {
     }
 
     // 4. Calculate Brightness Scalar (0.0 to 1.0)
-    // This abstract number represents "How bright should we be at this millisecond?"
     float scalar = 1.0f;
     
     // Increment Time
@@ -138,7 +135,6 @@ void irq_on_pwm_wrap(void) {
     }
     else if (local_target.pattern == LED_PULSE) {
         // Triangle Wave: Linear Up, Linear Down
-        // We use float math here for clarity. 
         float position = (float)counter_ms;
         float half_period = (float)period / 2.0f;
 
@@ -147,7 +143,6 @@ void irq_on_pwm_wrap(void) {
             scalar = position / half_period;
         } else {
             // Ramping Down (1.0 -> 0.0)
-            // Calculate how far into the second half we are
             float offset = position - half_period;
             scalar = 1.0f - (offset / half_period);
         }
@@ -174,7 +169,7 @@ void irq_on_pwm_wrap(void) {
     uint16_t final_g = (uint16_t)(LED_VAL_G(target_hex) * scalar * 0.5f);
     uint16_t final_b = (uint16_t)(LED_VAL_B(target_hex) * scalar * 0.5f);
 
-    // 6. Write to Hardware (Note the inversion)
+    // 6. Write to Hardware 
     pwm_set_gpio_level(PIN_LED_R, LED_PWM_TOP - final_r);
     pwm_set_gpio_level(PIN_LED_G, LED_PWM_TOP - final_g);
     pwm_set_gpio_level(PIN_LED_B, LED_PWM_TOP - final_b);

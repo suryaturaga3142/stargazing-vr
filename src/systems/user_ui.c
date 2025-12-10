@@ -60,9 +60,13 @@ bool user_ui_init(void)
     gpio_set_dir(PIN_BTN_DRIFT_CORRECT, GPIO_IN);
     gpio_init(PIN_BTN_LOCATION_TOGGLE);
     gpio_set_dir(PIN_BTN_LOCATION_TOGGLE, GPIO_IN);
+    gpio_init(PIN_BTN_PAUSE_TOGGLE);
+    gpio_set_dir(PIN_BTN_PAUSE_TOGGLE, GPIO_IN);
+    gpio_pull_up(PIN_BTN_PAUSE_TOGGLE);
 
     gpio_set_irq_enabled_with_callback(PIN_BTN_DRIFT_CORRECT, GPIO_IRQ_EDGE_RISE, true, irq_gpio_handler);
     gpio_set_irq_enabled(PIN_BTN_LOCATION_TOGGLE, GPIO_IRQ_EDGE_RISE, true);
+    gpio_set_irq_enabled(PIN_BTN_PAUSE_TOGGLE, GPIO_IRQ_EDGE_FALL, true);
 
     // Initialize LED GPIOs just because
     gpio_init(PIN_LED_1);

@@ -20,6 +20,7 @@
 
 #define TARGET_REFRESH_RATE_HZ          1
 #define TARGET_REFRESH_PERIOD_MS        (1000 / TARGET_REFRESH_RATE_HZ)
+#define DEBOUNCE_DELAY_MS               200
 #define GPS_CORRECTION_INTERVAL_MIN     10
 #define GPS_INIT_TIMEOUT_MS             10000
 #define GPS_TIMEOUT_MS                  1000
@@ -28,9 +29,9 @@
 #define WATCHDOG_SUPERVISOR_INTERVAL_MS 500
 #define SD_CARD_INIT_HZ                 400000
 #define SD_CARD_READ_HZ                 5000000
-#define SCREEN_WIDTH  320
-#define SCREEN_HEIGHT 480
-#define DEBOUNCE_DELAY_MS 200
+
+#define SCREEN_WIDTH                    320
+#define SCREEN_HEIGHT                   480
 
 //------------------------------------------------------------------------------
 // STAR CATALOG & CULLING CONSTANTS
@@ -98,10 +99,7 @@
 #define PIN_LED_G                       44
 #define PIN_BTN_DRIFT_CORRECT           PIN_PB_1
 #define PIN_BTN_LOCATION_TOGGLE         PIN_PB_2
-
-
-// ---Pause Button ----
-#define PAUSE_BUTTON 16
+#define PIN_BTN_PAUSE_TOGGLE            16
 
 
 //------------------------------------------------------------------------------

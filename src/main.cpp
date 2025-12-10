@@ -18,7 +18,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+
 #include "pico/stdlib.h"
+
 #include "hardware/gpio.h"
 #include "hardware/dma.h"
 #include "hardware/irq.h"
@@ -35,34 +37,13 @@
 #include "gps.h"
 #include "imu.h"
 #include "sd_card.h"
+#include "lcd.h"
 
 #include "mechanics.h"
 #include "monitor.h"
 #include "rendering.h"
 #include "user_ui.h"
 
-#include "lcd.h"
-
-// --- Pin Definitions (Matches your working code) ---
-#define PIN_SDI    11 // SPI1 TX
-#define PIN_CS     9
-#define PIN_SCK    10 // SPI1 SCK
-#define PIN_DC     12
-#define PIN_nRESET 13
-
-#define SCREEN_WIDTH  320
-#define SCREEN_HEIGHT 480
-#define DEBOUNCE_DELAY_MS 200
-
-// -----------------------------------
-
-//-- Choose Main Function
-#define MAIN_FUNCTION
-//#define DISPLAY_TEST
-
-// -----------------------
-
-void irq_gpio_handler(uint gpio, uint32_t events);
 
 void init_spi_lcd() {
     gpio_set_function(PIN_CS, GPIO_FUNC_SIO);
@@ -88,7 +69,6 @@ void init_spi_lcd() {
     spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 }
 
-#ifdef MAIN_FUNCTION
 int main()
 {
 
@@ -148,20 +128,10 @@ int main()
     }
 
     printf("IMU detected!\r\nStarting LCD...\r\n");
-    //Initialize the LCD
-    // Set to black
     init_spi_lcd();
-
     LCD_Setup();
-
     LCD_Clear(0x0000);
 
-    gpio_init(PAUSE_BUTTON);
-    gpio_set_dir(PAUSE_BUTTON, GPIO_IN);
-    gpio_pull_up(PAUSE_BUTTON);
-
-    gpio_set_irq_enabled_with_callback(PAUSE_BUTTON, GPIO_IRQ_EDGE_FALL, true, irq_gpio_handler);
-    //------------------
     watchdog_update();
 
     // PHASE 3: Heavy Lifting (PET THE WATCHDOG MANY TIMES!)
@@ -200,6 +170,7 @@ int main()
     st = { .x = -1.0f, .y = 0.0f, .z = 0.0f, .mag = 1.5f };
     all_stars[sky_database[0][0].start_index + 5] = st;
     */
+
     watchdog_update();
     printf("SD Card disabled & data sorted!\r\nInitializing GPS (This will take time)...\r\n");
     
@@ -289,51 +260,3 @@ int main()
 
     return 0;
 }
-
-#endif
-
-#ifdef DISPLAY_TEST
-
-int main() {
-    stdio_init_all();
-    
-    // 1. Init SPI Hardware
-    init_spi_lcd();
-    
-    // 2. Init LCD Driver (Sends commands via SPI1)
-    LCD_Setup();
-    
-    // 3. Clear Screen
-    LCD_Clear(0x0000); 
-
-    // 4. Loop Colors
-    for (;;) {
-        // Draw Black
-        LCD_DrawFillRectangle(0, 0, 320-1, 2-1, 0x0000);
-        sleep_ms(2000);
-        
-        // Draw Red
-        LCD_DrawFillRectangle(0, 0, 320-1, 2-1, 0xF800);
-        sleep_ms(2000);
-        
-        // Draw Green
-        LCD_DrawFillRectangle(0, 0, 320-1, 2-1, 0x07E0);
-        sleep_ms(2000);
-        
-        // Draw Blue
-        LCD_DrawFillRectangle(0, 0, 320-1, 2-1, 0x001F);
-        sleep_ms(2000);
-        
-        // Draw White
-        LCD_DrawFillRectangle(0, 0, 320-1, 2-1, 0xFFFF);
-        sleep_ms(2000);
-        
-
-        //print baudrate
-        
-    }
-
-    return 0;
-}
-
-#endif

@@ -46,6 +46,7 @@ static const Qfix_t Qfix_default = {
 static volatile bool g_is_rendering = false;
 volatile bool pause_button = false;
 volatile bool unpause_button = false;
+
 // --- Global Star Data Definitions ---
 // DEFINITIONS for the externally linked buffers (used by main/test)
 // static uint32_t g_star_coords_current[AMOUNT_OF_STARS]; 
@@ -256,9 +257,7 @@ bool run_main_render(void) {
                     int16_t z_int = (int16_t)(z_proj * 630.0f); // Vertical coordinate relative to center
                     uint8_t m_int =  mag_to_brightness_u8(star.mag); 
 
-                    // Add these coordinates to a list
-                    // Implement for Ryan: Use double  buffering to store. Erase the previous list and store in the new one.
-                    //These are the coordinate list of where to draw and erase the stars
+                    // Add these coordinates to a list and use double buffering
                     if(counter < AMOUNT_OF_STARS)
                     {
                         StarPosition_t *current_star;
