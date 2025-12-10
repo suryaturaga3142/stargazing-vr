@@ -24,7 +24,7 @@
 #define GPS_CORRECTION_INTERVAL_MIN     10
 #define GPS_INIT_TIMEOUT_MS             10000
 #define GPS_TIMEOUT_MS                  1000
-#define WATCHDOG_INIT_TIMEOUT_MS        50000
+#define WATCHDOG_INIT_TIMEOUT_MS        20000
 #define WATCHDOG_TIMEOUT_MS             2000
 #define WATCHDOG_SUPERVISOR_INTERVAL_MS 500
 #define SD_CARD_INIT_HZ                 400000
@@ -47,12 +47,12 @@
 
 // -- ILI9486 Displays (GPIO 9-13) --
 // Written with SPI.
-#define LCD_PORT   spi1
-#define PIN_CS     9
-#define PIN_SCK    10 // SPI1 SCK
-#define PIN_SDI    11 // SPI1 TX
-#define PIN_DC     12
-#define PIN_RST    13
+#define LCD_PORT    spi1
+#define PIN_LCD_CS  9
+#define PIN_LCD_SCK 10 // SPI1 SCK
+#define PIN_LCD_SDI 11 // SPI1 TX
+#define PIN_LCD_DC  12
+#define PIN_LCD_RST 13
 
 // -- In Built Zone (GPIO 21-26) --
 // Connected to Proton board PBs and LEDs.

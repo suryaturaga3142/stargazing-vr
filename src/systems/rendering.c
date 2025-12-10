@@ -33,16 +33,22 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+
 // Precalculated quaternions for location at PWL in J2000
 static const Qfix_t Qfix_default = {
     .loc =   {0.65922f, 0.28787f, 0.30386f, -0.62776f},
     .time =  {1.0f    , 0.0f    , 0.0f    ,  0.0f    },
     .total = {0.65922f, 0.28787f, 0.30386f, -0.62776f}
 };
+
 #define AMOUNT_OF_STARS 9000
+#define MAG_LIMIT      6.5f   // Dimmest visible star (Value -> 0)
+#define MAG_BRIGHTEST -1.5f   // Brightest reference star (Value -> MAX)
+#define SCALE_FACTOR   (1.0f / (MAG_LIMIT - MAG_BRIGHTEST))
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */
+
 static volatile bool g_is_rendering = false;
 volatile bool pause_button = false;
 volatile bool unpause_button = false;
@@ -57,21 +63,12 @@ volatile bool unpause_button = false;
 static StarPosition_t buffer_one[AMOUNT_OF_STARS];
 static StarPosition_t buffer_two[AMOUNT_OF_STARS];
 
-int selector = 1;
+static int selector = 1;
 static int last_frame_star_count = 0;
 
-// Started at precalculated in case GPS is not available
-// ...
-
 /* ----------------------------- Private Functions -------------------------- */
-// ...
 
-// Configuration
-#define MAG_LIMIT      6.5f   // Dimmest visible star (Value -> 0)
-#define MAG_BRIGHTEST -1.5f   // Brightest reference star (Value -> MAX)
-#define SCALE_FACTOR   (1.0f / (MAG_LIMIT - MAG_BRIGHTEST))
-
-uint8_t mag_to_brightness_u8(float mag) {
+static uint8_t mag_to_brightness_u8(float mag) {
     // 1. Check bounds
     if (mag >= MAG_LIMIT) return 0;       // Too dim
     if (mag <= MAG_BRIGHTEST) return 255; // Too bright (clamp to max)
@@ -105,68 +102,6 @@ Qfix_t Qfix_last = Qfix_default;
 /* ----------------------------- Public Functions --------------------------- */
 
 /**
- * @brief Builds the SPI transfer sequence for a single star and executes the bursts.
- * @param buffer The coordinate buffer.
- * @param magnitudes The magnitude buffer.
- * @param index The star index to process.
- * @param mode COLOR_BLACK (erase) or a different color (draw).
- */
-// static void execute_star_transfer(uint32_t buffer[AMOUNT_OF_STARS], uint16_t magnitudes[AMOUNT_OF_STARS], int index, uint16_t mode)
-// {
-//     // *** FIX 2: Wait for the previous DMA burst to finish ***
-//     // This is crucial to ensure the SPI peripheral is free before sending the next command.
-//     display_dma_wait_for_finish(); 
-
-//     // The total data buffer for a single star (Address Parameters + Pixel Data)
-//     uint8_t static_star_packet[BYTES_PER_STAR_PACKET];
-    
-//     // 1. Fill a static buffer with the address and pixel data for this star.
-//     size_t data_length = buffer_star_data(buffer, magnitudes, mode, index);
-    
-//     if (data_length < 26) return; 
-
-//     const uint8_t *data_ptr = static_star_packet;
-    
-//     // *** CASET (Column Address Set) Burst ***
-    
-//     // 2a. Send 0x2A Command Byte (D/C = 0)
-//     display_set_dc(false); // Command Mode
-//     display_spi_blocking((const uint8_t[]){0x2A}, 1); 
-    
-//     // 2b. Send 4 bytes of X-address parameters (D/C = 1)
-//     display_set_dc(true); // Data Mode
-//     display_spi_blocking(data_ptr, 4); // SC[15:0], EC[15:0]
-//     data_ptr += 4;
-    
-//     // *** PASET (Page Address Set) Burst ***
-    
-//     // 3a. Send 0x2B Command Byte (D/C = 0)
-//     display_set_dc(false); // Command Mode
-//     display_spi_blocking((const uint8_t[]){0x2B}, 1);
-    
-//     // 3b. Send 4 bytes of Y-address parameters (D/C = 1)
-//     display_set_dc(true); // Data Mode
-//     display_spi_blocking(data_ptr, 4); // SP[15:0], EP[15:0]
-//     data_ptr += 4;
-    
-//     // *** RAMWR (Memory Write) Burst ***
-    
-//     // 4a. Send 0x2C Command Byte (D/C = 0)
-//     display_set_dc(false); // Command Mode
-//     display_spi_blocking((const uint8_t[]){0x2C}, 1);
-    
-//     // 4b. Send 18 bytes of Pixel Data (D/C = 1) using DMA
-//     display_set_dc(true); // Data Mode
-//     display_dma_burst(data_ptr, 18); // 9 pixels * 2 bytes/pixel
-    
-//     // NOTE: The function now returns immediately after starting the DMA, 
-//     // allowing the CPU to proceed to the next star's logic, while the 
-//     // DMA controller handles the 18-byte pixel transfer.
-// }
-
-
-
-/**
  * @brief The center of this program. Goes through the actual rendering process.
  * 
  * @return true if rendering of stars was successful.
@@ -189,9 +124,9 @@ bool run_main_render(void) {
     if (g_is_rendering) return false;
     g_is_rendering = true;
 
-    //Clear_The_star();
     // Local selector for the inner logic block (RENAMED)
     int counter = 0;
+
     // Phase 1: Setup quaternions
     
     Quaternion_t q_imu = g_latest_imu_data.orientation;
@@ -291,22 +226,20 @@ bool run_main_render(void) {
     }
     watchdog_update();
 
-    if(selector)
-    {
+    if(selector) {
         erase_stars(buffer_two, last_frame_star_count);
         draw_stars(buffer_one, counter);
     }
-    else
-    {
+    else {
         erase_stars(buffer_one, last_frame_star_count);
         draw_stars(buffer_two, counter);
     }
 
     last_frame_star_count = counter;
     selector = selector ^ 1;
-    user_ui_set_state(LED_STATE_RUN);
 
-    //sleep_ms(10); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
+    //user_ui_set_state(LED_STATE_RUN);
+
     g_is_rendering = false;
 
     return true;
