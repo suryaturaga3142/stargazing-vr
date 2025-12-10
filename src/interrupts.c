@@ -35,6 +35,7 @@
 /* ----------------------------- Private Variables -------------------------- */
 static StateDetails_t led_cache = {-1, -1, -1, -1};
 static uint32_t counter_ms = 0;
+uint32_t last_pause_irq_time = 0;
 // ...
 
 /* ----------------------------- Private Functions -------------------------- */
@@ -42,7 +43,7 @@ static uint32_t counter_ms = 0;
 
 /* ----------------------------- Public Variables -------------------------- */
 // ...
-
+#define DEBOUNCE_DELAY_MS 200
 /* ----------------------------- Public Functions --------------------------- */
 
 /**
@@ -64,6 +65,13 @@ void irq_gpio_handler(uint gpio, uint32_t events)
     } else if (gpio == PIN_BTN_LOCATION_TOGGLE) {
         gpio_acknowledge_irq(PIN_BTN_LOCATION_TOGGLE, events);
         g_location_toggle_request = true;
+    } else if( gpio == PAUSE_BUTTON)
+    {
+        uint32_t current_time = to_ms_since_boot(get_absolute_time());
+        if(current_time - last_pause_irq_time > DEBOUNCE_DELAY_MS) {
+            toggle_button();
+            last_pause_irq_time = current_time;
+        }
     }
     return;
 }

@@ -44,6 +44,8 @@ static const Qfix_t Qfix_default = {
 
 /* ----------------------------- Private Variables -------------------------- */
 static volatile bool g_is_rendering = false;
+volatile bool pause_button = false;
+volatile bool unpause_button = false;
 // --- Global Star Data Definitions ---
 // DEFINITIONS for the externally linked buffers (used by main/test)
 // static uint32_t g_star_coords_current[AMOUNT_OF_STARS]; 
@@ -55,6 +57,7 @@ static StarPosition_t buffer_one[AMOUNT_OF_STARS];
 static StarPosition_t buffer_two[AMOUNT_OF_STARS];
 
 int selector = 1;
+static int last_frame_star_count = 0;
 
 // Started at precalculated in case GPS is not available
 // ...
@@ -77,6 +80,16 @@ uint8_t mag_to_brightness_u8(float mag) {
     float val = (MAG_LIMIT - mag) * SCALE_FACTOR * 255.0f;
 
     return (uint8_t)val;
+}
+
+void toggle_button(void)
+{
+    pause_button = !pause_button;
+
+    if(!pause_button)
+    {
+        unpause_button = true;
+    }
 }
 
 /* ----------------------------- Public Variables --------------------------- */
@@ -158,10 +171,24 @@ Qfix_t Qfix_last = Qfix_default;
  * @return true if rendering of stars was successful.
  */
 bool run_main_render(void) {
+
+    if(pause_button)
+    {
+        user_ui_set_state(LED_STATE_PAUSED);
+        return false;
+    }
+
+    if(unpause_button)
+    {
+        LCD_Clear(0x0000);
+        unpause_button = false;
+        last_frame_star_count = 0;
+    }
+
     if (g_is_rendering) return false;
     g_is_rendering = true;
 
-    Clear_The_star();
+    //Clear_The_star();
     // Local selector for the inner logic block (RENAMED)
     int counter = 0;
     // Phase 1: Setup quaternions
@@ -239,15 +266,15 @@ bool run_main_render(void) {
                         if(selector)
                         {
                             current_star = &buffer_one[counter];
-                            previous_star = &buffer_two[counter];
-                            buffer_two[counter] = buffer_one[counter];
+                            //previous_star = &buffer_two[counter];
+                            //buffer_two[counter] = buffer_one[counter];
                             //printf("%5d  %5d\r\n", x_int, z_int);
                         }
                         else
                         {
                             current_star = &buffer_two[counter];
-                            previous_star = &buffer_one[counter];
-                            buffer_one[counter] = buffer_two[counter];
+                            //previous_star = &buffer_one[counter];
+                            //buffer_one[counter] = buffer_two[counter];
                             //magnitude[counter] = m_int;
                         }
                         current_star->x_proj = x_int;
@@ -267,17 +294,18 @@ bool run_main_render(void) {
 
     if(selector)
     {
-        erase_stars(buffer_two, counter);
+        erase_stars(buffer_two, last_frame_star_count);
         draw_stars(buffer_one, counter);
     }
     else
     {
-        erase_stars(buffer_one, counter);
+        erase_stars(buffer_one, last_frame_star_count);
         draw_stars(buffer_two, counter);
     }
 
+    last_frame_star_count = counter;
     selector = selector ^ 1;
-
+    user_ui_set_state(LED_STATE_RUN);
 
     //sleep_ms(10); // Simulate the heavy rendering load. This also tests the g_is_rendering flag. Output speed will auto adjust
     g_is_rendering = false;

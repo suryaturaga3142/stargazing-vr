@@ -37,6 +37,8 @@ extern "C" {
 
 bool run_main_render(void);
 
+//void toggle_button(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -182,7 +182,8 @@ typedef enum {
     LED_STATE_WARN_OVERHEAT,    // Orange / Pulse
     LED_STATE_ERR_CRITICAL,     // Red / Fast Blink
     LED_STATE_REBOOTED,         // Magenta / Blink (Watchdog Reset)
-    LED_STATE_DRIFT_CONFIRM     // Cyan / Fast Blink (Feedback)
+    LED_STATE_DRIFT_CONFIRM,     // Cyan / Fast Blink (Feedback)
+    LED_STATE_PAUSED            // Pink / Pause state
 } LEDState_e;
 
 /**

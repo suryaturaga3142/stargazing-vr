@@ -52,6 +52,7 @@
 
 #define SCREEN_WIDTH  320
 #define SCREEN_HEIGHT 480
+#define DEBOUNCE_DELAY_MS 200
 
 // -----------------------------------
 
@@ -60,6 +61,8 @@
 //#define DISPLAY_TEST
 
 // -----------------------
+
+void irq_gpio_handler(uint gpio, uint32_t events);
 
 void init_spi_lcd() {
     gpio_set_function(PIN_CS, GPIO_FUNC_SIO);
@@ -152,6 +155,12 @@ int main()
     LCD_Setup();
 
     LCD_Clear(0x0000);
+
+    gpio_init(PAUSE_BUTTON);
+    gpio_set_dir(PAUSE_BUTTON, GPIO_IN);
+    gpio_pull_up(PAUSE_BUTTON);
+
+    gpio_set_irq_enabled_with_callback(PAUSE_BUTTON, GPIO_IRQ_EDGE_FALL, true, irq_gpio_handler);
     //------------------
     watchdog_update();
 

@@ -188,8 +188,13 @@ bool user_ui_set_state(LEDState_e state)
             current_state.pattern = LED_BLINK;
             current_state.speed   = LED_SPEED_FAST;
             break;
+        case LED_STATE_PAUSED:
+            current_state.color = LED_COLOR_MAGENTA;
+            current_state.pattern = LED_SOLID;
+            current_state.speed = LED_SPEED_SLOW;
+            break;
 
-        default:
+            default:
             // Fallback for undefined behavior: Solid Red
             current_state.color   = LED_COLOR_RED;
             current_state.pattern = LED_SOLID;
