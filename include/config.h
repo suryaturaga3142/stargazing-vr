@@ -28,6 +28,9 @@
 #define WATCHDOG_SUPERVISOR_INTERVAL_MS 500
 #define SD_CARD_INIT_HZ                 400000
 #define SD_CARD_READ_HZ                 5000000
+#define SCREEN_WIDTH  320
+#define SCREEN_HEIGHT 480
+#define DEBOUNCE_DELAY_MS 200
 
 //------------------------------------------------------------------------------
 // STAR CATALOG & CULLING CONSTANTS
@@ -41,13 +44,14 @@
 // PERIPHERAL CONFIGURATION
 //------------------------------------------------------------------------------
 
-// -- ILI9486 Displays (GPIO Bank 0-20) --
-// The 16-bit data bus is implemented with PIO.
-#define PIN_SDI    11 // SPI1 TX
+// -- ILI9486 Displays (GPIO 9-13) --
+// Written with SPI.
+#define LCD_PORT   spi1
 #define PIN_CS     9
 #define PIN_SCK    10 // SPI1 SCK
-#define LCD_DC_PIN 12
-#define PIN_nRESET 13
+#define PIN_SDI    11 // SPI1 TX
+#define PIN_DC     12
+#define PIN_RST    13
 
 // -- In Built Zone (GPIO 21-26) --
 // Connected to Proton board PBs and LEDs.
