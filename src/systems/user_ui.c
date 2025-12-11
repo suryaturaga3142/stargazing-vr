@@ -45,6 +45,8 @@ StateDetails_t current_state = {
 volatile bool g_drift_correct_request   = false;
 volatile bool g_location_toggle_request = false;
 volatile bool g_use_gps_location = true; // Default to using GPS location on startup
+volatile bool g_pause_toggle_request = false;
+volatile bool g_play_screen = true; // Default to playing on startup
 
 /* ----------------------------- Public Functions --------------------------- */
 

@@ -37,37 +37,12 @@
 #include "gps.h"
 #include "imu.h"
 #include "sd_card.h"
-#include "lcd.h"
 
 #include "mechanics.h"
 #include "monitor.h"
 #include "rendering.h"
 #include "user_ui.h"
 
-
-void init_spi_lcd() {
-    gpio_set_function(PIN_CS, GPIO_FUNC_SIO);
-    gpio_set_function(PIN_DC, GPIO_FUNC_SIO);
-    gpio_set_function(PIN_nRESET, GPIO_FUNC_SIO);
-
-    gpio_set_dir(PIN_CS, GPIO_OUT);
-    gpio_set_dir(PIN_DC, GPIO_OUT);
-    gpio_set_dir(PIN_nRESET, GPIO_OUT);
-
-    gpio_put(PIN_CS, 1); // CS high
-    gpio_put(PIN_DC, 0); // DC low
-    gpio_put(PIN_nRESET, 1); // nRESET high
-
-    // --- CRITICAL FIX: Use SPI1 ---
-    // GPIO 10 and 11 are hardwired to SPI1 on the RP2040.
-    gpio_set_function(PIN_SCK, GPIO_FUNC_SPI);
-    gpio_set_function(PIN_SDI, GPIO_FUNC_SPI);
-    
-    // Initialize SPI1 (not SPI0)
-    int baudrate = spi_init(spi1, 100000000);
-    printf("%d\r\n", baudrate);
-    spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-}
 
 int main()
 {
@@ -85,7 +60,7 @@ int main()
         sleep_ms(2000);
         user_ui_set_state(LED_STATE_BOOTING);
     }
-    // Setup watchdog with 5sec timeout during startup procedures. Pet it during long processes.
+    // Setup watchdog with timeout during startup procedures. Pet it during long processes.
     watchdog_enable(WATCHDOG_INIT_TIMEOUT_MS, true);
 
     // PHASE 2: Connectivity Check
@@ -128,9 +103,7 @@ int main()
     }
 
     printf("IMU detected!\r\nStarting LCD...\r\n");
-    init_spi_lcd();
-    LCD_Setup();
-    LCD_Clear(0x0000);
+    display_init();
 
     watchdog_update();
 
@@ -207,7 +180,7 @@ int main()
         // Awake now bc interrupt fired. Do the events in order of priority.
         
         // If the read flag is turned on, the IMU is automatically read using the SHTP protocol and updated in the background.
-        if (imu_check_and_read()) {
+        if (g_play_screen && imu_check_and_read()) {
             monitor_checkin(SYS_MODULE_IMU);
             // printf("Game: %f %f %f %f\r\n", 
             //        g_latest_imu_data.orientation.x, g_latest_imu_data.orientation.y, g_latest_imu_data.orientation.z, g_latest_imu_data.orientation.w);
@@ -234,11 +207,12 @@ int main()
         }
         monitor_checkin(SYS_MODULE_GPS);
 
-        if (g_use_gps_location) {
+        if (g_play_screen && g_use_gps_location) {
             if (g_latest_gps_data.is_valid) user_ui_set_state(LED_STATE_RUN);
             else                            user_ui_set_state(LED_STATE_RUN_NO_FIX);
         }
-        else user_ui_set_state(LED_STATE_RUN_J2000);
+        else if (g_play_screen) user_ui_set_state(LED_STATE_RUN_J2000);
+        else                    user_ui_set_state(LED_STATE_PAUSED);
 
         if (g_drift_correct_request) {
             user_ui_set_state(LED_STATE_DRIFT_CONFIRM); // It will get overwritten fast so it's just a blink
@@ -250,6 +224,7 @@ int main()
             g_use_gps_location = !g_use_gps_location;
             g_location_toggle_request = false;
         }
+        // Pause toggle request needs handling in rendering loop.
 
         monitor_checkin(SYS_MODULE_MAIN);
         sleep_ms(100);

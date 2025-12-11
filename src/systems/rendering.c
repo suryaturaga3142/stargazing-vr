@@ -50,8 +50,8 @@ static const Qfix_t Qfix_default = {
 /* ----------------------------- Private Variables -------------------------- */
 
 static volatile bool g_is_rendering = false;
-volatile bool pause_button = false;
-volatile bool unpause_button = false;
+//volatile bool pause_button = false;
+//volatile bool unpause_button = false;
 
 // --- Global Star Data Definitions ---
 // DEFINITIONS for the externally linked buffers (used by main/test)
@@ -80,16 +80,6 @@ static uint8_t mag_to_brightness_u8(float mag) {
     return (uint8_t)val;
 }
 
-void toggle_button(void)
-{
-    pause_button = !pause_button;
-
-    if(!pause_button)
-    {
-        unpause_button = true;
-    }
-}
-
 /* ----------------------------- Public Variables --------------------------- */
 
 // --- Star Catalog Data Structures ---
@@ -108,21 +98,24 @@ Qfix_t Qfix_last = Qfix_default;
  */
 bool run_main_render(void) {
 
-    if(pause_button)
-    {
-        user_ui_set_state(LED_STATE_PAUSED);
-        return false;
-    }
-
-    if(unpause_button)
-    {
-        LCD_Clear(0x0000);
-        unpause_button = false;
-        last_frame_star_count = 0;
-    }
-
     if (g_is_rendering) return false;
     g_is_rendering = true;
+
+    if (g_pause_toggle_request) {
+        g_play_screen = !g_play_screen;
+
+        if (g_play_screen) {
+            LCD_Clear(0x0000);
+            last_frame_star_count = 0;
+        }
+
+        g_pause_toggle_request = false;
+    }
+
+    if (!g_play_screen) {
+        g_is_rendering = false;
+        return true;
+    }
 
     // Local selector for the inner logic block (RENAMED)
     int counter = 0;
@@ -193,24 +186,13 @@ bool run_main_render(void) {
                     uint8_t m_int =  mag_to_brightness_u8(star.mag); 
 
                     // Add these coordinates to a list and use double buffering
-                    if(counter < AMOUNT_OF_STARS)
-                    {
+                    if(counter < AMOUNT_OF_STARS) {
                         StarPosition_t *current_star;
                         StarPosition_t *previous_star;
-                        if(selector)
-                        {
-                            current_star = &buffer_one[counter];
-                            //previous_star = &buffer_two[counter];
-                            //buffer_two[counter] = buffer_one[counter];
-                            //printf("%5d  %5d\r\n", x_int, z_int);
-                        }
-                        else
-                        {
-                            current_star = &buffer_two[counter];
-                            //previous_star = &buffer_one[counter];
-                            //buffer_one[counter] = buffer_two[counter];
-                            //magnitude[counter] = m_int;
-                        }
+                        
+                        if(selector) current_star = &buffer_one[counter];
+                        else         current_star = &buffer_two[counter];
+
                         current_star->x_proj = x_int;
                         current_star->z_proj = z_int;
                         current_star->magnitude = m_int;
@@ -238,8 +220,7 @@ bool run_main_render(void) {
     last_frame_star_count = counter;
     selector = selector ^ 1;
 
-    //user_ui_set_state(LED_STATE_RUN);
-
+    // Sleep for a bit here
     g_is_rendering = false;
 
     return true;

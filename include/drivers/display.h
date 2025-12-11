@@ -23,8 +23,8 @@
 /* ---------------------------- Global Constants --------------------------- */
 
 // LCD Resolution Definitions
-#define LCD_WIDTH           320
-#define LCD_HEIGHT          480
+#define SCREEN_WIDTH           320
+#define SCREEN_HEIGHT          480
 
 // Star Rendering Limits
 #define AMOUNT_OF_STARS     9000
@@ -42,6 +42,10 @@
 extern "C" {
 #endif
 
+bool display_init(void);
+void erase_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count);
+void draw_stars (StarPosition_t buffer[AMOUNT_OF_STARS], int count);
+
 /* ----------------------------- Global Variables -------------------------- */
 
 // The central buffer used for all DMA transactions 
@@ -50,6 +54,7 @@ extern uint32_t DMA_list[];
 extern size_t g_dma_packet_length;
 
 /* ----------------------------- Core DMA/Packet Functions ------------------- */
+
 
 void display_dma_wait_for_finish(void);
 /**
@@ -65,12 +70,6 @@ void display_set_dc(bool is_data);
  * full frame drawing cycle before building packets.
  */
 void initialize_dma_packet(void);
-
-void erase_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count);
-
-void draw_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count);
-
-uint16_t brightness_scale(uint8_t magnitude);
 
 void Clear_The_star(void);
 /**

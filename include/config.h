@@ -30,9 +30,6 @@
 #define SD_CARD_INIT_HZ                 400000
 #define SD_CARD_READ_HZ                 5000000
 
-#define SCREEN_WIDTH                    320
-#define SCREEN_HEIGHT                   480
-
 //------------------------------------------------------------------------------
 // STAR CATALOG & CULLING CONSTANTS
 //------------------------------------------------------------------------------

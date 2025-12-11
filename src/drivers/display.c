@@ -1,11 +1,152 @@
-#include "display.h"
+/*******************************************************************************
+ * @file        display.c
+ * @brief       Implements the functionality for the display module.
+ * @details     Allows for interacting with the display at a higher level.
+ * 
+ * @author      LED Chasers
+ * @date        2025-12-10
+ * 
+ * @note        This module is designed to be driven by interrupts and is not
+ *              intended to be called from a blocking main loop.
+ * 
+ * @copyright   Copyright (c) 2025, LED Chasers. All rights reserved.
+ ******************************************************************************/
+
+/* ----------------------------- Private Includes --------------------------- */
 #include "hardware/spi.h" 
 #include "hardware/dma.h"
 #include "hardware/gpio.h"
+
 #include "pico/stdlib.h"
-#include <stdio.h> 
+
 #include "config.h" // Assumed to define SPI_PORT (e.g., spi1) and LCD_DC_PIN
 #include "lcd.h"    // Assumed to define LCD_WIDTH/HEIGHT
+#include "display.h"
+
+#include <stdio.h> 
+// ...
+
+/* ---------------------------- Private Constants --------------------------- */
+#define X_HALF (SCREEN_WIDTH / 2)
+#define Y_HALF (SCREEN_HEIGHT / 2)
+// ...
+
+/* ----------------------------- Private Variables -------------------------- */
+// ...
+
+/* ----------------------------- Private Functions -------------------------- */
+// ...
+
+/**
+ * @brief Converts brightness into RGR 565 format
+ * 
+ * @param magnitude Scaled brightness
+ * @return scale RGB565 color
+ */
+static uint16_t brightness_scale(uint8_t magnitude)
+{
+    uint16_t red_scale   = (uint16_t)roundf(magnitude * (31.0 / 255.0f));
+    uint16_t green_scale = (uint16_t)roundf(magnitude * (63.0f / 255.0f));
+    uint16_t blue_scale  = (uint16_t)roundf(magnitude * (31.0f / 255.0f));
+
+    return (red_scale << 11) | (green_scale << 5) | blue_scale;
+}
+
+/* ----------------------------- Public Variables -------------------------- */
+// ...
+
+/* ----------------------------- Public Functions --------------------------- */
+
+
+bool display_init() {
+
+    gpio_set_function(PIN_LCD_CS, GPIO_FUNC_SIO);
+    gpio_set_function(PIN_LCD_DC, GPIO_FUNC_SIO);
+    gpio_set_function(PIN_LCD_RST, GPIO_FUNC_SIO);
+
+    gpio_set_dir(PIN_LCD_CS, GPIO_OUT);
+    gpio_set_dir(PIN_LCD_DC, GPIO_OUT);
+    gpio_set_dir(PIN_LCD_RST, GPIO_OUT);
+
+    gpio_put(PIN_LCD_CS, 1); // CS high
+    gpio_put(PIN_LCD_DC, 0); // DC low
+    gpio_put(PIN_LCD_RST, 1); // nRESET high
+
+    // --- CRITICAL FIX: Use SPI1 ---
+    // GPIO 10 and 11 are hardwired to SPI1 on the RP2040.
+    gpio_set_function(PIN_LCD_SCK, GPIO_FUNC_SPI);
+    gpio_set_function(PIN_LCD_SDI, GPIO_FUNC_SPI);
+    
+    // Initialize SPI1 (not SPI0)
+    int baudrate = spi_init(LCD_PORT, 100000000);
+    //printf("%d\r\n", baudrate);
+    spi_set_format(LCD_PORT, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+
+    LCD_Setup();
+    LCD_Clear(0x0000);
+
+    return true;
+}
+
+/**
+ * @brief Erases all stars in the buffer
+ * 
+ * @param buffer Erase buffer.
+ * @param count Number of stars to erase.
+ * 
+ */
+void erase_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count)
+{
+    for (int i = 0; i< count; i++)
+    {
+        // 1. Extract Center-Based Coordinates (xc, yc)
+        // x_c (center-based X): Bits 31 to 16
+        //int x_c = buffer[i].x_proj; 
+        //int y_c = buffer[i].z_proj; 
+
+        // 1. Convert to Display Coordinates (xd, yd)
+        int x_d = buffer[i].x_proj + X_HALF; 
+        int y_d = Y_HALF - buffer[i].z_proj; // Flips the Y-axis and shifts the origin to top-left
+
+        // 2. Erase a 3x3 square of pixels around the new display coordinates (x_d, y_d)
+        // Note: Coordinates are typically cast or constrained to display limits (0 to 319/479)
+        
+        LCD_DrawFillRectangle(x_d, y_d, x_d + 1, y_d + 1, COLOR_BLACK);
+    }
+}
+
+/**
+ * @brief Draws all stars in the buffer
+ * 
+ * @param buffer Draw buffer.
+ * @param count Number of stars to draw.
+ * 
+ */
+void draw_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count)
+{
+    // Assuming COLOR_WHITE is defined globally (e.g., 0xFFFFFF in 262K mode)
+
+    for (int i = 0; i < count; i++)
+    {
+        // 1. Extract Center-Based Coordinates (xc, yc)
+        // x_c (center-based X): Bits 31 to 16
+        // int x_c = buffer[i].x_proj; 
+        // int y_c = buffer[i].z_proj;
+
+        // 2. Convert to Display Coordinates (xd, yd)
+        int x_d = buffer[i].x_proj + X_HALF; 
+        int y_d = Y_HALF - buffer[i].z_proj; // Flips Y axis, shifts origin to top-left
+
+        // 3. Draw a 2x2 square of pixels (star) around the new display coordinates (x_d, y_d)
+        
+        uint16_t brightness_color = brightness_scale(buffer[i].magnitude);
+        LCD_DrawFillRectangle(x_d, y_d, x_d + 1, y_d + 1, brightness_color);
+        //sleep_ms(1);
+
+    }
+}
+
+
 
 // // --- DMA/SPI HARDWARE CONFIGURATION ---
 
@@ -236,97 +377,3 @@
 // // by the new burst logic in rendering.c calling buffer_star_data.
 
 //WITH SPI ONLY
-
-void Clear_The_star(void)
-{
-    LCD_Clear(0x0000);
-}
-
-uint16_t brightness_scale(uint8_t magnitude)
-{
-    uint16_t red_scale = (uint16_t)roundf(magnitude * (31.0 / 255.0f));
-    uint16_t green_scale = (uint16_t)roundf(magnitude * (63.0f / 255.0f));
-    uint16_t blue_scale = (uint16_t)roundf(magnitude * (31.0f / 255.0f));
-
-    return (red_scale << 11) | (green_scale << 5) | blue_scale;
-}
-
-void erase_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count)
-{
-    // Define half-width and half-height for conversion
-    const int X_HALF = 160; 
-    const int Y_HALF = 240; 
-
-    for (int i = 0; i< count; i++)
-    {
-        // 1. Extract Center-Based Coordinates (xc, yc)
-        // x_c (center-based X): Bits 31 to 16
-        int x_c = buffer[i].x_proj; 
-        int y_c = buffer[i].z_proj; 
-
-        // 2. Convert to Display Coordinates (xd, yd)
-        int x_d = x_c + X_HALF; 
-        int y_d = Y_HALF - y_c; // Flips the Y-axis and shifts the origin to top-left
-
-        // 3. Erase a 3x3 square of pixels around the new display coordinates (x_d, y_d)
-        // Note: Coordinates are typically cast or constrained to display limits (0 to 319/479)
-        
-        // Row y_d + 1
-        // LCD_DrawPoint(x_d - 1, y_d + 1, COLOR_BLACK); 
-        // LCD_DrawPoint(x_d,     y_d + 1, COLOR_BLACK); 
-        // LCD_DrawPoint(x_d + 1, y_d + 1, COLOR_BLACK);
-        
-        // // Row y_d 
-        // LCD_DrawPoint(x_d - 1, y_d,     COLOR_BLACK); 
-        // LCD_DrawPoint(x_d,     y_d,     COLOR_BLACK); 
-        // LCD_DrawPoint(x_d + 1, y_d,     COLOR_BLACK);
-        
-        // // Row y_d - 1
-        // LCD_DrawPoint(x_d - 1, y_d - 1, COLOR_BLACK); 
-        // LCD_DrawPoint(x_d,     y_d - 1, COLOR_BLACK); 
-        // LCD_DrawPoint(x_d + 1, y_d - 1, COLOR_BLACK);
-        LCD_DrawFillRectangle(x_d, y_d, x_d + 1, y_d + 1, COLOR_BLACK);
-    }
-}
-
-void draw_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count)
-{
-    // Define half-width and half-height for conversion
-    const int X_HALF = 160; 
-    const int Y_HALF = 240; 
-    
-    // Assuming COLOR_WHITE is defined globally (e.g., 0xFFFFFF in 262K mode)
-
-    for (int i = 0; i < count; i++)
-    {
-        // 1. Extract Center-Based Coordinates (xc, yc)
-        // x_c (center-based X): Bits 31 to 16
-        int x_c = buffer[i].x_proj; 
-        int y_c = buffer[i].z_proj;
-
-        // 2. Convert to Display Coordinates (xd, yd)
-        int x_d = x_c + X_HALF; 
-        int y_d = Y_HALF - y_c; // Flips Y axis, shifts origin to top-left
-
-        // 3. Draw a 3x3 square of pixels (star) around the new display coordinates (x_d, y_d)
-        
-        // Row y_d + 1
-        // LCD_DrawPoint(x_d - 1, y_d + 1, COLOR_WHITE); 
-        // LCD_DrawPoint(x_d,     y_d + 1, COLOR_WHITE); 
-        // LCD_DrawPoint(x_d + 1, y_d + 1, COLOR_WHITE);
-        
-        // // Row y_d 
-        // LCD_DrawPoint(x_d - 1, y_d,     COLOR_WHITE); 
-        // LCD_DrawPoint(x_d,     y_d,     COLOR_WHITE); 
-        // LCD_DrawPoint(x_d + 1, y_d,     COLOR_WHITE);
-        
-        // // Row y_d - 1
-        // LCD_DrawPoint(x_d - 1, y_d - 1, COLOR_WHITE); 
-        // LCD_DrawPoint(x_d,     y_d - 1, COLOR_WHITE); 
-        // LCD_DrawPoint(x_d + 1, y_d - 1, COLOR_WHITE);
-        uint16_t brightness_color = brightness_scale(buffer[i].magnitude);
-        LCD_DrawFillRectangle(x_d, y_d, x_d + 1, y_d + 1, brightness_color);
-        //sleep_ms(1);
-    }
-    //sleep_ms(100);
-}
