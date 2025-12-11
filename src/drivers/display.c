@@ -23,6 +23,7 @@
 #include "lcd.h"    // Assumed to define LCD_WIDTH/HEIGHT
 #include "display.h"
 
+#include <math.h>
 #include <stdio.h> 
 // ...
 
@@ -72,14 +73,12 @@ bool display_init() {
     gpio_put(PIN_LCD_DC, 0); // DC low
     gpio_put(PIN_LCD_RST, 1); // nRESET high
 
-    // --- CRITICAL FIX: Use SPI1 ---
     // GPIO 10 and 11 are hardwired to SPI1 on the RP2040.
     gpio_set_function(PIN_LCD_SCK, GPIO_FUNC_SPI);
     gpio_set_function(PIN_LCD_SDI, GPIO_FUNC_SPI);
     
     // Initialize SPI1 (not SPI0)
-    int baudrate = spi_init(LCD_PORT, 100000000);
-    //printf("%d\r\n", baudrate);
+    spi_init(LCD_PORT, 100000000);
     spi_set_format(LCD_PORT, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
     LCD_Setup();

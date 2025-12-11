@@ -23,6 +23,7 @@
 #include "gps.h"
 #include "user_ui.h"
 #include "display.h"
+#include "lcd.h"
 #include "pico/stdlib.h"
 #include "hardware/watchdog.h"
 #include <stdio.h>
@@ -188,7 +189,6 @@ bool run_main_render(void) {
                     // Add these coordinates to a list and use double buffering
                     if(counter < AMOUNT_OF_STARS) {
                         StarPosition_t *current_star;
-                        StarPosition_t *previous_star;
                         
                         if(selector) current_star = &buffer_one[counter];
                         else         current_star = &buffer_two[counter];
@@ -206,7 +206,7 @@ bool run_main_render(void) {
             }
         }
     }
-    watchdog_update();
+    //watchdog_update();
 
     if(selector) {
         erase_stars(buffer_two, last_frame_star_count);
