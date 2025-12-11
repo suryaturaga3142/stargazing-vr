@@ -55,30 +55,30 @@
 
 // -- In Built Zone (GPIO 21-26) --
 // Connected to Proton board PBs and LEDs.
-#define PIN_PB_1  21
-#define PIN_PB_2  26
-#define PIN_LED_1 22
-#define PIN_LED_2 23
-#define PIN_LED_3 24
-#define PIN_LED_4 25
+#define PIN_PB_1  26//21
+#define PIN_PB_2  27//26
+#define PIN_LED_1 29//22
+#define PIN_LED_2 30//23
+#define PIN_LED_3 31//24
+#define PIN_LED_4 32//25
 
 // -- BNO085 IMU (GPIO Bank 27-30) --
 // Grouped together for clean I2C routing.
 #define I2C_PORT                        i2c0
 #define IMU_I2C_ADDR                    0x4A
-#define PIN_IMU_SDA                     28
-#define PIN_IMU_SCL                     29
-#define PIN_IMU_INT                     30  // Interrupt pin
-#define PIN_IMU_RST                     31  // Reset pin
+#define PIN_IMU_SDA                     44//28
+#define PIN_IMU_SCL                     45//29
+#define PIN_IMU_INT                     43//30  // Interrupt pin
+#define PIN_IMU_RST                     46//31  // Reset pin
 
 // -- SD Card (via SDIO or SPI) --
 // Uses a second PIO for implementing SDIO, or default SPI.
 #define SPI_PORT                        spi0
-#define PIN_SD_RX                       32
-#define PIN_SD_CSN                      33
-#define PIN_SD_SCK                      34
-#define PIN_SD_TX                       35
-#define PIN_SD_DET                      38
+#define PIN_SD_RX                       36//32
+#define PIN_SD_CSN                      37//33
+#define PIN_SD_SCK                      38//34
+#define PIN_SD_TX                       39//35
+#define PIN_SD_DET                      35//38
 
 #define PIN_SDIO_CLK                    32
 #define PIN_SDIO_CMD                    33
@@ -93,9 +93,9 @@
 
 // -- User Interface (GPIO Bank 42-44) --
 // Grouped together for clean User UI routing.
-#define PIN_LED_R                       42
-#define PIN_LED_B                       43
-#define PIN_LED_G                       44
+#define PIN_LED_R                       24//42
+#define PIN_LED_B                       23//43
+#define PIN_LED_G                       22//44
 #define PIN_BTN_DRIFT_CORRECT           PIN_PB_1
 #define PIN_BTN_LOCATION_TOGGLE         PIN_PB_2
 #define PIN_BTN_PAUSE_TOGGLE            16

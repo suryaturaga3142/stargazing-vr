@@ -108,7 +108,8 @@ void erase_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count)
         // 2. Erase a 3x3 square of pixels around the new display coordinates (x_d, y_d)
         // Note: Coordinates are typically cast or constrained to display limits (0 to 319/479)
         
-        LCD_DrawFillRectangle(x_d, y_d, x_d + 1, y_d + 1, COLOR_BLACK);
+        //LCD_DrawFillRectangle(x_d, y_d, x_d + 1, y_d + 1, COLOR_BLACK);
+        LCD_DrawPoint(x_d, y_d, COLOR_BLACK);
     }
 }
 
@@ -137,7 +138,8 @@ void draw_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count)
         // 3. Draw a 2x2 square of pixels (star) around the new display coordinates (x_d, y_d)
         
         uint16_t brightness_color = brightness_scale(buffer[i].magnitude);
-        LCD_DrawFillRectangle(x_d, y_d, x_d + 1, y_d + 1, brightness_color);
+        //LCD_DrawFillRectangle(x_d, y_d, x_d + 1, y_d + 1, brightness_color);
+        LCD_DrawPoint(x_d, y_d, brightness_color);
         //sleep_ms(1);
 
     }
