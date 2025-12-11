@@ -4,8 +4,13 @@
 .vscode/launch.json
 .vscode/ipch
 
-data/sources/hipparcos.fit
-data/bin/stars.bin
+src/third_party/watchdog.c
+include/third_party/watchdog.h
+
+data/sources/*.fit
+data/outputs/*.bin
+data/outputs/*.csv
+data/outputs/*.xlsx
 pcb-stargazing/production/backups/
 
 # KiCad auto-generated files

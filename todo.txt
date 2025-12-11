@@ -1,0 +1,104 @@
+Phase 1: Power-On and Low-Level Initialization
+(Goal: Bring the MCU to life and set up the user interface for feedback)
+
+1. System Clock & Peripherals:
+- Initialize the RP2350 system clock (125MHz or higher if overclocking).
+- Initialize standard I/O (stdio_init_all()) for debugging.
+
+2. Watchdog Timer (Early Safety):
+- Enable the watchdog timer with a long timeout (e.g., 5 seconds). This protects against lock-ups during the potentially slow hardware checks that follow.
+- Note: You must "pet" this watchdog inside any subsequent long wait loops (like the SD card retry loop).
+
+3. User Interface (Status & Control):
+- Initialize the RGB LED pins with PWM (1kHz frequency).
+- Set the LED state to "Booting" (Pulsing White).
+- Initialize the Pushbuttons (Drift Correct, etc.) as inputs with pull-ups.
+- Start a low-priority timer or task (e.g., 10Hz) to poll button states (with debouncing) and update the LED PWM based on the current system state enum.
+
+Phase 2: Storage and Data Loading
+(Goal: Retrieve the massive star catalog from cold storage)
+
+1. SD Card Hardware Check:
+- Set LED state to "Loading" (Pulsing Blue).
+- Check the Card Detect (DET) pin.
+- If NOT detected:
+    - Enter a waiting loop (max 30 seconds).
+    - Flash LED Yellow/Red.
+    - Periodically check DET. Pet the watchdog.
+    - Timeout: If 30s passes without a card, transition to "Critical Error" (Fast Blinking Red) and halt.
+
+2. SD Card Initialization (PIO SDIO):
+- Once detected, call sd_init(). This loads the PIO SDIO driver programs, configures the state machines/DMA, and executes the SD card initialization sequence (CMD0, CMD8, ACMD41, etc.).
+- Mount the FatFs file system.
+- Failure: If sd_init or mount fails, transition to "Critical Error".
+- Data Validation & Loading:
+    - Open stars.bin.
+    - Read the Header. Verify the Magic Number (0x53544152), Version, and Star Count.
+    - Failure: If the magic number is wrong, the file is corrupt. Transition to "Data Error" state.
+    - Success: Proceed to load the payload.
+
+3. Star Data Compilation (The 3-Pass Sort):
+- Read the entire stars.bin payload into the static file_buffer in RAM (bulk read).
+- Pass 1: Iterate through the buffer to count stars per sky patch.
+- Pass 2: Calculate start indices for the sky_database.
+- Pass 3: Iterate again to unpack, convert to Cartesian Star_t, and place into the final all_stars array.
+- Validation: Verify total counts match.
+- Crucial: Pet the watchdog periodically inside these large loops.
+- Once done, the star database is ready. The SD card can be unmounted (or kept open if needed, but likely done).
+
+Phase 3: Sensor Initialization
+(Goal: Bring the eyes and ears of the system online)
+
+1. IMU Initialization (BNO085 via SPI):
+- Initialize the SPI peripheral for the BNO085.
+- Attempt to communicate (read chip ID or reset).
+- Configuration: Send commands to enable the Game Rotation Vector (Report 0x08) at 200Hz (or 400Hz).
+- Verify Interrupt: Wait for the first pulse on the INT pin to confirm data is actually streaming.
+- Failure: If communication fails or no data arrives within 5 seconds, transition to "Critical Error". This is a non-recoverable hardware failure.
+- Success: Enable the high-priority GPIO interrupt handler for the INT pin.
+
+2. GPS Initialization (NEO-M10 via UART):
+- Initialize the UART peripheral.
+- Configuration: Send UBX binary commands to disable unnecessary NMEA sentences (GLL, GSA, GSV, etc.) and ensure only $GNRMC and $GNGGA are enabled at 1Hz.
+
+3. Wait for Fix (Blocking with Timeout):
+- Set LED state to "Acquiring GPS" (Pulsing Yellow).
+- Enter a loop (max 30 seconds) waiting for a valid $GNRMC sentence with status 'A' (Active).
+- Pet the watchdog.
+- Success:
+    - Extract UTC Date/Time and Latitude/Longitude.
+    - Set the RP2350 Internal RTC with this time.
+    - Calculate the initial q_location quaternion.
+- Timeout/Failure:
+    - If no fix after 30s, do not crash.
+    - Set a "GPS Failed" flag.
+    - Use default values (e.g., J2000 time, North Pole location).
+    - Set LED to "Warning: No GPS" (Slow Blinking Red) or similar indication, but proceed to VR mode.
+- Background Task: Start the 10-minute repeating timer for background GPS updates.
+
+Phase 4: Display Initialization
+(Goal: Turn on the screens)
+
+1. Display Driver Setup:
+- Initialize the PIO state machine for the 16-bit 8080 interface.
+- Configure the DMA channel for frame transfers.
+- LCD Configuration:
+    - Pulse the RESET pin to hardware reset the displays.
+    - Send the initialization command sequence (Sleep Out, Pixel Format 0x55 for 16-bit, Display On, Gamma settings, etc.).
+    - Clear Screen: Send a command to fill both screens with the "Super Dark Blue" background color.
+
+Phase 5: Handover to Real-Time Loop
+(Goal: Start the main engine)
+
+1. Finalize Watchdog:
+- Reconfigure the watchdog for the "Multi-Task Check-In" mode (e.g., 200ms timeout).
+- Start the low-priority supervisor timer (10Hz) that checks the flags.
+- Enable Render Interrupt:
+    - Start the 150Hz hardware timer alarm.
+    - Enable its interrupt (render_timer_isr).
+
+2. Enter Main Loop:
+- Set LED to "Ready" (Solid Green) (or Cyan if in J2000 mode).
+- The main() function now drops into the loop, handling background tasks and sleeping with __wfi().
+
+Your system is now live.

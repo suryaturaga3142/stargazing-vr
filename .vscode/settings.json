@@ -2,7 +2,13 @@
     "files.associations": {
         "quaternions.h": "c",
         "star_movement.h": "c",
-        "math.h": "c"
+        "math.h": "c",
+        "watchdog.h": "c",
+        "utils.h": "c",
+        "ff.h": "c",
+        "interrupts.h": "c",
+        "gps.h": "c"
     },
-    "cortex-debug.variableUseNaturalFormat": false
+    "cortex-debug.variableUseNaturalFormat": false,
+    "makefile.configureOnOpen": true
 }

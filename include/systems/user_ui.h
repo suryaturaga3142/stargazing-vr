@@ -13,6 +13,26 @@
 #ifndef USER_UI_H
 #define USER_UI_H
 
+#include <stdbool.h>
+#include "structs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern StateDetails_t current_state;
+
+extern volatile bool g_drift_correct_request;     // Set by button ISR, handled by main.
+extern volatile bool g_location_toggle_request;   // Set by button ISR, handled by main.
+extern volatile bool g_use_gps_location;          // Toggles between GPS and J2000 reference.
+extern volatile bool g_pause_toggle_request;      // Set by the button ISR, handled by main.
+extern volatile bool g_play_screen;               // Toggles between pausing and playing.
+
+bool user_ui_init(void);
+bool user_ui_set_state(LEDState_e state);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* USER_UI_H */

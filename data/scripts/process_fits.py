@@ -33,8 +33,8 @@
 #
 # USAGE:
 # ======
-#   Run from the command line in the `data/` directory:
-#   > python scripts/process_fits.py
+#   Run from the command line in the `stargazing_vr/` directory:
+#   > python data/scripts/process_fits.py
 #
 ################################################################################
 
@@ -250,21 +250,12 @@ def process_fits_to_custom_binary(fits_filepath, bin_filepath):
 
 
 if __name__ == '__main__':
-    # --- Define File Paths Based on Script Location ---
     
-    # Get the directory this script is in (e.g., .../data/scripts)
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-    
-    # Get the parent 'data' directory (e.g., .../data)
     DATA_DIR = os.path.dirname(SCRIPT_DIR)
     
-    # Define the input file path (e.g., .../data/sources/hipparcos.fit)
     fits_file = os.path.join(DATA_DIR, 'sources', 'hipparcos.fit')
-    
-    # Define the output directory (e.g., .../data/bin)
-    output_dir = os.path.join(DATA_DIR, 'bin')
-    
-    # Define the output file path (e.g., .../data/bin/stars.bin)
+    output_dir = os.path.join(DATA_DIR, 'outputs')
     output_bin_file = os.path.join(output_dir, 'stars.bin')
     
     print(f"Script location: {SCRIPT_DIR}")

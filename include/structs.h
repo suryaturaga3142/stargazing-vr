@@ -15,9 +15,7 @@
 #define STRUCTS_H
 
 #include <stdint.h>
-#include "globals.h"
-
-// sandy move gps struct here pls
+#include <stdbool.h>
 
 /* -------------------------- Core Math Data Types -------------------------- */
 
@@ -37,6 +35,14 @@ typedef struct {
     float x, y, z;
 } Vector3f_t;
 
+/**
+ * @brief A group of Quaternions to hold the complete fix data.
+ * @details total = loc * time
+ */
+typedef struct {
+    Quaternion_t loc, time, total;
+} Qfix_t;
+
 /* -------------------------- Timekeeping Data Types ------------------------ */
 
 /**
@@ -55,15 +61,36 @@ typedef struct {
 } UTCTime_t;
 
 /**
- * @brief A high-precision Julian Date for all astronomical calculations.
- * @details A Julian Date is a continuous count of days since a standard epoch.
- * This linear format is ideal for all standard celestial mechanics
- * algorithms (e.g., for sidereal time). Struct makes this safer.
+ * @brief Julian Date for all astronomical calculations.
+ * @details A continuous count of days since a standard epoch.
+ * Linear format better for sidereal time calc. Struct makes this safer.
  */
 typedef struct {
     double jd; // Use a 'double' for maximum precision in calculations.
 } JulianDate_t;
 
+/**
+ * @brief Sidereal time in radians for quaternion calculations
+ * @details High precision in radians to allow easier calcs. This is relative to 
+ * stars so accounts for revolution.
+ */
+typedef struct {
+    double st;
+} SideReal_t;
+
+/**
+ * @brief A manual definition of the exact RTC format argument passed
+ * @details RTC needs this format to set it. Linker isn't working so use this.
+ */
+typedef struct {
+    int16_t year;    ///< 0..4095
+    int8_t month;    ///< 1..12, 1 is January
+    int8_t day;      ///< 1..28,29,30,31 depending on month
+    int8_t dotw;     ///< 0..6, 0 is Sunday
+    int8_t hour;     ///< 0..23
+    int8_t min;      ///< 0..59
+    int8_t sec;      ///< 0..59
+} datetime_t;
 
 /* --------------------------- Star Catalog Data Types ---------------------- */
 
@@ -71,7 +98,7 @@ typedef struct {
  * @brief Header for the stars.bin file on the SD card.
  * @details Provides metadata to validate the file and understand its contents.
  */
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint32_t magic_number;    // Should be "STAR" (0x53544152) to make sure bin is right
     uint16_t version;         // File format version
     uint16_t header_size;     // Size of this header in bytes
@@ -83,7 +110,7 @@ typedef struct {
  * @details Uses scaled integers to minimize storage footprint. This is the
  * "on-disk" format that is unpacked at startup.
  */
-typedef struct {
+typedef struct __attribute((packed))__ {
     int32_t  ra_scaled;
     int32_t  dec_scaled;
     int16_t  pmra_scaled;
@@ -95,6 +122,7 @@ typedef struct {
  * @brief Render-ready structure for a single star in RAM.
  * @details Stores the pre-calculated Cartesian coordinates on a unit sphere,
  * optimized for the real-time rendering loop. Single element in processed buffer.
+ * x, y, and z are cartesian coordinates. mag is standard range b/w -1.5 - 6.5 and lower is brighter.
  */
 typedef struct {
     float x, y, z;
@@ -116,7 +144,7 @@ typedef struct {
 
 /**
  * @brief A complete, timestamped measurement snapshot from the IMU.
- * @details Bundles the orientation and velocity from a single 100Hz IMU update
+ * @details Bundles the orientation and velocity from a single 200Hz IMU update
  * to ensure they are always synchronized.
  */
 typedef struct {
@@ -136,14 +164,35 @@ typedef struct {
     bool      is_valid;
 } GPSData_t;
 
-/* ---------------------------- System State Types -------------------------- */
+
+/* -------------------------- User UI ------------------------- */
+
+/**
+ * @brief A globally accessed enum to control the state
+ * @details All modules can access to change RGB LED
+ */
+typedef enum {
+    LED_STATE_BOOTING,          // White / Pulse
+    LED_STATE_SD_LOADING,       // Blue / Pulse
+    LED_STATE_GPS_SEARCHING,    // Yellow / Pulse
+    LED_STATE_RUN,              // Green / Solid (GPS Mode)
+    LED_STATE_RUN_J2000,        // Cyan / Solid (J2000 Mode)
+    LED_STATE_TIMELAPSE,        // Purple / Pulse
+    LED_STATE_RUN_NO_FIX,       // Red / Slow Blink
+    LED_STATE_WARN_OVERHEAT,    // Orange / Pulse
+    LED_STATE_ERR_CRITICAL,     // Red / Fast Blink
+    LED_STATE_REBOOTED,         // Magenta / Blink (Watchdog Reset)
+    LED_STATE_DRIFT_CONFIRM,     // Cyan / Fast Blink (Feedback)
+    LED_STATE_PAUSED            // Pink / Pause state
+} LEDState_e;
 
 /**
  * @brief Represents the current state of the RGB LED indicator.
  * @details Used by the UI manager to control the color and pattern of the
- * user-facing status LED.
+ * user-facing status LED based on the system state.
  */
 typedef struct {
+    LEDState_e state;
     enum {
         LED_COLOR_OFF,
         LED_COLOR_WHITE,
@@ -155,7 +204,7 @@ typedef struct {
         LED_COLOR_ORANGE,
         LED_COLOR_MAGENTA,
         LED_COLOR_PURPLE
-    } LED_Color_t;
+    } color;
     enum {
         LED_SOLID,
         LED_BLINK,
@@ -166,7 +215,6 @@ typedef struct {
         LED_SPEED_MEDIUM,
         LED_SPEED_FAST
     } speed;
-} LEDState_t;
-
+} StateDetails_t;
 
 #endif /* STRUCTS_H */
