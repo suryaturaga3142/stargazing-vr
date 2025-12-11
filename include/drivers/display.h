@@ -26,6 +26,9 @@
 #define SCREEN_WIDTH           320
 #define SCREEN_HEIGHT          480
 
+#define X_HALF (SCREEN_WIDTH / 2)
+#define Y_HALF (SCREEN_HEIGHT / 2)
+
 // Star Rendering Limits
 #define AMOUNT_OF_STARS     9000
 

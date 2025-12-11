@@ -18,15 +18,17 @@
 // SYSTEM TIMING CONSTANTS
 //------------------------------------------------------------------------------
 
-#define TARGET_REFRESH_RATE_HZ          1
+#define TARGET_REFRESH_RATE_HZ          200
 #define TARGET_REFRESH_PERIOD_MS        (1000 / TARGET_REFRESH_RATE_HZ)
-#define DEBOUNCE_DELAY_MS               200
-#define GPS_CORRECTION_INTERVAL_MIN     10
+
+#define GPS_CORRECTION_INTERVAL_MIN     5
 #define GPS_INIT_TIMEOUT_MS             10000
 #define GPS_TIMEOUT_MS                  1000
+
 #define WATCHDOG_INIT_TIMEOUT_MS        20000
-#define WATCHDOG_TIMEOUT_MS             2000
+#define WATCHDOG_TIMEOUT_MS             5000
 #define WATCHDOG_SUPERVISOR_INTERVAL_MS 500
+
 #define SD_CARD_INIT_HZ                 400000
 #define SD_CARD_READ_HZ                 5000000
 

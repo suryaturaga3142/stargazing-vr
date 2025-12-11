@@ -28,8 +28,6 @@
 // ...
 
 /* ---------------------------- Private Constants --------------------------- */
-#define X_HALF (SCREEN_WIDTH / 2)
-#define Y_HALF (SCREEN_HEIGHT / 2)
 // ...
 
 /* ----------------------------- Private Variables -------------------------- */

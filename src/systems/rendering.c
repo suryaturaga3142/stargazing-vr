@@ -42,7 +42,7 @@ static const Qfix_t Qfix_default = {
     .total = {0.65922f, 0.28787f, 0.30386f, -0.62776f}
 };
 
-#define AMOUNT_OF_STARS 9000
+#define AMOUNT_OF_STARS 5000
 #define MAG_LIMIT      6.5f   // Dimmest visible star (Value -> 0)
 #define MAG_BRIGHTEST -1.5f   // Brightest reference star (Value -> MAX)
 #define SCALE_FACTOR   (1.0f / (MAG_LIMIT - MAG_BRIGHTEST))
@@ -141,7 +141,7 @@ bool run_main_render(void) {
 
 
     // f = Focal Length related to FOV (e.g., 1.0 / tan(fov/2))
-    float f = -1.0f / tanf(40.0f * M_PI / 180.0f); // 100 deg FOV
+    float f = -1.0f / tanf(50.0f * M_PI / 180.0f); // 100 deg FOV
     int ra_choice = mech_v_to_ra_bin(perspective_vector);
     int dec_choice = mech_v_to_dec_bin(perspective_vector);
 
@@ -150,8 +150,8 @@ bool run_main_render(void) {
     for (int dec_i = dec_choice - 1; dec_i < dec_choice + 2; dec_i++) {
 
         if (dec_i < 0 || dec_i >= SKY_PATCH_DEC_DIVISIONS) continue;
-        int ra_l = ra_choice - 1;
-        int ra_h = ra_choice + 2;
+        int ra_l = ra_choice - 3;
+        int ra_h = ra_choice + 4;
 
         // Special cases for poles to include all RA patches
         if (dec_i == 0 || dec_i == SKY_PATCH_DEC_DIVISIONS - 1) {
@@ -159,8 +159,12 @@ bool run_main_render(void) {
             ra_h = SKY_PATCH_RA_DIVISIONS;
         }
         else if (dec_i == 1 || dec_i == SKY_PATCH_DEC_DIVISIONS - 2) {
-            ra_l = ra_choice - 2;
-            ra_h = ra_choice + 3;
+            ra_l = ra_choice - 5;
+            ra_h = ra_choice + 6;
+        }
+        else if (dec_i == 2 || dec_i == SKY_PATCH_DEC_DIVISIONS - 3) {
+            ra_l = ra_choice - 3;
+            ra_h = ra_choice + 4;
         }
 
         for (int ra_i = ra_l; ra_i < ra_h; ra_i++) {
@@ -175,33 +179,36 @@ bool run_main_render(void) {
                 //printf("Star Vector Originl %d: x=%f y=%f z=%f\r\n", i, star.x, star.y, star.z);
                 //printf("Star Vector Rotated %d: x=%f y=%f z=%f\r\n", i, pt.x, pt.y, pt.z);
 
-                if (pt.y <= 0.0f) continue;
+                if (pt.y <= 0.1f) continue;
 
                 float x_proj = (pt.x / pt.y) * f;
                 float z_proj = (pt.z / pt.y) * f;
-
+                // Scale and cast
                 if (x_proj >= -1.0f && x_proj <= 1.0f && z_proj >= -1.0f && z_proj <= 1.0f) {
-                    // Scale and cast
+
                     int16_t x_int = (int16_t)(x_proj * 420.0f); // Horizontal coordinate relative to center
                     int16_t z_int = (int16_t)(z_proj * 630.0f); // Vertical coordinate relative to center
-                    uint8_t m_int =  mag_to_brightness_u8(star.mag); 
 
-                    // Add these coordinates to a list and use double buffering
-                    if(counter < AMOUNT_OF_STARS) {
-                        StarPosition_t *current_star;
-                        
-                        if(selector) current_star = &buffer_one[counter];
-                        else         current_star = &buffer_two[counter];
+                    if (x_int >= -X_HALF && x_int <= X_HALF && z_int >= -Y_HALF && z_int <= Y_HALF) {
+                        uint8_t m_int =  mag_to_brightness_u8(star.mag); 
 
-                        current_star->x_proj = x_int;
-                        current_star->z_proj = z_int;
-                        current_star->magnitude = m_int;
+                        // Add these coordinates to a list and use double buffering
+                        if(counter < AMOUNT_OF_STARS) {
+                            StarPosition_t *current_star;
+                            
+                            if(selector) current_star = &buffer_one[counter];
+                            else         current_star = &buffer_two[counter];
 
-                        counter++;
+                            current_star->x_proj = x_int;
+                            current_star->z_proj = z_int;
+                            current_star->magnitude = m_int;
+
+                            counter++;
+                        }
+                        // Print as Hex: $XXXXYYYMMM
+                        // %04X for 16-bit, %02X for 8-bit
+                        //printf("$%04X%04X%02X\n", (uint16_t)x_int, (uint16_t)z_int, m_int);
                     }
-                    // Print as Hex: $XXXXYYYMMM
-                    // %04X for 16-bit, %02X for 8-bit
-                    //printf("$%04X%04X%02X\n", (uint16_t)x_int, (uint16_t)z_int, m_int);
                 }
             }
         }
@@ -220,7 +227,8 @@ bool run_main_render(void) {
     last_frame_star_count = counter;
     selector = selector ^ 1;
 
-    // Sleep for a bit here
+    //sleep_ms(50);
+
     g_is_rendering = false;
 
     return true;

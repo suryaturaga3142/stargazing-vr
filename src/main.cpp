@@ -180,11 +180,13 @@ int main()
         // Awake now bc interrupt fired. Do the events in order of priority.
         
         // If the read flag is turned on, the IMU is automatically read using the SHTP protocol and updated in the background.
-        if (g_play_screen && imu_check_and_read()) {
-            monitor_checkin(SYS_MODULE_IMU);
+        if (imu_check_and_read()) {
             // printf("Game: %f %f %f %f\r\n", 
             //        g_latest_imu_data.orientation.x, g_latest_imu_data.orientation.y, g_latest_imu_data.orientation.z, g_latest_imu_data.orientation.w);
+            monitor_checkin(SYS_MODULE_IMU);
+
             run_main_render();
+
             monitor_checkin(SYS_MODULE_DISPLAY);
         }
 
@@ -202,7 +204,7 @@ int main()
             Qfix_t Qfix_latest;
             Qfix_latest.loc   = mech_location_to_q(g_latest_gps_data.latitude, g_latest_gps_data.longitude);
             Qfix_latest.time  = mech_time_to_q(mech_utc_to_sidereal(g_latest_gps_data.time));
-            Qfix_latest.total = mech_product_q(Qfix_last.loc, Qfix_last.time);
+            Qfix_latest.total = mech_product_q(Qfix_latest.loc, Qfix_latest.time);
             Qfix_last = Qfix_latest;
         }
         monitor_checkin(SYS_MODULE_GPS);
@@ -227,7 +229,6 @@ int main()
         // Pause toggle request needs handling in rendering loop.
 
         monitor_checkin(SYS_MODULE_MAIN);
-        sleep_ms(100);
     }
 
     // Should never reach here.
