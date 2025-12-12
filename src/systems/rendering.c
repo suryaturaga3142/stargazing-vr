@@ -175,6 +175,15 @@ bool run_main_render(void) {
     if(pause_button)
     {
         user_ui_set_state(LED_STATE_PAUSED);
+        beautiful_background();
+        if(selector)
+        {
+            draw_paused_stars(buffer_two, last_frame_star_count);
+        }
+        else
+        {
+            draw_paused_stars(buffer_one, last_frame_star_count);
+        }
         return false;
     }
 

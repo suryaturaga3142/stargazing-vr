@@ -66,11 +66,17 @@ void display_set_dc(bool is_data);
  */
 void initialize_dma_packet(void);
 
+void beautiful_background();
+
 void erase_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count);
 
 void draw_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count);
 
+void draw_paused_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count);
+
 uint16_t brightness_scale(uint8_t magnitude);
+
+uint16_t quality_adjust(uint8_t magnitude);
 
 void Clear_The_star(void);
 /**
