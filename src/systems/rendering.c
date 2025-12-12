@@ -109,11 +109,11 @@ bool run_main_render(void) {
             LCD_Clear(0x0000);
             last_frame_star_count = 0;
         }
-        else {
-            //beautiful_background();
-            //if(selector) draw_paused_stars(buffer_two, last_frame_star_count);
-            //else         draw_paused_stars(buffer_one, last_frame_star_count);
-        }
+        /*else {
+            beautiful_background();
+            if(selector) draw_paused_stars(buffer_two, last_frame_star_count);
+            else         draw_paused_stars(buffer_one, last_frame_star_count);
+        }*/
 
         g_pause_toggle_request = false;
     }
@@ -129,7 +129,8 @@ bool run_main_render(void) {
     // Phase 1: Setup quaternions
     
     Quaternion_t q_imu = g_latest_imu_data.orientation;
-    q_imu.y = -q_imu.y;
+    q_imu.y = q_imu.y;
+    q_imu.z = -q_imu.z;
     Quaternion_t q_fix_calc; // The one to use in calculation
     
     if (g_use_gps_location) q_fix_calc = Qfix_last.total;
