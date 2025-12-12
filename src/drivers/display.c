@@ -143,6 +143,101 @@ void draw_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count)
     }
 }
 
+uint8_t matrix[4][4] = {
+    { 0,  8,  2, 10},
+    {12,  4, 14,  6},
+    { 3, 11,  1,  9},
+    {15,  7, 13,  5}
+};
+
+void beautiful_background()
+{
+    int start_r = 5;
+    int start_g = 10;
+    int start_b = 25;
+
+    int end_r = 45;
+    int end_g = 25;
+    int end_b = 60;
+
+    lcddev.select(1);
+    LCD_SetWindow(0, 0, 319, 479);
+    LCD_WriteData16_Prepare();
+
+    uint16_t row_background[320];
+    uint16_t pixel_variants[4];
+
+   for (int y = 0; y < 480; y++)
+    {
+        
+        int r_base = start_r + ((end_r - start_r) * y) / 480;
+        int g_base = start_g + ((end_g - start_g) * y) / 480;
+        int b_base = start_b + ((end_b - start_b) * y) / 480;
+
+        const uint8_t *dither_row = matrix[y & 3]; 
+
+        for (int k = 0; k < 4; k++)
+        {
+            int d = dither_row[k];
+
+            int r = r_base + (d >> 1); 
+            int g = g_base + (d >> 2); 
+            int b = b_base + (d >> 1);
+
+            if (r > 255) r = 255;
+            if (g > 255) g = 255;
+            if (b > 255) b = 255;
+
+            pixel_variants[k] = (uint16_t)(((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3));
+        }
+
+        for (int x = 0; x < 320; x += 4)
+        {
+            row_background[x] = pixel_variants[0];
+            row_background[x + 1] = pixel_variants[1];
+            row_background[x + 2] = pixel_variants[2];
+            row_background[x + 3] = pixel_variants[3];
+        }
+
+        // D. Burst Write via SPI
+        spi_write16_blocking(spi1, row_background, 320);
+    }
+
+    LCD_WriteData16_End();
+    lcddev.select(0);
+}
+
+uint16_t quality_adjust(uint8_t magnitude)
+{
+    uint16_t r = (magnitude * 25) / 255;
+    uint16_t g = (magnitude * 57) / 255;
+    uint16_t b = (magnitude * 31) / 255;
+
+    return (r << 11) | (g << 5) | b;
+}
+
+void draw_paused_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count)
+{
+    //const int X_HALF = 160; 
+    //const int Y_HALF = 240; 
+
+    for (int i = 0; i < count; i++)
+    {
+        // 1. Extract Center-Based Coordinates (xc, yc)
+        int x_c = buffer[i].x_proj; 
+        int y_c = buffer[i].z_proj;
+
+        // 2. Convert to Display Coordinates (xd, yd)
+        int x_d = x_c + X_HALF; 
+        int y_d = Y_HALF - y_c; // Flips Y axis, shifts origin to top-left
+
+        uint16_t quality_scale = quality_adjust(buffer[i].magnitude);
+        LCD_DrawLine(x_d - 1, y_d, x_d + 1, y_d, quality_scale);
+        LCD_DrawLine(x_d, y_d - 1, x_d, y_d + 1, quality_scale);
+    }
+
+}
+
 
 
 // // --- DMA/SPI HARDWARE CONFIGURATION ---

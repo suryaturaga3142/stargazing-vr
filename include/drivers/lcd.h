@@ -93,6 +93,10 @@ void LCD_DrawChar(u16 x,u16 y,u16 fc, u16 bc, char num, u8 size, u8 mode);
 void LCD_DrawString(u16 x,u16 y, u16 fc, u16 bg, const char *p, u8 size, u8 mode);
 void LCD_DrawPicture(u16 x0, u16 y0, const Picture *pic);
 
+void LCD_SetWindow(uint16_t xStart, uint16_t yStart, uint16_t xEnd, uint16_t yEnd);
+void LCD_WriteData16_Prepare(void);
+void LCD_WriteData16_End(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -109,6 +109,11 @@ bool run_main_render(void) {
             LCD_Clear(0x0000);
             last_frame_star_count = 0;
         }
+        else {
+            //beautiful_background();
+            //if(selector) draw_paused_stars(buffer_two, last_frame_star_count);
+            //else         draw_paused_stars(buffer_one, last_frame_star_count);
+        }
 
         g_pause_toggle_request = false;
     }

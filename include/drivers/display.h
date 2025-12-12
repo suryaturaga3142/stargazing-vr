@@ -74,6 +74,12 @@ void display_set_dc(bool is_data);
  */
 void initialize_dma_packet(void);
 
+void beautiful_background();
+void draw_paused_stars(StarPosition_t buffer[AMOUNT_OF_STARS], int count);
+uint16_t quality_adjust(uint8_t magnitude);
+
+
+
 void Clear_The_star(void);
 /**
  * @brief Initializes the DMA channel for SPI-based display transfer.
