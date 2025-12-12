@@ -115,7 +115,7 @@ bool run_main_render(void) {
 
     if (!g_play_screen) {
         g_is_rendering = false;
-        return true;
+        return false;
     }
 
     // Local selector for the inner logic block (RENAMED)

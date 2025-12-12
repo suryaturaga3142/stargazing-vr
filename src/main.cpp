@@ -125,24 +125,6 @@ int main()
     watchdog_update();
     sd_buf_sort();  // Sorts data in 3 pass algorithm
 
-    /*for (int i = 0; i < 50; i++) {
-        if (all_stars[i].mag != 0.0f) printf("Final Star %d: Mag %f x: %f y: %f z: %f\r\n", i, all_stars[i].mag, all_stars[i].x, all_stars[i].y, all_stars[i].z);
-    }*/
-
-    /* TEST VALUES */
-    /*Star_t st = { .x = 0.0f, .y = 0.0f, .z = 1.0f, .mag = -1.5f };
-    all_stars[sky_database[0][0].start_index] = st;
-    st = { .x = 0.0f, .y = 0.0f, .z = -1.0f, .mag = 0.0f };
-    all_stars[sky_database[0][0].start_index + 1] = st;
-    st = { .x = 0.0f, .y = 1.0f, .z = 0.0f, .mag = 1.0f };
-    all_stars[sky_database[0][0].start_index + 2] = st;
-    st = { .x = 0.0f, .y = -1.0f, .z = 0.0f, .mag = -1.5f };
-    all_stars[sky_database[0][0].start_index + 3] = st;
-    st = { .x = 1.0f, .y = 0.0f, .z = 0.0f, .mag = 0.0f };
-    all_stars[sky_database[0][0].start_index + 4] = st;
-    st = { .x = -1.0f, .y = 0.0f, .z = 0.0f, .mag = 1.5f };
-    all_stars[sky_database[0][0].start_index + 5] = st;
-    */
 
     watchdog_update();
     printf("SD Card disabled & data sorted!\r\nInitializing GPS (This will take time)...\r\n");
