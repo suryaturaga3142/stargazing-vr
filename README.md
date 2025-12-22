@@ -20,6 +20,7 @@ This project is a wearable headset with an RP2350 microcontroller and two 3.5" T
 *View from a single screen during operation.*
 
 [![Full View](https://img.youtube.com/vi/E_Z8thj5-Y4/0.jpg)](https://youtu.be/E_Z8thj5-Y4?si=hsxMM6rmYNDNSfJs)
+
 *360 Degree View of the Headset*
 
 ---
@@ -53,10 +54,13 @@ The LCD Displays (ILI9486) as well as the microSD Card are controlled using SPI.
 ---
 
 [![Demo Video 1](https://img.youtube.com/vi/3412y5BKB1g/0.jpg)](https://youtu.be/3412y5BKB1g?si=uu_Z9wU7jyXM4vg-)
-  *A short demonstration of the Headset working.*
+
+*A short demonstration of the Headset working.*
+
 
 [![Demo Video 2](https://img.youtube.com/vi/89O6f0i35UU/0.jpg)](https://youtu.be/89O6f0i35UU?si=O_-78V77JQVSeXiZ)
-  *A demonstration of the UI of the headset.*
+
+*A demonstration of the UI of the headset.*
 
 ---
 
