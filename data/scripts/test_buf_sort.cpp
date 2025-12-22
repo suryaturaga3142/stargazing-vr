@@ -30,6 +30,10 @@
 // Project Structs
 // --------------------------------------------------------------------------
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 #define STAR_CATALOG_SIZE_MAX   15000
 #define SKY_PATCH_RA_DIVISIONS  24
 #define SKY_PATCH_DEC_DIVISIONS 12
