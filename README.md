@@ -27,7 +27,6 @@ Our Story
 
 - [Features](#-features)
 - [Instructions for Usage](#-instructions-for-usage)
-- [Design Stages](#-design-stages)
 - [Software Developement](#-software-development)
   - [The Rendering Pipeline](#-the-rendering-pipeline)
   - [Side Quest 1: Scripting](#-side-quest-1-scripting)
@@ -62,13 +61,6 @@ If you're using the PCB, it's a plug and play. It needs the Adafruit BNO085 IMU 
 
 ---
 
-<a id="-design-stages"></a>
-## 📐 Design Stages
-
-Give a short flow of what all we went about doing. Basically a short story.
-
----
-
 <a id="-software-development"></a>
 ## 🖥️ Software Development
 
@@ -77,50 +69,85 @@ We started with the software. Before wiring anything up, we began testing our de
 <a id="-the-rendering-pipeline"></a>
 ### 🚄 The Rendering Pipeline
 
-Short desc. Mermaid flowchart?
+The critical path is IMU to display, and it runs at 200Hz. The IMU generates in interrupt, which triggers main to read data, process it, find the final rotation, generate the star list, and draw/erase the display. Everything else, such as state setting, GPS reading, IMU taring, etc happen in the remaining 5ms between reads. 
+
+The watchdog in the MCU is set to 1000ms and cleared every 200ms, so if there's a deadlock (especially an issue with the GPS), the system reboots.
 
 <a id="-side-quest-1-scripting"></a>
 ### 🎬 Side Quest 1: Scripting
 
-Short desc again. Show some images.
+Python scripts were the method we used to get stuff done.
+
+[process_fits.py](data/scripts/process_fits.py) is the most critical one. We used it to generate the needed binary file from a heavy fit file. Used ```astropy```.
+
+[game_rot.py](data/scripts/game_rot.py) is more of an IMU debugging script. It reads game rotation vectors from the IMU and allows visualization of the data in 3D using ```pyqtgraph``` and ```PySide6```.
+
+[see_stars.py](data/scripts/see_stars.py) is meant to test the sorting algorithm written to run on g++ in [test_buf_sort.cpp](data/scripts/test_buf_sort.cpp) by displaying the sorted data as patches on a 3D sphere. It's a neat visualization of how the data looks.
+
+![Stars Visual](docs/images/see_stars.png)
+*Visualization of data sorted into 12 bins of Declination and 24 bins of Right Ascension.*
+
+The remaining scripts were used to emulate the LCDs for debugging and calibrating purposes. They're more effective when you handwrite a small batch (~10) of test stars.
 
 <a id="-optimizations"></a>
 ### 🪡 Optimizations
 
-Give an idea of quaternion math, spatial culling, double buffering.
+The first major optimization we used in this project was the use of quaternions for rotations. Instead of Euler angles, which are hard to visualize and are prone to gimbal lock, we used quaternions, which are 4D complex numbers, and are a completely neat set of mathematics immune to any edge cases. They literally describe rotations in the purest sense, with a single quaternion essentially behaving like a 3x3 rotation matrix meant to be applied on a 3x1 coordinate vector. Each of the 3 main factors - Location, Date/Time, and IMU vector - are all expressed as seperate quaternions, and combining them to obtain a single final rotation quaternions is akin to multiplying 3 matrices together!
+
+$$ q_{final} = q_{IMU} \cdot q_{location} \cdot q_{time} $$
+
+$$ v_{final} = q_{final} \cdot v_{J2000} \cdot q_{final}^{*} $$
+
+Our next optimization was Spatial Culling, optimizing in what to do with this final rotation. Applying it to all stars only to then narrow down a 100 degree FOV would be far too expensive computationally. Instead, we applied the inverse rotation to the perspective vector, and then checked which set of stars could appear on screen. That's where the bin sorting came into play. The 288 patches were sorted based on RA and DEC, allowing easy access of patches to then apply the rotation to. 
+
+Finally, we used double buffering to allow erasing of old stars and drawing of new ones together. Keeping this rate maxed out, it even created an unintentional twinkling effect of stars! It's not a bug, it's a feature.
 
 ---
 
 <a id="-hardware-building"></a>
 ## 🛠️ Hardware Building
 
-While the code was being developed, stuff was getting wired up on the breadboard! Starting with the RGB LED, then moving to the IMU, GPS, SD Card, and finally, the displays. This was just the process of integration, of course. Everything was being developed and tested slowly at the same time.
+While the code was being developed, stuff was getting wired up on the breadboard! Starting with the RGB LED, then moving to the IMU, GPS, SD Card, and finally, the displays. This was just the process of integration, of course. Everything software and hardware was being developed and tested slowly at the same time.
 
 <a id="-the-physical-design"></a>
 ### The Physical Design
 
-Outline the choices made and what we started with
-
-Put a pic.
+On the breadboard, there wasn't much to do. We simplified a lot of wiring by using breakout boards for all parts. Appropriate resistor sizes were chosen for the RGB LED and soldered. Everything else was just connected with regular wiring. The breadboard design was arguably the easiest part of this project. We got ourselves a 9V to breadboard supply board that provided the needed 5V and 3V3 supplies. That with a USB-C breakout was all we needed. Refer to [config.h](include/config.h) for exact connections for breadboarding. Remember, the PCB was different! Check the schematic for that.
 
 <a id="-so-many-issues"></a>
 ### So many issues!
 
-Short summary of problems we faced and how we adapted
+We initially tried to speed up graphics by using PIO to communicate with the LCDs through 16-bit 8080. Using long and noisy wires, this ended up being a bit of a mess.
+
+![Parallel Wiring](docs/images/initial_soldering_pio_2.jpg)
+*FPC connector to breadboard wire soldering*
+
+Due to the noise in these wires and the precise timing requirements, we scrapped this idea after a lot of failed attempts, and moved back to SPI. The same issue happened to the microSD Card, where SDIO may not have been feasible due to the wiring size. Hence, both were moved back to SPI.
+
+An interesting challenge faced was balancing timing with performance. What was the fastest we could go without messing up the visuals? How much gap did we give between render frames? And how much did we zoom into a patch? There were several calibration challenges that needed solving. And then there was the issue of making sure there was enough space on the board for all connections. [main.cpp](src/main.cpp) and [config.h](include/config.h) have the exact timings.
 
 <a id="-side-quest-2-pcb-design"></a>
 ### Side Quest 2: PCB Design
 
-Short summary of making the PCB and what happened with it. Put a picture!
+Making the PCB took an all nighter. It uses the same RP2350B with the same set of parts. It's important to note that due to vendor shortage, the IMU was replaced with headers for the Adafruit breakout board for BNO085. Due to the requirements of moving the displays, 2 FPC connectors were installed at the edge of the PCB for displaying. Due to the noise requirements, the GPS module is connected with a JST connector, to prevent the antenna from catching noise. 
+
+Finally, the device is programmed with the Pico Probe headers and powered by a rechargeable LiPo battery. The USB-C receptacle can either charge the battery during runtime, or power the device. Charging needs the supercharge switch enabled, and it has to be connected to a wall socket. Excess current draw will trigger a laptop polyfuse if you try charging.
 
 <a id="-putting-it-all-together"></a>
 ### Putting it all together
 
-Finally, assembling the headset! Keep this short with pics.
+Everything was held together with electrical tape. And it worked well! The occasional loose connection was annoying, but the project worked nevertheless. We had to end up using the breadboards as opposed to the PCB, though. That was a bit sad, but seeing the headset work was awesome!
 
 ---
 
 <a id="-closing-thoughts"></a>
 ## 📦 Closing Thoughts
 
-Showcase at spark and final thoughts on how the project could be improved and what not. End with group photo.
+Despite all the issues we faced, we were able to showcase our project at the Purdue University Spark Challenge in December 2025. Showing the project to friends and teachers alike was an unforgettable experience. 
+
+Technically speaking, there's a good number of improvements that can be made. Small adjustments like adjusting x and z FOVs as well as star pixel designs are user choices. Speed optimizations can be made, too. Firstly, swapping out normal writing for DMA would significantly speed up LCD display drawing. So would a parallel interface and using the RP2350 dual core capabilities to seperate computations and rendering.
+
+Thankfully, the project is really modular. Every file works independantly, and swapping out mechanisms is definitely a large area for improvement that can be achieved.
+
+![Group Pic](docs/images/group_pic.jpg)
+*LED Chasers - (L to R) Sandeep Saravanakumar, Surya Turaga, Madelyn Zavada, Ryan Yoong*

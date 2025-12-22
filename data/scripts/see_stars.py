@@ -26,6 +26,9 @@
 #   - Python 3.x
 #   - NumPy: Astropy dependency, used for data filtering. (`pip install numpy`)
 #   - Pandas: Calculations ('pip install pandas')
+#   - PySide6: GUI framework ('pip install PySide6')
+#   - PyQtGraph: Plotting ('pip install pyqtgraph')
+#   - PyOpenGL: Required for 3D visualization ('pip install PyOpenGL PyOpenGL_accelerate')
 #
 # USAGE:
 # ======
