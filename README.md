@@ -3,6 +3,12 @@
 ![Project Banner / Hero Image](docs/images/final_pic_1.jpg)
 *A high-performance, standalone VR headset powered by the RP2350 that renders real-time star constellations based on precise geolocation and orientation.*
 
+[![Demo Video 1](https://img.youtube.com/vi/3412y5BKB1g/0.jpg)](https://youtu.be/3412y5BKB1g?si=uu_Z9wU7jyXM4vg-)
+*A short demonstration of the Headset working.*
+
+[![Demo Video 2](https://img.youtube.com/vi/89O6f0i35UU/0.jpg)](https://youtu.be/89O6f0i35UU?si=O_-78V77JQVSeXiZ)
+*A demonstration of the UI of the headset.*
+
 ---
 
 ## 📖 Introduction
