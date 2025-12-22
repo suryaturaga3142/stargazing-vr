@@ -144,9 +144,12 @@ An interesting challenge faced was balancing timing with performance. What was t
 <a id="-side-quest-2-pcb-design"></a>
 ### Side Quest 2: PCB Design
 
-Making the PCB took an all nighter. It uses the same RP2350B with the same set of parts. It's important to note that due to vendor shortage, the IMU was replaced with headers for the Adafruit breakout board for BNO085. Due to the requirements of moving the displays, 2 FPC connectors were installed at the edge of the PCB for displaying. Due to the noise requirements, the GPS module is connected with a JST connector, to prevent the antenna from catching noise. 
+Making the PCB took an all nighter. For all the files, check [pcb-stargazing](./pcb-stargazing/), which has the full KiCad 9.0 project. It uses the same RP2350B with the same set of parts. It's important to note that due to vendor shortage, the IMU was replaced with headers for the Adafruit breakout board for BNO085. Due to the requirements of moving the displays, 2 FPC connectors were installed at the edge of the PCB for displaying. Due to the noise requirements, the GPS module is connected with a JST connector, to prevent the antenna from catching noise. 
 
-Finally, the device is programmed with the Pico Probe headers and powered by a rechargeable LiPo battery. The USB-C receptacle can either charge the battery during runtime, or power the device. Charging needs the supercharge switch enabled, and it has to be connected to a wall socket. Excess current draw will trigger a laptop polyfuse if you try charging.
+Finally, the device is programmed with the Pico Probe headers and powered by a rechargeable LiPo battery. The USB-C receptacle can either charge the battery during runtime, or power the device. Charging needs the supercharge switch enabled, and it has to be connected to a wall socket. Excess current draw will trigger a laptop polyfuse if you try charging. Fun side note, the PCB also has a breakout meant to attach into a breadboard to allow for easy parallel interfacing with a display using an FPC!
+
+![PCB 3D Model](docs/images/pcb_kicad3d.png)
+*3D Model of the PCB that was built.*
 
 <a id="-putting-it-all-together"></a>
 ### Putting it all together
